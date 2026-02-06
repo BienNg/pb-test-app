@@ -1,6 +1,12 @@
 import React from 'react';
-import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
-import { StatCard, Button } from './BaseComponents';
+import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
+import {
+  Card,
+  StatCard,
+  CircularProgress,
+  ActivityButton,
+  Button,
+} from './BaseComponents';
 import { BookingCalendar } from './BookingCalendar';
 import { UpcomingLessonCard } from './Cards';
 

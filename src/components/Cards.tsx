@@ -88,7 +88,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   title,
   category,
   duration,
+  thumbnail,
   progress = 0,
+  isVOD = false,
   isCompleted = false,
   onClick,
 }) => (
