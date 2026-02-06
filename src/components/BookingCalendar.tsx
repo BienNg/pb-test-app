@@ -114,7 +114,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
   };
 
   const allAvailableInView = useMemo(() => {
-    const keys = getAvailableDateKeys();
     const start = new Date(selectedDate);
     start.setDate(start.getDate() - 7);
     const end = new Date(selectedDate);
