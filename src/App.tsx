@@ -4,22 +4,33 @@ import { globalStyles } from './styles/globals';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from './styles/theme';
 import { Dashboard } from './components/Dashboard';
 import { CoachApp } from './components/CoachApp';
+import { AdminApp } from './components/AdminApp';
 import { LessonsPage } from './components/LessonsPage';
 import { MyProgressPage } from './components/MyProgressPage';
 
 type TabId = 'home' | 'progress' | 'library';
 
+function getRoute() {
+  const path = window.location.pathname;
+  if (path === '/admin') return 'admin';
+  if (path === '/coach') return 'coach';
+  return 'student';
+}
+
 function App() {
-  const [isCoachRoute, setIsCoachRoute] = useState(() => window.location.pathname === '/coach');
+  const [route, setRoute] = useState(getRoute);
   const [activeTab, setActiveTab] = useState<TabId>('home');
 
   useEffect(() => {
-    const onPopState = () => setIsCoachRoute(window.location.pathname === '/coach');
+    const onPopState = () => setRoute(getRoute());
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  if (isCoachRoute) {
+  if (route === 'admin') {
+    return <AdminApp />;
+  }
+  if (route === 'coach') {
     return <CoachApp />;
   }
 

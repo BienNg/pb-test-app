@@ -6,3 +6,5 @@ export { Dashboard } from './Dashboard';
 export { Calendar } from './Calendar';
 export { TrainerCard, LessonCard, UpcomingLessonCard, UpcomingSessionCard } from './Cards';
 export { LessonsPage } from './LessonsPage';
+export { AdminApp } from './AdminApp';
+export type { CoachInfo } from './AdminApp';
