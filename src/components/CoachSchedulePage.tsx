@@ -150,13 +150,95 @@ export const CoachSchedulePage: React.FC = () => {
       }}
     >
       <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ marginBottom: SPACING.xl }}>
-          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
+        <div style={{ marginBottom: SPACING.md }}>
+          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
             My Schedule
           </h1>
           <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
             Your upcoming lessons and sessions.
           </p>
+        </div>
+
+        {/* Stats — primary content, top placement */}
+        <div
+          style={{
+            marginBottom: SPACING.xl,
+            background: `linear-gradient(145deg, ${COLORS.textPrimary} 0%, #2C2C2E 100%)`,
+            borderRadius: RADIUS.lg,
+            padding: SPACING.xl,
+            color: COLORS.white,
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SPACING.xl }}>
+            <div>
+              <p
+                style={{
+                  ...TYPOGRAPHY.label,
+                  color: COLORS.primary,
+                  margin: 0,
+                  marginBottom: SPACING.md,
+                  fontWeight: 600,
+                }}
+              >
+                This month
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Sessions</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.sessionsThisMonth}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Hours</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.hoursThisMonth} hrs</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Students</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.studentsThisMonth}</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <p
+                style={{
+                  ...TYPOGRAPHY.label,
+                  color: 'rgba(255,255,255,0.55)',
+                  margin: 0,
+                  marginBottom: SPACING.md,
+                  fontWeight: 600,
+                }}
+              >
+                All time
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Total sessions</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.totalSessions}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Total hours</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.totalHours} hrs</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: SPACING.md }}>
+                  <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Total students</span>
+                  <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, margin: 0, flexShrink: 0 }}>{stats.totalStudents}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: -30,
+              right: -30,
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
+              background: 'rgba(155, 225, 93, 0.12)',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
 
         <div style={{ marginBottom: SPACING.xl }}>
@@ -277,65 +359,6 @@ export const CoachSchedulePage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Stats */}
-        <div style={{ marginTop: SPACING.xxl, paddingBottom: SPACING.xxl }}>
-          <h2
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              fontWeight: 600,
-              color: COLORS.textSecondary,
-              textTransform: 'uppercase',
-              marginBottom: SPACING.md,
-            }}
-          >
-            Stats
-          </h2>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-              gap: SPACING.md,
-            }}
-          >
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Sessions this month
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.sessionsThisMonth}</p>
-            </Card>
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Hours this month
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.hoursThisMonth} hrs</p>
-            </Card>
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Students this month
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.studentsThisMonth}</p>
-            </Card>
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Total sessions
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.totalSessions}</p>
-            </Card>
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Total hours
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.totalHours} hrs</p>
-            </Card>
-            <Card padding={SPACING.lg}>
-              <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                Total students
-              </p>
-              <p style={{ ...TYPOGRAPHY.h2, color: COLORS.textPrimary, margin: 0 }}>{stats.totalStudents}</p>
-            </Card>
-          </div>
         </div>
 
         {/* Confirm / reject requested session modal */}
