@@ -1,0 +1,42 @@
+/* Mobile-first responsive design */
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+main {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Mobile styles */
+@media (max-width: 480px) {
+  div[style*="padding"] {
+    --padding-mobile: calc(var(--padding-default, 16px) * 0.75);
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 481px) and (max-width: 768px) {
+  /* Optimizations for tablets */
+}
+
+/* Desktop styles */
+@media (min-width: 769px) {
+  /* Optimizations for desktop */
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Hover states for non-touch devices */
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    filter: brightness(0.95);
+  }
+}
