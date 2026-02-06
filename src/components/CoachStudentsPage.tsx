@@ -33,7 +33,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
           width: 56,
           height: 56,
           borderRadius: RADIUS.circle,
-          backgroundColor: COLORS.lavender,
+          backgroundColor: COLORS.primary,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',

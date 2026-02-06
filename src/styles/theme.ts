@@ -17,14 +17,18 @@ export const COLORS = {
   textSecondary: '#8E8E93',
   textMuted: '#C7C7CC',
   
+  // Primary (add button green) – main accent across the app
+  primary: '#9BE15D',
+  primaryLight: 'rgba(155, 225, 93, 0.25)',
+
   // Accents
   lavender: '#D6C9FF',
-  green: '#9BE15D',
+  green: '#9BE15D', // same as primary
   coral: '#FF8A80',
   red: '#FF6B6B',
   purple: '#D6C9FF',
   blue: '#87CEEB',
-  
+
   // Icon backgrounds
   iconBg: '#F3F4F6',
 };

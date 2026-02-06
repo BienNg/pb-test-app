@@ -230,7 +230,7 @@ export const LessonsPage: React.FC = () => {
                       cy="18"
                       r="14"
                       fill="none"
-                      stroke={COLORS.green}
+                      stroke={COLORS.primary}
                       strokeWidth="4"
                       strokeDasharray={`${(completedCount / Math.max(totalLessons, 1)) * 88} 88`}
                       strokeLinecap="round"

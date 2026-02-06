@@ -214,7 +214,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variants = {
     primary: {
-      backgroundColor: COLORS.lavender,
+      backgroundColor: COLORS.primary,
       color: COLORS.textPrimary,
       border: 'none',
     },
@@ -334,9 +334,9 @@ interface BadgeProps {
 
 export const Badge: React.FC<BadgeProps> = ({ label, status = 'info' }) => {
   const statusColors = {
-    success: COLORS.green,
+    success: COLORS.primary,
     warning: COLORS.coral,
-    info: COLORS.lavender,
+    info: COLORS.primary,
   };
 
   return (

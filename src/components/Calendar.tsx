@@ -180,7 +180,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
               style={{
                 aspectRatio: '1',
                 border: 'none',
-                backgroundColor: isSelected ? COLORS.lavender : 'transparent',
+                backgroundColor: isSelected ? COLORS.primaryLight : 'transparent',
                 color: date
                   ? isActive
                     ? COLORS.textPrimary
@@ -227,7 +227,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
                         width: 4,
                         height: 4,
                         borderRadius: RADIUS.circle,
-                        backgroundColor: COLORS.green,
+                        backgroundColor: COLORS.primary,
                       }}
                     />
                   ))}

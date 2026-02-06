@@ -121,7 +121,7 @@ export const CoachApp: React.FC = () => {
                       width: 24,
                       height: 3,
                       borderRadius: 999,
-                      backgroundColor: COLORS.lavender,
+                      backgroundColor: COLORS.primary,
                       marginTop: 2,
                     }}
                   />

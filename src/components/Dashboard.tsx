@@ -70,7 +70,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             value="12"
             unit="of 16"
             icon="✓"
-            accentColor={COLORS.green}
+            accentColor={COLORS.primary}
             onClick={onNavigateToTab ? () => onNavigateToTab('library') : undefined}
           />
           <StatCard

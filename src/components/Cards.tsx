@@ -27,7 +27,7 @@ export const TrainerCard: React.FC<TrainerCardProps> = ({
           width: '80px',
           height: '80px',
           borderRadius: RADIUS.circle,
-          backgroundColor: COLORS.lavender,
+          backgroundColor: COLORS.primary,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
@@ -210,7 +210,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
               style={{
                 width: `${progress}%`,
                 height: '100%',
-                backgroundColor: COLORS.lavender,
+                backgroundColor: COLORS.primary,
                 transition: 'width 0.3s ease',
               }}
             />
@@ -256,7 +256,7 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
           width: '48px',
           height: '48px',
           borderRadius: RADIUS.circle,
-          backgroundColor: COLORS.lavender,
+          backgroundColor: COLORS.primary,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
@@ -332,8 +332,8 @@ export const UpcomingSessionCard: React.FC<UpcomingSessionProps> = ({
   onClick,
 }) => {
   const statusColors = {
-    upcoming: COLORS.lavender,
-    'in-progress': COLORS.green,
+    upcoming: COLORS.primaryLight,
+    'in-progress': COLORS.primary,
     completed: COLORS.iconBg,
   };
 
