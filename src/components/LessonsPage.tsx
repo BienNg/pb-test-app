@@ -105,6 +105,32 @@ export const LessonsPage: React.FC = () => {
             lesson.category.toLowerCase() === selectedCategory.toLowerCase()
         );
 
+  // Stats for the overview card
+  const completedCount = lessons.filter((l) => l.isCompleted).length;
+  const inProgressCount = lessons.filter(
+    (l) => l.progress > 0 && !l.isCompleted
+  ).length;
+  const totalLessons = lessons.length;
+
+  // Parse "MM:SS" or "M:SS" to minutes and sum
+  const totalMinutes = lessons.reduce((acc, l) => {
+    const [m, s] = l.duration.split(':').map(Number);
+    return acc + (m || 0) + (s || 0) / 60;
+  }, 0);
+  const totalHours = Math.floor(totalMinutes / 60);
+  const totalMins = Math.round(totalMinutes % 60);
+  const totalContentLabel =
+    totalHours > 0
+      ? `${totalHours}:${totalMins.toString().padStart(2, '0')} hr`
+      : `${Math.round(totalMinutes)} min`;
+
+  const avgProgress =
+    totalLessons > 0
+      ? Math.round(
+          lessons.reduce((acc, l) => acc + l.progress, 0) / totalLessons
+        )
+      : 0;
+
   return (
     <div
       style={{
@@ -124,7 +150,7 @@ export const LessonsPage: React.FC = () => {
           boxSizing: 'border-box',
         }}
       >
-        {/* Header */}
+        {/* Header - on top */}
         <div style={{ marginBottom: SPACING.xxl }}>
           <h1
             style={{
@@ -146,8 +172,202 @@ export const LessonsPage: React.FC = () => {
           >
             Learn from expert instructors. Master your technique, strategy, and game.
           </p>
+        </div>
 
-          {/* Filter Buttons */}
+        {/* Lesson Progress overview card */}
+        <div style={{ marginBottom: SPACING.xxl }}>
+          <Card padding={SPACING.lg}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: SPACING.lg,
+                alignItems: 'flex-start',
+              }}
+            >
+              <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+                <h2
+                  style={{
+                    ...TYPOGRAPHY.h3,
+                    color: COLORS.textPrimary,
+                    margin: 0,
+                    marginBottom: 4,
+                  }}
+                >
+                  Lesson Progress
+                </h2>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                  }}
+                >
+                  Pickleball Training Library
+                </p>
+              </div>
+              <div
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <div style={{ position: 'relative', width: 72, height: 72 }}>
+                  <svg width={72} height={72} viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      fill="none"
+                      stroke={COLORS.backgroundLight}
+                      strokeWidth="4"
+                    />
+                    <circle
+                      cx="18"
+                      cy="18"
+                      r="14"
+                      fill="none"
+                      stroke={COLORS.green}
+                      strokeWidth="4"
+                      strokeDasharray={`${(completedCount / Math.max(totalLessons, 1)) * 88} 88`}
+                      strokeLinecap="round"
+                      style={{ transition: 'stroke-dasharray 0.4s ease' }}
+                    />
+                  </svg>
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.h2,
+                      color: COLORS.textPrimary,
+                      margin: 0,
+                      lineHeight: 1,
+                      position: 'absolute',
+                      left: '50%',
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                    }}
+                  >
+                    {completedCount}/{totalLessons}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  Completed
+                </span>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: SPACING.md,
+                marginTop: SPACING.xl,
+                paddingTop: SPACING.lg,
+                borderTop: `1px solid ${COLORS.backgroundLight}`,
+              }}
+            >
+              <div>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.h3,
+                    color: COLORS.textPrimary,
+                    margin: 0,
+                    marginBottom: 4,
+                  }}
+                >
+                  {totalContentLabel}
+                </p>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                  }}
+                >
+                  Total Content
+                </p>
+                <div
+                  style={{
+                    height: 2,
+                    backgroundColor: COLORS.backgroundLight,
+                    marginTop: SPACING.sm,
+                    borderRadius: 1,
+                    maxWidth: 48,
+                  }}
+                />
+              </div>
+              <div>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.h3,
+                    color: COLORS.textPrimary,
+                    margin: 0,
+                    marginBottom: 4,
+                  }}
+                >
+                  {inProgressCount}
+                </p>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                  }}
+                >
+                  In Progress
+                </p>
+                <div
+                  style={{
+                    height: 2,
+                    backgroundColor: COLORS.backgroundLight,
+                    marginTop: SPACING.sm,
+                    borderRadius: 1,
+                    maxWidth: 48,
+                  }}
+                />
+              </div>
+              <div>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.h3,
+                    color: COLORS.textPrimary,
+                    margin: 0,
+                    marginBottom: 4,
+                  }}
+                >
+                  {avgProgress}%
+                </p>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                  }}
+                >
+                  Avg Progress
+                </p>
+                <div
+                  style={{
+                    height: 2,
+                    backgroundColor: COLORS.backgroundLight,
+                    marginTop: SPACING.sm,
+                    borderRadius: 1,
+                    maxWidth: 48,
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Filter Buttons */}
+        <div style={{ marginBottom: SPACING.xxl }}>
           <Card padding={SPACING.lg}>
             <div
               style={{
@@ -167,101 +387,6 @@ export const LessonsPage: React.FC = () => {
                 </Button>
               ))}
             </div>
-          </Card>
-        </div>
-
-        {/* Lesson Stats */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: `${SPACING.lg}px`,
-            marginBottom: SPACING.xxl,
-          }}
-        >
-          <Card padding={SPACING.lg}>
-            <p
-              style={{
-                ...TYPOGRAPHY.label,
-                color: COLORS.textSecondary,
-                margin: 0,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              Total Lessons
-            </p>
-            <p
-              style={{
-                ...TYPOGRAPHY.h2,
-                color: COLORS.textPrimary,
-                margin: 0,
-              }}
-            >
-              {lessons.length}
-            </p>
-          </Card>
-          <Card padding={SPACING.lg}>
-            <p
-              style={{
-                ...TYPOGRAPHY.label,
-                color: COLORS.textSecondary,
-                margin: 0,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              Completed
-            </p>
-            <p
-              style={{
-                ...TYPOGRAPHY.h2,
-                color: COLORS.green,
-                margin: 0,
-              }}
-            >
-              {lessons.filter((l) => l.isCompleted).length}
-            </p>
-          </Card>
-          <Card padding={SPACING.lg}>
-            <p
-              style={{
-                ...TYPOGRAPHY.label,
-                color: COLORS.textSecondary,
-                margin: 0,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              In Progress
-            </p>
-            <p
-              style={{
-                ...TYPOGRAPHY.h2,
-                color: COLORS.lavender,
-                margin: 0,
-              }}
-            >
-              {lessons.filter((l) => l.progress > 0 && !l.isCompleted).length}
-            </p>
-          </Card>
-          <Card padding={SPACING.lg}>
-            <p
-              style={{
-                ...TYPOGRAPHY.label,
-                color: COLORS.textSecondary,
-                margin: 0,
-                marginBottom: SPACING.sm,
-              }}
-            >
-              Not Started
-            </p>
-            <p
-              style={{
-                ...TYPOGRAPHY.h2,
-                color: COLORS.coral,
-                margin: 0,
-              }}
-            >
-              {lessons.filter((l) => l.progress === 0 && !l.isCompleted).length}
-            </p>
           </Card>
         </div>
 
