@@ -82,6 +82,36 @@ const OVERVIEW_STATS = {
   totalLessonCompletions: MOCK_ALL_STUDENTS.reduce((sum, s) => sum + (s.lessonsCompleted ?? 0), 0),
 };
 
+const COACHES_STATS = (() => {
+  const totalCoaches = MOCK_COACHES.length;
+  const totalCoachStudents = MOCK_COACHES.reduce((sum, c) => sum + c.studentCount, 0);
+  const totalCoachSessions = MOCK_COACHES.reduce((sum, c) => sum + c.sessionCount, 0);
+
+  const avgStudentsPerCoach =
+    totalCoaches > 0 ? Number((totalCoachStudents / totalCoaches).toFixed(1)) : 0;
+  const avgSessionsPerCoach =
+    totalCoaches > 0 ? Number((totalCoachSessions / totalCoaches).toFixed(1)) : 0;
+
+  const currentMonthKey = new Date().toISOString().slice(0, 7); // e.g. "2026-02"
+  const sessionsThisMonth = MOCK_REQUESTED_SESSIONS_INITIAL.filter((req) =>
+    req.dateKey.startsWith(currentMonthKey),
+  );
+  const totalSessionsThisMonth = sessionsThisMonth.length;
+  const totalHoursThisMonth = Number(
+    (sessionsThisMonth.reduce((sum, req) => sum + req.durationMinutes, 0) / 60).toFixed(1),
+  );
+
+  return {
+    totalCoaches,
+    totalCoachStudents,
+    totalCoachSessions,
+    avgStudentsPerCoach,
+    avgSessionsPerCoach,
+    totalSessionsThisMonth,
+    totalHoursThisMonth,
+  };
+})();
+
 function AdminOverviewPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
@@ -319,9 +349,80 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
           <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
             All Coaches
           </h1>
-          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            {MOCK_COACHES.length} coaches on the platform.
-          </p>
+        </div>
+
+        <div
+          style={{
+            marginBottom: SPACING.xl,
+            background: 'linear-gradient(135deg, #3AAED8 0%, #2D8DB3 40%, #1E607C 75%, #123849 100%)',
+            borderRadius: RADIUS.lg,
+            padding: SPACING.xl,
+            color: COLORS.white,
+            overflow: 'hidden',
+            position: 'relative',
+          }}
+        >
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <p
+              style={{
+                ...TYPOGRAPHY.label,
+                color: COLORS.primary,
+                margin: 0,
+                marginBottom: SPACING.md,
+                fontWeight: 600,
+              }}
+            >
+              Coach stats
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: SPACING.xl,
+              }}
+            >
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Coaches</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.totalCoaches}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Assigned students</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.totalCoachStudents}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Total sessions</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.totalCoachSessions}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Avg students / coach</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.avgStudentsPerCoach}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Avg sessions / coach</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.avgSessionsPerCoach}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Sessions this month</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.totalSessionsThisMonth}</div>
+              </div>
+              <div>
+                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Hours this month</span>
+                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{COACHES_STATS.totalHoursThisMonth}</div>
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              position: 'absolute',
+              bottom: -30,
+              right: -30,
+              width: 120,
+              height: 120,
+              borderRadius: '50%',
+              background: 'rgba(155, 225, 93, 0.12)',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
 
         <div

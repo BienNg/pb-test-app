@@ -55,6 +55,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   unit,
   icon,
+  accentColor,
   onClick,
 }) => (
   <Card onClick={onClick}>
@@ -93,7 +94,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         {icon && (
           <div style={{
             fontSize: '24px',
-            backgroundColor: COLORS.iconBg,
+            backgroundColor: accentColor ?? COLORS.iconBg,
             width: '48px',
             height: '48px',
             borderRadius: RADIUS.circle,
