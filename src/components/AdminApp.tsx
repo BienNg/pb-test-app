@@ -4,9 +4,13 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../st
 import { Card, StatCard } from './BaseComponents';
 import type { StudentInfo } from './CoachStudentsPage';
 
-type AdminTabId = 'overview' | 'students' | 'coaches';
+type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
 
 const DESKTOP_MIN = BREAKPOINTS.desktop; // 1024px
+const formatDateLabel = (dateKey: string) => {
+  const d = new Date(dateKey + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+};
 const SIDEBAR_WIDTH = 220;
 
 function useIsDesktop(): boolean {
@@ -44,6 +48,29 @@ const MOCK_COACHES: CoachInfo[] = [
   { id: 'c1', name: 'Sarah Martinez', email: 'sarah@pbacademy.com', studentCount: 5, sessionCount: 15, lastActive: 'Feb 6, 2026' },
   { id: 'c2', name: 'Mike Johnson', email: 'mike@pbacademy.com', studentCount: 3, sessionCount: 8, lastActive: 'Feb 5, 2026' },
   { id: 'c3', name: 'Emma Wilson', email: 'emma@pbacademy.com', studentCount: 4, sessionCount: 12, lastActive: 'Feb 4, 2026' },
+];
+
+export interface RequestedSession {
+  id: string;
+  dateKey: string;
+  dateLabel: string;
+  time: string;
+  studentName: string;
+  studentEmail?: string;
+  coachId: string;
+  coachName: string;
+  type: 'Private' | 'Group';
+  durationMinutes: number;
+  address?: string;
+  requestedAt?: string;
+}
+
+// Platform-wide requested sessions (students requested, awaiting admin/coach confirm)
+const MOCK_REQUESTED_SESSIONS_INITIAL: RequestedSession[] = [
+  { id: 'req-1', dateKey: '2026-02-06', dateLabel: 'Thu, Feb 6', time: '11:00 AM', studentName: 'Jamie Lee', studentEmail: 'jamie@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Private', durationMinutes: 60, requestedAt: 'Feb 4, 2026' },
+  { id: 'req-2', dateKey: '2026-02-07', dateLabel: 'Fri, Feb 7', time: '3:00 PM', studentName: 'Riley Smith', studentEmail: 'riley@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Private', durationMinutes: 45, requestedAt: 'Feb 3, 2026' },
+  { id: 'req-3', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '10:00 AM', studentName: 'Jamie Lee', studentEmail: 'jamie@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Group', durationMinutes: 90, requestedAt: 'Feb 5, 2026' },
+  { id: 'req-4', dateKey: '2026-02-10', dateLabel: 'Mon, Feb 10', time: '2:00 PM', studentName: 'Jordan Kim', studentEmail: 'jordan@example.com', coachId: 'c2', coachName: 'Mike Johnson', type: 'Private', durationMinutes: 60, requestedAt: 'Feb 5, 2026' },
 ];
 
 // Aggregate stats for overview
@@ -352,8 +379,312 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
   );
 }
 
+function AdminRequestsPage({
+  isDesktop,
+  requests,
+  setRequests,
+}: {
+  isDesktop: boolean;
+  requests: RequestedSession[];
+  setRequests: React.Dispatch<React.SetStateAction<RequestedSession[]>>;
+}) {
+  const [editing, setEditing] = useState<RequestedSession | null>(null);
+
+  const handleConfirm = () => {
+    if (!editing) return;
+    const address = editing.address?.trim();
+    if (!address) return;
+    setRequests((prev) => prev.filter((r) => r.id !== editing.id));
+    setEditing(null);
+  };
+
+  const handleReject = () => {
+    if (!editing) return;
+    setRequests((prev) => prev.filter((r) => r.id !== editing.id));
+    setEditing(null);
+  };
+
+  const updateEditing = (updates: Partial<RequestedSession>) => {
+    setEditing((prev) => (prev ? { ...prev, ...updates } : null));
+  };
+
+  return (
+    <div
+      style={{
+        backgroundColor: COLORS.background,
+        minHeight: '100vh',
+        padding: isDesktop ? SPACING.xl : SPACING.md,
+        width: '100%',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+      }}
+    >
+      <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ marginBottom: SPACING.xl }}>
+          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
+            Requested Sessions
+          </h1>
+          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
+            {requests.length} session request{requests.length !== 1 ? 's' : ''} from students. Review, edit details, then confirm or reject.
+          </p>
+        </div>
+
+        {requests.length === 0 ? (
+          <Card padding={SPACING.xl}>
+            <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0, textAlign: 'center' }}>
+              No pending session requests.
+            </p>
+          </Card>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: isDesktop ? SPACING.lg : SPACING.md,
+            }}
+          >
+            {requests.map((req) => (
+              <Card
+                key={req.id}
+                padding={SPACING.lg}
+                onClick={() => setEditing({ ...req })}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: SPACING.sm }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
+                      {req.studentName}
+                    </p>
+                    <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
+                      with {req.coachName}
+                    </p>
+                    <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted, margin: 0 }}>
+                      {req.dateLabel} · {req.time} · {req.type} · {req.durationMinutes} min
+                    </p>
+                    {req.requestedAt && (
+                      <p style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted, margin: 0, marginTop: SPACING.sm }}>
+                        Requested {req.requestedAt}
+                      </p>
+                    )}
+                  </div>
+                  <span style={{ color: COLORS.textMuted, fontSize: 18, flexShrink: 0 }}>›</span>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {editing && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: SPACING.lg,
+              boxSizing: 'border-box',
+            }}
+            onClick={() => setEditing(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: 480, width: '100%', maxHeight: '90vh', overflow: 'auto' }}
+            >
+              <Card padding={SPACING.xl} style={{ width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+                <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
+                  Review session request
+                </h3>
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.lg }}>
+                  Edit any details, add address/court to confirm, or reject the request.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Student</span>
+                    <input
+                      type="text"
+                      value={editing.studentName}
+                      onChange={(e) => updateEditing({ studentName: e.target.value })}
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                  </label>
+                  {editing.studentEmail != null && (
+                    <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                      <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Student email</span>
+                      <input
+                        type="email"
+                        value={editing.studentEmail}
+                        onChange={(e) => updateEditing({ studentEmail: e.target.value })}
+                        style={{
+                          padding: SPACING.sm,
+                          borderRadius: RADIUS.sm,
+                          border: `1px solid ${COLORS.textMuted}`,
+                          ...TYPOGRAPHY.body,
+                        }}
+                      />
+                    </label>
+                  )}
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Coach</span>
+                    <input
+                      type="text"
+                      value={editing.coachName}
+                      onChange={(e) => updateEditing({ coachName: e.target.value })}
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Date</span>
+                    <input
+                      type="date"
+                      value={editing.dateKey}
+                      onChange={(e) => updateEditing({ dateKey: e.target.value, dateLabel: formatDateLabel(e.target.value) })}
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Time</span>
+                    <input
+                      type="text"
+                      value={editing.time}
+                      onChange={(e) => updateEditing({ time: e.target.value })}
+                      placeholder="e.g. 11:00 AM"
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Type</span>
+                    <select
+                      value={editing.type}
+                      onChange={(e) => updateEditing({ type: e.target.value as 'Private' | 'Group' })}
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    >
+                      <option value="Private">Private</option>
+                      <option value="Group">Group</option>
+                    </select>
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Duration (minutes)</span>
+                    <input
+                      type="number"
+                      min={15}
+                      step={15}
+                      value={editing.durationMinutes}
+                      onChange={(e) => updateEditing({ durationMinutes: Number(e.target.value) || 60 })}
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
+                      Address / Court <span style={{ color: COLORS.coral }}>* for confirm</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={editing.address ?? ''}
+                      onChange={(e) => updateEditing({ address: e.target.value || undefined })}
+                      placeholder="e.g. 123 Sunset Blvd, San Diego, CA — Court 3"
+                      style={{
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.textMuted}`,
+                        ...TYPOGRAPHY.body,
+                      }}
+                    />
+                    {(!editing.address || !editing.address.trim()) && (
+                      <span style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted }}>
+                        Required to confirm the session
+                      </span>
+                    )}
+                  </label>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: SPACING.md,
+                    marginTop: SPACING.xl,
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={handleReject}
+                    style={{
+                      padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                      borderRadius: RADIUS.sm,
+                      border: `1px solid ${COLORS.coral}`,
+                      backgroundColor: 'transparent',
+                      color: COLORS.coral,
+                      ...TYPOGRAPHY.bodySmall,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirm}
+                    disabled={!editing.address?.trim()}
+                    style={{
+                      padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: (editing.address?.trim() ? COLORS.primary : COLORS.textMuted) as string,
+                      color: COLORS.textPrimary,
+                      ...TYPOGRAPHY.bodySmall,
+                      fontWeight: 600,
+                      cursor: editing.address?.trim() ? 'pointer' : 'not-allowed',
+                      opacity: editing.address?.trim() ? 1 : 0.7,
+                    }}
+                  >
+                    Confirm session
+                  </button>
+                </div>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
+  const [requestedSessions, setRequestedSessions] = useState<RequestedSession[]>(() => [...MOCK_REQUESTED_SESSIONS_INITIAL]);
   const isDesktop = useIsDesktop();
 
   useEffect(() => {
@@ -373,6 +704,14 @@ export const AdminApp: React.FC = () => {
         return <AdminStudentsPage isDesktop={isDesktop} />;
       case 'coaches':
         return <AdminCoachesPage isDesktop={isDesktop} />;
+      case 'requests':
+        return (
+          <AdminRequestsPage
+            isDesktop={isDesktop}
+            requests={requestedSessions}
+            setRequests={setRequestedSessions}
+          />
+        );
       default:
         return <AdminOverviewPage isDesktop={isDesktop} />;
     }
@@ -412,10 +751,25 @@ export const AdminApp: React.FC = () => {
         </svg>
       ),
     },
+    {
+      id: 'requests',
+      label: 'Requests',
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+          <line x1="16" y1="2" x2="16" y2="6" />
+          <line x1="8" y1="2" x2="8" y2="6" />
+          <line x1="3" y1="10" x2="21" y2="10" />
+        </svg>
+      ),
+    },
   ];
+
+  const pendingRequestsCount = requestedSessions.length;
 
   const tabButton = (tab: (typeof tabs)[0]) => {
     const isActive = tab.id === activeTab;
+    const showRequestsBadge = tab.id === 'requests' && pendingRequestsCount > 0;
     return (
       <button
         key={tab.id}
@@ -435,17 +789,66 @@ export const AdminApp: React.FC = () => {
           color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
           borderRadius: isDesktop ? RADIUS.md : 0,
           cursor: 'pointer',
+          position: 'relative',
         }}
       >
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{tab.icon}</span>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
+          {tab.icon}
+          {showRequestsBadge && !isDesktop && (
+            <span
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                minWidth: 18,
+                height: 18,
+                paddingLeft: 4,
+                paddingRight: 4,
+                borderRadius: 9,
+                backgroundColor: COLORS.red,
+                color: COLORS.white,
+                fontSize: 11,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+            </span>
+          )}
+        </span>
         <span
           style={{
             ...TYPOGRAPHY.label,
             fontWeight: isActive ? 600 : 500,
             color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: SPACING.xs,
           }}
         >
           {tab.label}
+          {showRequestsBadge && isDesktop && (
+            <span
+              style={{
+                minWidth: 18,
+                height: 18,
+                paddingLeft: 4,
+                paddingRight: 4,
+                borderRadius: 9,
+                backgroundColor: COLORS.red,
+                color: COLORS.white,
+                fontSize: 11,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+            </span>
+          )}
         </span>
         {!isDesktop && (
           <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
