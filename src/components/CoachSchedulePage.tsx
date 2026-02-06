@@ -115,7 +115,8 @@ export const CoachSchedulePage: React.FC = () => {
   };
 
   const handleConfirmSession = () => {
-    if (!editingSession || !editingSession.address?.trim()) return;
+    const address = editingSession?.address?.trim();
+    if (!editingSession || !address) return;
     setSessions((prev) =>
       prev.map((s) =>
         s.id === editingSession.id
@@ -123,7 +124,7 @@ export const CoachSchedulePage: React.FC = () => {
               ...editingSession,
               dateLabel: formatDateLabel(editingSession.dateKey),
               status: 'confirmed' as const,
-              address: editingSession.address.trim(),
+              address,
             }
           : s
       )
