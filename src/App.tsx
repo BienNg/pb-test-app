@@ -7,6 +7,7 @@ import { CoachApp } from './components/CoachApp';
 import { AdminApp } from './components/AdminApp';
 import { LessonsPage } from './components/LessonsPage';
 import { MyProgressPage } from './components/MyProgressPage';
+import { TrainingSessionDetail } from './components/TrainingSessionDetail';
 
 type TabId = 'home' | 'progress' | 'library';
 
@@ -20,6 +21,7 @@ function getRoute() {
 function App() {
   const [route, setRoute] = useState(getRoute);
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
 
   useEffect(() => {
     const onPopState = () => setRoute(getRoute());
@@ -46,11 +48,24 @@ function App() {
   }, []);
 
   const renderContent = () => {
+    if (activeTrainingSessionId != null) {
+      return (
+        <TrainingSessionDetail
+          sessionId={activeTrainingSessionId}
+          onBack={() => setActiveTrainingSessionId(null)}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'home':
         return <Dashboard onNavigateToTab={setActiveTab} />;
       case 'progress':
-        return <MyProgressPage />;
+        return (
+          <MyProgressPage
+            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          />
+        );
       case 'library':
         return <LessonsPage />;
       default:
