@@ -143,11 +143,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               style={{
                 padding: `${SPACING.xs}px ${SPACING.sm}px`,
                 borderRadius: 999,
-                backgroundColor: COLORS.white,
-                boxShadow: SHADOWS.light,
+                backgroundColor: COLORS.backgroundLight,
                 ...TYPOGRAPHY.label,
                 textTransform: 'uppercase',
                 color: COLORS.textSecondary,
+                opacity: 0.9,
               }}
             >
               Training session
@@ -161,15 +161,36 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             >
               {session.title}
             </h1>
-            <p
+            <div
               style={{
-                ...TYPOGRAPHY.bodySmall,
-                margin: `${SPACING.xs}px 0 0`,
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                gap: SPACING.md,
+                marginTop: SPACING.xs,
                 color: COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
               }}
             >
-              {session.dateLabel} • {session.time} • ⏱️ {session.duration}
-            </p>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span role="img" aria-label="calendar">
+                  📅
+                </span>
+                <span>{session.dateLabel}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span role="img" aria-label="time">
+                  🕒
+                </span>
+                <span>{session.time}</span>
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span role="img" aria-label="duration">
+                  ⏱️
+                </span>
+                <span>{session.duration}</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -193,8 +214,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 overflow: 'hidden',
                 background:
                   'radial-gradient(circle at 10% 20%, #9BE15D 0%, #1C1C1E 45%, #000000 100%)',
-                boxShadow: SHADOWS.subtle,
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.28)',
                 marginBottom: SPACING.md,
+                border: '1px solid rgba(255, 255, 255, 0.06)',
               }}
             >
               <div
@@ -225,9 +247,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       marginLeft: 4,
                       width: 0,
                       height: 0,
-                      borderTop: '11px solid transparent',
-                      borderBottom: '11px solid transparent',
-                      borderLeft: '18px solid #FFFFFF',
+                      borderTop: '12px solid transparent',
+                      borderBottom: '12px solid transparent',
+                      borderLeft: '20px solid #FFFFFF',
                     }}
                   />
                 </div>
@@ -253,7 +275,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 color: COLORS.textPrimary,
               }}
             >
-              {session.title}
+              Session overview
             </h2>
             <p
               style={{
@@ -277,13 +299,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 style={{
                   padding: `${SPACING.xs}px ${SPACING.sm}px`,
                   borderRadius: 999,
-                  backgroundColor: COLORS.white,
-                  boxShadow: SHADOWS.light,
+                  backgroundColor: COLORS.backgroundLight,
                   ...TYPOGRAPHY.label,
                   color: COLORS.textSecondary,
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: SPACING.xs,
+                  opacity: 0.9,
                 }}
               >
                 <span>{session.thumbnail}</span>
@@ -293,10 +315,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 style={{
                   padding: `${SPACING.xs}px ${SPACING.sm}px`,
                   borderRadius: 999,
-                  backgroundColor: COLORS.white,
-                  boxShadow: SHADOWS.light,
+                  backgroundColor: COLORS.backgroundLight,
                   ...TYPOGRAPHY.label,
                   color: COLORS.textSecondary,
+                  opacity: 0.8,
                 }}
               >
                 Saved to My Progress
@@ -345,32 +367,40 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   No comments yet. Be the first to leave a note about this session.
                 </p>
               ) : (
-                comments.map((comment) => (
-                  <div
-                    key={comment.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: SPACING.sm,
-                      padding: `${SPACING.sm}px 0`,
-                      borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                    }}
-                  >
+                comments.map((comment) => {
+                  const isCoach = comment.role === 'Coach';
+
+                  return (
                     <div
+                      key={comment.id}
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '50%',
-                        backgroundColor:
-                          comment.role === 'Coach' ? COLORS.primaryLight : COLORS.iconBg,
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 16,
+                        alignItems: 'flex-start',
+                        gap: SPACING.sm,
+                        padding: `${SPACING.sm}px ${SPACING.sm}px`,
+                        margin: `0 -${SPACING.xs}px`,
+                        borderBottom: `1px solid ${COLORS.backgroundLight}`,
+                        backgroundColor: isCoach ? COLORS.backgroundLight : 'transparent',
+                        borderLeft: isCoach
+                          ? `3px solid ${COLORS.primaryLight}`
+                          : `3px solid transparent`,
+                        borderRadius: RADIUS.sm,
                       }}
                     >
-                      {comment.role === 'Coach' ? '🎓' : '🙂'}
-                    </div>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: isCoach ? COLORS.primaryLight : COLORS.iconBg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                        }}
+                      >
+                        {isCoach ? '🎓' : '🙂'}
+                      </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
@@ -390,7 +420,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           <span
                             style={{
                               ...TYPOGRAPHY.bodySmall,
-                              fontWeight: 600,
+                              fontWeight: isCoach ? 700 : 600,
                               color: COLORS.textPrimary,
                             }}
                           >
@@ -400,7 +430,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             style={{
                               ...TYPOGRAPHY.label,
                               textTransform: 'uppercase',
-                              color: COLORS.textSecondary,
+                              color: isCoach ? COLORS.textPrimary : COLORS.textSecondary,
+                              opacity: isCoach ? 0.9 : 0.8,
                             }}
                           >
                             {comment.role}
@@ -427,7 +458,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       </p>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -450,14 +482,33 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   marginBottom: SPACING.xs,
                 }}
               >
-                Add a comment
+                Reflection
               </label>
+              <p
+                style={{
+                  ...TYPOGRAPHY.bodySmall,
+                  color: COLORS.textPrimary,
+                  fontWeight: 500,
+                  margin: `0 0 ${SPACING.xs}px`,
+                }}
+              >
+                What did you notice in this session?
+              </p>
+              <p
+                style={{
+                  ...TYPOGRAPHY.bodySmall,
+                  color: COLORS.textSecondary,
+                  margin: `0 0 ${SPACING.sm}px`,
+                }}
+              >
+                Where did you feel challenged, or what do you want to focus on next time?
+              </p>
               <textarea
                 id="session-comment-input"
                 rows={3}
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
-                placeholder="Share what you noticed, where you felt challenged, or what you want to focus on next session."
+                placeholder="Capture a quick note for future you..."
                 style={{
                   width: '100%',
                   resize: 'none',
@@ -512,6 +563,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </button>
               </div>
             </div>
+            <p
+              style={{
+                ...TYPOGRAPHY.bodySmall,
+                color: COLORS.textSecondary,
+                marginTop: SPACING.sm,
+              }}
+            >
+              Set one focus you want to carry into your next session.
+            </p>
           </div>
         </div>
       </div>
