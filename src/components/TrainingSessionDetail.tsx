@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
 
@@ -12,6 +12,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onBack,
 }) => {
   const session = TRAINING_SESSIONS.find((s) => s.id === sessionId);
+
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    const updateLayout = () => {
+      if (typeof window === 'undefined') return;
+      setIsNarrow(window.innerWidth < 768);
+    };
+
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+
+    return () => {
+      window.removeEventListener('resize', updateLayout);
+    };
+  }, []);
 
   const [commentDraft, setCommentDraft] = useState('');
   const [comments, setComments] = useState<SessionComment[]>(() => {
@@ -93,9 +109,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           style={{
             marginBottom: SPACING.lg,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: SPACING.md,
+            flexDirection: 'column',
+            gap: SPACING.sm,
           }}
         >
           <button
@@ -118,18 +133,33 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           </button>
           <div
             style={{
-              textAlign: 'right',
-              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: SPACING.xs,
             }}
           >
+            <div
+              style={{
+                padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                borderRadius: 999,
+                backgroundColor: COLORS.white,
+                boxShadow: SHADOWS.light,
+                ...TYPOGRAPHY.label,
+                textTransform: 'uppercase',
+                color: COLORS.textSecondary,
+              }}
+            >
+              Training session
+            </div>
             <h1
               style={{
-                ...TYPOGRAPHY.h3,
+                ...TYPOGRAPHY.h2,
                 margin: 0,
                 color: COLORS.textPrimary,
               }}
             >
-              Training Session
+              {session.title}
             </h1>
             <p
               style={{
@@ -147,7 +177,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)',
+            gridTemplateColumns: isNarrow
+              ? 'minmax(0, 1fr)'
+              : 'minmax(0, 7fr) minmax(0, 5fr)',
             gap: SPACING.lg,
           }}
         >
@@ -278,7 +310,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              maxHeight: 520,
+              maxHeight: isNarrow ? 'none' : 520,
             }}
           >
             <h3
