@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
 import { IconUser, IconChevronRight } from './Icons';
+import { LessonCard } from './Cards';
+import { TRAINING_SESSIONS } from './MyProgressPage';
 
 export interface StudentInfo {
   id: string;
@@ -80,6 +82,9 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   students = MOCK_STUDENTS,
   onSelectStudent,
 }) => {
+  const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
+  const sessions = TRAINING_SESSIONS;
+
   return (
     <div
       style={{
@@ -93,23 +98,150 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
     >
       <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: SPACING.xl }}>
-          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
+          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xl }}>
             Student Progress
           </h1>
-          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            View progress for each student. Tap a card to see their full progress view.
-          </p>
+
+          {/* Segmented Control */}
+          <div
+            style={{
+              display: 'flex',
+              background: `linear-gradient(135deg, ${COLORS.backgroundLight} 0%, ${COLORS.iconBg} 100%)`,
+              borderRadius: 999,
+              padding: 2,
+              gap: 2,
+              marginBottom: SPACING.xl,
+              boxShadow: 'inset 0px 1px 2px rgba(0, 0, 0, 0.04), 0px 1px 3px rgba(0, 0, 0, 0.06)',
+              border: `1px solid rgba(0, 0, 0, 0.04)`,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Subtle shimmer overlay */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%)',
+                pointerEvents: 'none',
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedSegment('students')}
+              style={{
+                flex: 1,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: 999,
+                border: 'none',
+                backgroundColor: selectedSegment === 'students' ? COLORS.white : 'transparent',
+                color: selectedSegment === 'students' ? COLORS.textPrimary : COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
+                fontWeight: selectedSegment === 'students' ? 600 : 500,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: selectedSegment === 'students' 
+                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
+                  : 'none',
+                transform: selectedSegment === 'students' ? 'translateY(-1px)' : 'translateY(0)',
+                position: 'relative',
+                zIndex: selectedSegment === 'students' ? 1 : 0,
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSegment !== 'students') {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSegment !== 'students') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              Students
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedSegment('mySession')}
+              style={{
+                flex: 1,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: 999,
+                border: 'none',
+                backgroundColor: selectedSegment === 'mySession' ? COLORS.white : 'transparent',
+                color: selectedSegment === 'mySession' ? COLORS.textPrimary : COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
+                fontWeight: selectedSegment === 'mySession' ? 600 : 500,
+                cursor: 'pointer',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: selectedSegment === 'mySession' 
+                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
+                  : 'none',
+                transform: selectedSegment === 'mySession' ? 'translateY(-1px)' : 'translateY(0)',
+                position: 'relative',
+                zIndex: selectedSegment === 'mySession' ? 1 : 0,
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSegment !== 'mySession') {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSegment !== 'mySession') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              My Session
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
-          {students.map((student) => (
-            <StudentCard
-              key={student.id}
-              student={student}
-              onClick={() => onSelectStudent(student)}
-            />
-          ))}
-        </div>
+        {/* Content based on selected segment */}
+        {selectedSegment === 'students' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+            {students.map((student) => (
+              <StudentCard
+                key={student.id}
+                student={student}
+                onClick={() => onSelectStudent(student)}
+              />
+            ))}
+          </div>
+        )}
+
+        {selectedSegment === 'mySession' && (
+          <div style={{ marginBottom: SPACING.xl }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: `${SPACING.lg}px`,
+              }}
+            >
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  id={`session-${session.id}`}
+                >
+                  <LessonCard
+                    title={`${session.dateLabel} • ${session.time}`}
+                    category="Training Session"
+                    duration={session.duration}
+                    thumbnail={session.thumbnail}
+                    isVOD
+                    onClick={() =>
+                      console.log(`Open video for training session ${session.id}`)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

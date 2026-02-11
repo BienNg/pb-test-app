@@ -186,9 +186,9 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
             style={{
               display: 'flex',
               background: `linear-gradient(135deg, ${COLORS.backgroundLight} 0%, ${COLORS.iconBg} 100%)`,
-              borderRadius: RADIUS.lg,
-              padding: SPACING.xs,
-              gap: SPACING.xs,
+              borderRadius: 999,
+              padding: 2,
+              gap: 2,
               marginBottom: SPACING.xl,
               boxShadow: 'inset 0px 1px 2px rgba(0, 0, 0, 0.04), 0px 1px 3px rgba(0, 0, 0, 0.06)',
               border: `1px solid rgba(0, 0, 0, 0.04)`,
@@ -213,8 +213,8 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
               onClick={() => setSelectedSegment('videos')}
               style={{
                 flex: 1,
-                padding: `${SPACING.md}px ${SPACING.lg}px`,
-                borderRadius: RADIUS.md,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: 999,
                 border: 'none',
                 backgroundColor: selectedSegment === 'videos' ? COLORS.white : 'transparent',
                 color: selectedSegment === 'videos' ? COLORS.textPrimary : COLORS.textSecondary,
@@ -247,8 +247,8 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
               onClick={() => setSelectedSegment('duprCoach')}
               style={{
                 flex: 1,
-                padding: `${SPACING.md}px ${SPACING.lg}px`,
-                borderRadius: RADIUS.md,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: 999,
                 border: 'none',
                 backgroundColor: selectedSegment === 'duprCoach' ? COLORS.white : 'transparent',
                 color: selectedSegment === 'duprCoach' ? COLORS.textPrimary : COLORS.textSecondary,
