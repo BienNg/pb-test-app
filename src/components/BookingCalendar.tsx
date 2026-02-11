@@ -56,11 +56,30 @@ const getAvailableDateKeys = () => Object.keys(MOCK_AVAILABILITY);
 const getAvailableSlotsForDate = (dateKey: string): Set<string> =>
   new Set(MOCK_AVAILABILITY[dateKey] || []);
 
-interface BookingCalendarProps {
-  onTimeSlotSelect?: (date: Date, time: string) => void;
+interface CoachInfo {
+  id: string;
+  name: string;
+  tier: string;
+  hourlyRate: number;
+  avatar?: string;
 }
 
-export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSelect }) => {
+interface BookingCalendarProps {
+  coaches: CoachInfo[];
+  selectedCoachId: string | null;
+  onCoachSelect: (id: string) => void;
+  onTimeSlotSelect?: (date: Date, time: string) => void;
+  onBookSession?: () => void;
+}
+
+export const BookingCalendar: React.FC<BookingCalendarProps> = ({
+  coaches,
+  selectedCoachId,
+  onCoachSelect,
+  onTimeSlotSelect,
+  onBookSession,
+}) => {
+  const coachSelected = selectedCoachId !== null;
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = new Date(today);
@@ -72,8 +91,11 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
     const d = new Date(2026, 1, 5);
     return d;
   });
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const availableDateKeys = useMemo(() => new Set(getAvailableDateKeys()), []);
+
+  const isBookDisabled = !coachSelected || !selectedTime;
 
   const getCalendarDays = () => {
     const year = currentMonth.getFullYear();
@@ -110,10 +132,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
     const key = formatDateKey(date);
     if (availableDateKeys.has(key)) {
       setSelectedDate(date);
+      setSelectedTime(null);
     }
   };
 
   const handleSlotClick = (date: Date, time: string) => {
+    setSelectedTime(time);
     onTimeSlotSelect?.(date, time);
   };
 
@@ -206,7 +230,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
           display: 'grid',
           gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: SPACING.xs,
-          marginBottom: SPACING.xl,
+          marginBottom: SPACING.lg,
           minWidth: 0,
         }}
       >
@@ -257,6 +281,111 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
         })}
       </div>
 
+      {/* Coach badges - horizontal scrollable single row */}
+      <div
+        className="scrollbar-hide"
+        style={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          gap: SPACING.md,
+          marginBottom: SPACING.lg,
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          minWidth: 0,
+        }}
+      >
+        {coaches.map((coach) => {
+          const isSelected = selectedCoachId === coach.id;
+          const initials = coach.name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .slice(0, 2);
+          return (
+            <button
+              key={coach.id}
+              type="button"
+              onClick={() => onCoachSelect(coach.id)}
+              style={{
+                flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: RADIUS.lg,
+                border: `2px solid ${isSelected ? COLORS.primary : 'rgba(0,0,0,0.06)'}`,
+                backgroundColor: isSelected ? COLORS.primaryLight : COLORS.white,
+                boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.06)' : '0 1px 3px rgba(0,0,0,0.04)',
+                cursor: 'pointer',
+                minWidth: 72,
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  backgroundColor: coach.avatar ? 'transparent' : COLORS.primaryLight,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: SPACING.xs,
+                  flexShrink: 0,
+                }}
+              >
+                {coach.avatar ? (
+                  <img
+                    src={coach.avatar}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: COLORS.primary,
+                    }}
+                  >
+                    {initials}
+                  </span>
+                )}
+              </div>
+              <span
+                style={{
+                  ...TYPOGRAPHY.label,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: COLORS.textPrimary,
+                  marginBottom: 2,
+                  textAlign: 'center',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%',
+                }}
+              >
+                {coach.name.split(' ')[0]}
+              </span>
+              <span
+                style={{
+                  ...TYPOGRAPHY.label,
+                  fontSize: 10,
+                  fontWeight: 500,
+                  color: COLORS.textSecondary,
+                  textAlign: 'center',
+                }}
+              >
+                {coach.tier.replace(' Coach', '')} · ${coach.hourlyRate}/hr
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Time Slots Section - Selected date only, 6am–9pm in 30-min intervals */}
       <div style={{ borderTop: `1px solid ${BOOKING_COLORS.slotBorder}`, paddingTop: SPACING.lg }}>
         <div
@@ -294,6 +423,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
             const dateKey = formatDateKey(selectedDate);
             const availableSlots = getAvailableSlotsForDate(dateKey);
             const isAvailable = availableSlots.has(time);
+            const isSelected = selectedTime === time;
 
             return (
               <button
@@ -304,9 +434,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
                 style={{
                   padding: `${SPACING.sm}px ${SPACING.md}px`,
                   borderRadius: RADIUS.md,
-                  border: `1px solid ${BOOKING_COLORS.slotBorder}`,
-                  backgroundColor: isAvailable ? COLORS.white : COLORS.iconBg,
-                  color: isAvailable ? BOOKING_COLORS.availableText : COLORS.textMuted,
+                  border: `1px solid ${isSelected ? BOOKING_COLORS.selected : BOOKING_COLORS.slotBorder}`,
+                  backgroundColor: isSelected ? BOOKING_COLORS.selected : isAvailable ? COLORS.white : COLORS.iconBg,
+                  color: isSelected ? COLORS.white : isAvailable ? BOOKING_COLORS.availableText : COLORS.textMuted,
                   ...TYPOGRAPHY.bodySmall,
                   fontWeight: 500,
                   cursor: isAvailable ? 'pointer' : 'default',
@@ -320,6 +450,28 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
             );
           })}
         </div>
+
+        <button
+          type="button"
+          onClick={() => !isBookDisabled && onBookSession?.()}
+          disabled={isBookDisabled}
+          style={{
+            width: '100%',
+            marginTop: SPACING.lg,
+            padding: `${SPACING.sm}px ${SPACING.lg}px`,
+            borderRadius: RADIUS.md,
+            border: 'none',
+            backgroundColor: isBookDisabled ? COLORS.iconBg : COLORS.primary,
+            color: isBookDisabled ? COLORS.textMuted : COLORS.textPrimary,
+            ...TYPOGRAPHY.bodySmall,
+            fontWeight: 600,
+            cursor: isBookDisabled ? 'default' : 'pointer',
+            boxShadow: isBookDisabled ? 'none' : '0 4px 12px rgba(155, 225, 93, 0.4)',
+            opacity: isBookDisabled ? 0.8 : 1,
+          }}
+        >
+          Book Session
+        </button>
       </div>
     </Card>
   );
