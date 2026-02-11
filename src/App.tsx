@@ -78,7 +78,7 @@ function App() {
       id: 'home',
       label: 'Home',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
           <polyline points="9 22 9 12 15 12 15 22" />
         </svg>
@@ -88,7 +88,7 @@ function App() {
       id: 'progress',
       label: 'My Progress',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
           <polyline points="17 6 23 6 23 12" />
         </svg>
@@ -98,7 +98,7 @@ function App() {
       id: 'library',
       label: 'Library',
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="5 3 19 12 5 21 5 3" />
         </svg>
       ),
@@ -106,7 +106,7 @@ function App() {
   ];
 
   const rightTab = (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
     </svg>
@@ -132,8 +132,11 @@ function App() {
           bottom: 0,
           backgroundColor: COLORS.white,
           boxShadow: SHADOWS.md,
-          padding: `${SPACING.sm}px ${SPACING.lg}px`,
+          padding: '5px 16px 10px',
           zIndex: 100,
+          overflow: 'visible',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
         }}
       >
         <div
@@ -143,9 +146,12 @@ function App() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: SPACING.xs,
+            gap: 0,
+            position: 'relative',
+            minHeight: 60,
           }}
         >
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {tabs.slice(0, 1).map((tab) => {
             const isActive = tab.id === activeTab;
             return (
@@ -158,11 +164,11 @@ function App() {
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  padding: SPACING.xs,
+                  padding: 2,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 2,
                   color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
                 }}
               >
@@ -170,17 +176,19 @@ function App() {
                 <span
                   style={{
                     ...TYPOGRAPHY.label,
+                    fontSize: 11,
                     fontWeight: isActive ? 600 : 500,
                     color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {tab.label}
                 </span>
-                <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isActive && (
                     <div
                       style={{
-                        width: 20,
+                        width: 18,
                         height: 2,
                         borderRadius: 999,
                         backgroundColor: COLORS.primary,
@@ -191,6 +199,8 @@ function App() {
               </button>
             );
           })}
+          </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* My Progress */}
           {tabs.slice(1, 2).map((tab) => {
             const isActive = tab.id === activeTab;
@@ -204,11 +214,11 @@ function App() {
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  padding: SPACING.xs,
+                  padding: 2,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 2,
                   color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
                 }}
               >
@@ -216,17 +226,19 @@ function App() {
                 <span
                   style={{
                     ...TYPOGRAPHY.label,
+                    fontSize: 11,
                     fontWeight: isActive ? 600 : 500,
                     color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {tab.label}
                 </span>
-                <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isActive && (
                     <div
                       style={{
-                        width: 20,
+                        width: 18,
                         height: 2,
                         borderRadius: 999,
                         backgroundColor: COLORS.primary,
@@ -237,21 +249,28 @@ function App() {
               </button>
             );
           })}
-          {/* Big Add button (no functionality) - vertically centered */}
+          </div>
+          {/* Big Add button (no functionality) - floats above nav, centered */}
           <div
             style={{
-              flex: 0,
+              flex: 1,
+              position: 'relative',
+              height: 1,
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'center',
+              alignSelf: 'flex-start',
             }}
           >
             <button
               type="button"
               aria-label="Add"
               style={{
-                width: 56,
-                height: 56,
+                position: 'absolute',
+                left: '50%',
+                top: 0,
+                transform: 'translate(-50%, -38%)',
+                width: 58,
+                height: 58,
                 borderRadius: '50%',
                 backgroundColor: COLORS.primary,
                 border: 'none',
@@ -262,12 +281,13 @@ function App() {
                 cursor: 'default',
               }}
             >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </button>
           </div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {/* Library */}
           {tabs.slice(2, 3).map((tab) => {
             const isActive = tab.id === activeTab;
@@ -281,11 +301,11 @@ function App() {
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  padding: SPACING.xs,
+                  padding: 2,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 4,
+                  gap: 2,
                   color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
                 }}
               >
@@ -293,17 +313,19 @@ function App() {
                 <span
                   style={{
                     ...TYPOGRAPHY.label,
+                    fontSize: 11,
                     fontWeight: isActive ? 600 : 500,
                     color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {tab.label}
                 </span>
-                <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {isActive && (
                     <div
                       style={{
-                        width: 20,
+                        width: 18,
                         height: 2,
                         borderRadius: 999,
                         backgroundColor: COLORS.primary,
@@ -314,21 +336,23 @@ function App() {
               </button>
             );
           })}
+          </div>
           {/* Person - visual only, no functionality yet */}
           <div
             style={{
               flex: 1,
-              padding: SPACING.xs,
+              padding: 2,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: 4,
+              justifyContent: 'center',
+              gap: 2,
               color: COLORS.textSecondary,
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{rightTab}</span>
-            <span style={{ ...TYPOGRAPHY.label, fontWeight: 500, color: COLORS.textSecondary }}>Profile</span>
-            <div style={{ height: 5 }} />
+            <span style={{ ...TYPOGRAPHY.label, fontSize: 11, fontWeight: 500, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Profile</span>
+            <div style={{ height: 4 }} />
           </div>
         </div>
       </nav>
