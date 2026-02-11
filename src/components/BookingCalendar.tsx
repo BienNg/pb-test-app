@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
-import { IconChevronLeft, IconChevronRight } from './Icons';
+import { IconChevronLeft, IconChevronRight, IconUsers } from './Icons';
+import { COACH_AVAILABILITY } from '../data/coachAvailability';
 
 // Booking-specific colors matching the reference design
 const BOOKING_COLORS = {
@@ -34,27 +35,31 @@ const ALL_TIME_SLOTS: string[] = (() => {
   return slots;
 })();
 
-// Mock: available dates (keys) and their available (unbooked) time slots (30-min intervals)
-// Slots NOT in this list for a date are considered booked (greyed out)
-const MOCK_AVAILABILITY: Record<string, string[]> = {
-  '2026-02-05': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
-  '2026-02-06': ['09:00', '09:30', '11:00', '11:30', '14:00', '14:30'],
-  '2026-02-09': ['10:00', '10:30', '13:00', '13:30', '15:00', '15:30'],
-  '2026-02-10': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
-  '2026-02-11': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
-  '2026-02-12': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
-  '2026-02-13': ['10:00', '10:30', '11:00', '14:00', '14:30'],
-  '2026-03-02': ['10:00', '10:30', '13:00', '13:30', '16:00', '16:30'],
-  '2026-03-03': ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30'],
-  '2026-03-04': ['10:00', '10:30', '14:00', '14:30', '15:00', '15:30'],
-  '2026-03-05': ['10:00', '10:30', '13:00', '13:30', '16:00', '16:30'],
-  '2026-03-06': ['09:00', '09:30', '10:00', '10:30', '14:00', '14:30'],
+// Get available date keys for a coach (or union of all coaches when coachId is null)
+const getAvailableDateKeys = (coachId: string | null, coachIds: string[]): Set<string> => {
+  if (coachId === null) {
+    const set = new Set<string>();
+    coachIds.forEach((id) => {
+      const byDate = COACH_AVAILABILITY[id];
+      if (byDate) Object.keys(byDate).forEach((key) => set.add(key));
+    });
+    return set;
+  }
+  return new Set(Object.keys(COACH_AVAILABILITY[coachId] || {}));
 };
 
-const getAvailableDateKeys = () => Object.keys(MOCK_AVAILABILITY);
-
-const getAvailableSlotsForDate = (dateKey: string): Set<string> =>
-  new Set(MOCK_AVAILABILITY[dateKey] || []);
+// Get available time slots for a date and coach (or union when coachId is null)
+const getAvailableSlotsForDate = (dateKey: string, coachId: string | null, coachIds: string[]): Set<string> => {
+  if (coachId === null) {
+    const set = new Set<string>();
+    coachIds.forEach((id) => {
+      const slots = COACH_AVAILABILITY[id]?.[dateKey] || [];
+      slots.forEach((t) => set.add(t));
+    });
+    return set;
+  }
+  return new Set(COACH_AVAILABILITY[coachId]?.[dateKey] || []);
+};
 
 interface CoachInfo {
   id: string;
@@ -67,7 +72,7 @@ interface CoachInfo {
 interface BookingCalendarProps {
   coaches: CoachInfo[];
   selectedCoachId: string | null;
-  onCoachSelect: (id: string) => void;
+  onCoachSelect: (id: string | null) => void;
   onTimeSlotSelect?: (date: Date, time: string) => void;
   onBookSession?: () => void;
 }
@@ -79,6 +84,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   onTimeSlotSelect,
   onBookSession,
 }) => {
+  const coachIds = useMemo(() => coaches.map((c) => c.id), [coaches]);
   const coachSelected = selectedCoachId !== null;
   const today = useMemo(() => new Date(), []);
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -93,7 +99,26 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   });
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-  const availableDateKeys = useMemo(() => new Set(getAvailableDateKeys()), []);
+  const availableDateKeys = useMemo(
+    () => getAvailableDateKeys(selectedCoachId, coachIds),
+    [selectedCoachId, coachIds]
+  );
+
+  // When coach filter changes, clear selected time if it's no longer available; optionally move date to first available
+  useEffect(() => {
+    const dateKey = formatDateKey(selectedDate);
+    const slots = getAvailableSlotsForDate(dateKey, selectedCoachId, coachIds);
+    if (selectedTime && !slots.has(selectedTime)) {
+      setSelectedTime(null);
+    }
+    if (!availableDateKeys.has(dateKey) && availableDateKeys.size > 0) {
+      const firstKey = Array.from(availableDateKeys).sort()[0];
+      const [y, m, day] = firstKey.split('-').map(Number);
+      setSelectedDate(new Date(y, m - 1, day));
+      setSelectedTime(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when coach filter changes
+  }, [selectedCoachId, coachIds]);
 
   const isBookDisabled = !coachSelected || !selectedTime;
 
@@ -294,6 +319,63 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
           minWidth: 0,
         }}
       >
+        {/* All coaches filter */}
+        <button
+          type="button"
+          onClick={() => onCoachSelect(null)}
+          style={{
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: `${SPACING.sm}px ${SPACING.md}px`,
+            borderRadius: RADIUS.lg,
+            border: `2px solid ${selectedCoachId === null ? COLORS.primary : 'rgba(0,0,0,0.06)'}`,
+            backgroundColor: selectedCoachId === null ? COLORS.primaryLight : COLORS.white,
+            boxShadow: selectedCoachId === null ? '0 2px 8px rgba(0,0,0,0.06)' : '0 1px 3px rgba(0,0,0,0.04)',
+            cursor: 'pointer',
+            minWidth: 72,
+            transition: 'border-color 0.2s, box-shadow 0.2s',
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              backgroundColor: selectedCoachId === null ? COLORS.primaryLight : COLORS.iconBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: SPACING.xs,
+              flexShrink: 0,
+            }}
+          >
+            <IconUsers size={18} style={{ color: selectedCoachId === null ? COLORS.primary : COLORS.textSecondary }} />
+          </div>
+          <span
+            style={{
+              ...TYPOGRAPHY.label,
+              fontSize: 11,
+              fontWeight: 600,
+              color: COLORS.textPrimary,
+              textAlign: 'center',
+            }}
+          >
+            All
+          </span>
+          <span
+            style={{
+              ...TYPOGRAPHY.label,
+              fontSize: 10,
+              fontWeight: 500,
+              color: COLORS.textSecondary,
+              textAlign: 'center',
+            }}
+          >
+            Any coach
+          </span>
+        </button>
         {coaches.map((coach) => {
           const isSelected = selectedCoachId === coach.id;
           const initials = coach.name
@@ -421,7 +503,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         >
           {ALL_TIME_SLOTS.map((time) => {
             const dateKey = formatDateKey(selectedDate);
-            const availableSlots = getAvailableSlotsForDate(dateKey);
+            const availableSlots = getAvailableSlotsForDate(dateKey, selectedCoachId, coachIds);
             const isAvailable = availableSlots.has(time);
             const isSelected = selectedTime === time;
 
