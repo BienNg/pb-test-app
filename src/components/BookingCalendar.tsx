@@ -149,7 +149,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
   };
 
   return (
-    <Card>
+    <Card style={{ width: '100%', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
       {/* Month Header */}
       <div
         style={{
@@ -210,9 +210,10 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: SPACING.xs,
           marginBottom: SPACING.md,
+          minWidth: 0,
         }}
       >
         {DAY_ABBREVS.map((day, i) => (
@@ -234,9 +235,10 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: SPACING.xs,
           marginBottom: SPACING.xl,
+          minWidth: 0,
         }}
       >
         {getCalendarDays().map((date, i) => {
@@ -256,10 +258,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
               disabled={!isAvailable}
               style={{
                 aspectRatio: '1',
+                minWidth: 0,
+                width: '100%',
+                maxWidth: '100%',
                 border: 'none',
                 borderRadius: RADIUS.circle,
                 cursor: isAvailable ? 'pointer' : 'default',
-                fontSize: 14,
+                fontSize: 'min(14px, 4vw)',
                 fontWeight: isSelected ? 600 : 400,
                 display: 'flex',
                 alignItems: 'center',
@@ -348,8 +353,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(3, visibleDays.length)}, 1fr)`,
+            gridTemplateColumns: `repeat(${Math.min(3, visibleDays.length)}, minmax(0, 1fr))`,
             gap: SPACING.lg,
+            minWidth: 0,
           }}
         >
           {visibleDays.map((day) => {
@@ -359,7 +365,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
             const dayNum = day.getDate();
 
             return (
-              <div key={dateKey}>
+              <div key={dateKey} style={{ minWidth: 0 }}>
                 <div
                   style={{
                     ...TYPOGRAPHY.label,
@@ -375,6 +381,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
                     display: 'flex',
                     flexDirection: 'column',
                     gap: SPACING.sm,
+                    minWidth: 0,
                   }}
                 >
                   {slots.map((time) => (
@@ -392,6 +399,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
                         fontWeight: 500,
                         cursor: 'pointer',
                         textAlign: 'center',
+                        minWidth: 0,
                       }}
                     >
                       {time}
