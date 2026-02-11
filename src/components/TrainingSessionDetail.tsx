@@ -14,6 +14,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const session = TRAINING_SESSIONS.find((s) => s.id === sessionId);
 
   const [isNarrow, setIsNarrow] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -219,41 +220,43 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 border: '1px solid rgba(255, 255, 255, 0.06)',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
+              {!isVideoPlaying && (
                 <div
                   style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: '50%',
-                    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                    position: 'absolute',
+                    inset: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    backdropFilter: 'blur(6px)',
+                    pointerEvents: 'none',
                   }}
                 >
                   <div
                     style={{
-                      marginLeft: 4,
-                      width: 0,
-                      height: 0,
-                      borderTop: '12px solid transparent',
-                      borderBottom: '12px solid transparent',
-                      borderLeft: '20px solid #FFFFFF',
+                      width: 72,
+                      height: 72,
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '1px solid rgba(255, 255, 255, 0.4)',
+                      backdropFilter: 'blur(6px)',
                     }}
-                  />
+                  >
+                    <div
+                      style={{
+                        marginLeft: 4,
+                        width: 0,
+                        height: 0,
+                        borderTop: '12px solid transparent',
+                        borderBottom: '12px solid transparent',
+                        borderLeft: '20px solid #FFFFFF',
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               <video
                 controls
                 style={{
@@ -262,6 +265,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   aspectRatio: '16 / 9',
                   objectFit: 'cover',
                 }}
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
+                onEnded={() => setIsVideoPlaying(false)}
               >
                 <source src={session.videoUrl} type="video/mp4" />
               </video>

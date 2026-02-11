@@ -44,15 +44,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
           >
             Welcome back, Alex! 🎾
           </h1>
-          <p
-            style={{
-              ...TYPOGRAPHY.body,
-              color: COLORS.textSecondary,
-              margin: 0,
-            }}
-          >
-            Track your pickleball training progress and upcoming lessons
-          </p>
         </div>
 
         {/* Main Grid */}
