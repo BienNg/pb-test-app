@@ -82,7 +82,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: SPACING.md,
         width: '100%',

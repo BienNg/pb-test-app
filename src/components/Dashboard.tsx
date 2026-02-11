@@ -1,6 +1,6 @@
 import React from 'react';
 import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
-import { StatCard, Button } from './BaseComponents';
+import { StatCard } from './BaseComponents';
 import { BookingCalendar } from './BookingCalendar';
 import { UpcomingLessonCard } from './Cards';
 
@@ -14,7 +14,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden',
@@ -93,20 +93,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             courtName="Court 3"
             otherParticipants={['Jamie', 'Morgan']}
           />
-        </div>
-
-        {/* CTA Footer */}
-        <div style={{ textAlign: 'center', paddingBottom: SPACING.lg }}>
-          <p
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              color: COLORS.textSecondary,
-              marginBottom: SPACING.lg,
-            }}
-          >
-            Ready to improve your game? Book your next lesson with your coach.
-          </p>
-          <Button size="lg">Schedule Lesson</Button>
         </div>
 
         {/* Booking Calendar */}

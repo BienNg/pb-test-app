@@ -145,7 +145,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: `${SPACING.md}px`,
         width: '100%',

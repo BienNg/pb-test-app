@@ -134,7 +134,7 @@ export const LessonsPage: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: `${SPACING.md}px`,
         width: '100%',

@@ -16,7 +16,13 @@ export const globalStyles = `
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #ECEFF3;
+    /* Soft multi-layer pastel gradient: warm off-white base + very low-contrast glows */
+    background-color: #F7F8FA;
+    background-image:
+      radial-gradient(ellipse 140% 90% at 50% -10%, rgba(255, 245, 210, 0.5), transparent 65%),
+      radial-gradient(ellipse 120% 70% at 20% -5%, rgba(220, 230, 255, 0.4), transparent 60%),
+      radial-gradient(ellipse 100% 60% at 80% 0%, rgba(235, 240, 250, 0.3), transparent 55%);
+    background-attachment: fixed;
     color: #1C1C1E;
     overflow-x: hidden;
   }
@@ -39,7 +45,7 @@ export const globalStyles = `
   }
 
   ::-webkit-scrollbar-track {
-    background: #ECEFF3;
+    background: #F7F8FA;
   }
 
   ::-webkit-scrollbar-thumb {

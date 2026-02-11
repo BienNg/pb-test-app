@@ -25,7 +25,7 @@ export const CoachApp: React.FC = () => {
   // When viewing a student's progress, show full-screen overlay
   if (selectedStudent) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: COLORS.background }}>
+      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
         <MyProgressPage
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}

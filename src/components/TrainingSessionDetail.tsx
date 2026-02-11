@@ -89,7 +89,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: `${SPACING.md}px`,
         width: '100%',

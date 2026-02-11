@@ -153,7 +153,7 @@ function AdminOverviewPage({
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -353,7 +353,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -431,7 +431,7 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -625,7 +625,7 @@ function AdminRequestsPage({
   return (
     <div
       style={{
-        backgroundColor: COLORS.background,
+        backgroundColor: 'transparent',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
