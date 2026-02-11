@@ -667,7 +667,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         </span>
                       </div>
                       {comment.timestampSeconds != null && (
-                        <span
+                        <button
+                          type="button"
+                          onClick={() => seekTo(comment.timestampSeconds!)}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -680,11 +682,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             color: COLORS.primary,
                             ...TYPOGRAPHY.label,
                             fontWeight: 600,
+                            cursor: 'pointer',
                           }}
                         >
                           <span style={{ opacity: 0.9 }}>▶</span>
                           {formatTimestamp(comment.timestampSeconds)}
-                        </span>
+                        </button>
                       )}
                       <p
                         style={{
