@@ -60,20 +60,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
         >
           {/* Quick Stats */}
           <StatCard
-            title="Video Lessons Completed"
-            value="12"
-            unit="of 16"
-            icon={<IconCheck size={24} />}
-            accentColor={COLORS.primary}
-            onClick={onNavigateToTab ? () => onNavigateToTab('library') : undefined}
-          />
-          <StatCard
             title="Training Hours"
             value="18.5"
             unit="hrs"
-            icon={<IconClock size={24} />}
-            accentColor={COLORS.blue}
+            icon={<IconClock size={22} />}
+            accentColor={COLORS.statIconMuted}
             onClick={onNavigateToTab ? () => onNavigateToTab('progress') : undefined}
+          />
+          <StatCard
+            title="Video Lessons Completed"
+            value="12"
+            unit="of 16"
+            icon={<IconCheck size={22} />}
+            accentColor={COLORS.statIconMuted}
+            onClick={onNavigateToTab ? () => onNavigateToTab('library') : undefined}
           />
         </div>
 

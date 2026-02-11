@@ -31,6 +31,9 @@ export const COLORS = {
 
   // Icon backgrounds
   iconBg: '#F3F4F6',
+
+  // Stat card icons — muted, premium (not playful)
+  statIconMuted: '#E8ECF1',
 };
 
 export const SPACING = {

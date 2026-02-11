@@ -94,14 +94,20 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
         {icon && (
           <div style={{
-            color: COLORS.textPrimary,
-            backgroundColor: accentColor ?? COLORS.iconBg,
-            width: '48px',
-            height: '48px',
-            borderRadius: RADIUS.circle,
+            width: 48,
+            height: 48,
+            minWidth: 48,
+            minHeight: 48,
+            borderRadius: '50%',
+            overflow: 'hidden',
+            flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            color: COLORS.textPrimary,
+            backgroundColor: accentColor ?? COLORS.iconBg,
+            border: '1px solid rgba(0, 0, 0, 0.06)',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
           }}>
             {icon}
           </div>
