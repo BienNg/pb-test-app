@@ -63,41 +63,30 @@ export const StatCard: React.FC<StatCardProps> = ({
     <div
       style={{
         position: 'relative',
-        paddingBottom: onClick ? SPACING.lg : 0,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        minHeight: onClick ? '120px' : 'auto',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{
-            ...TYPOGRAPHY.label,
-            color: COLORS.textSecondary,
-            marginBottom: SPACING.md,
-          }}>
-            {title}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: SPACING.md }}>
-            <div style={{
-              ...TYPOGRAPHY.h2,
-              color: COLORS.textPrimary,
-            }}>
-              {value}
-            </div>
-            {unit && (
-              <div style={{
-                ...TYPOGRAPHY.bodySmall,
-                color: COLORS.textSecondary,
-              }}>
-                {unit}
-              </div>
-            )}
-          </div>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-start',
+        marginBottom: 'auto',
+      }}>
+        <div style={{
+          ...TYPOGRAPHY.label,
+          color: COLORS.textSecondary,
+        }}>
+          {title}
         </div>
         {icon && (
           <div style={{
-            width: 48,
-            height: 48,
-            minWidth: 48,
-            minHeight: 48,
+            width: 32,
+            height: 32,
+            minWidth: 32,
+            minHeight: 32,
             borderRadius: '50%',
             overflow: 'hidden',
             flexShrink: 0,
@@ -110,6 +99,27 @@ export const StatCard: React.FC<StatCardProps> = ({
             boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
           }}>
             {icon}
+          </div>
+        )}
+      </div>
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'baseline', 
+        gap: SPACING.md,
+        marginTop: 'auto',
+      }}>
+        <div style={{
+          ...TYPOGRAPHY.h2,
+          color: COLORS.textPrimary,
+        }}>
+          {value}
+        </div>
+        {unit && (
+          <div style={{
+            ...TYPOGRAPHY.bodySmall,
+            color: COLORS.textSecondary,
+          }}>
+            {unit}
           </div>
         )}
       </div>

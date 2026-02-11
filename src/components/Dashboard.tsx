@@ -64,7 +64,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             title="Training Hours"
             value="18.5"
             unit="hrs"
-            icon={<IconClock size={22} />}
+            icon={<IconClock size={16} />}
             accentColor={COLORS.statIconMuted}
             onClick={onNavigateToTab ? () => onNavigateToTab('progress') : undefined}
           />
@@ -72,7 +72,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             title="Video Lessons Completed"
             value="12"
             unit="of 16"
-            icon={<IconCheck size={22} />}
+            icon={<IconCheck size={16} />}
             accentColor={COLORS.statIconMuted}
             onClick={onNavigateToTab ? () => onNavigateToTab('library') : undefined}
           />
