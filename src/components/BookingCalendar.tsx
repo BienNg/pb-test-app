@@ -22,38 +22,39 @@ const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const formatDateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-// Mock: available dates (keys) and their time slots
+// Generate all 30-min slots from 6:00 to 21:00
+const ALL_TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 6; h <= 21; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      if (h === 21 && m > 0) break;
+      slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    }
+  }
+  return slots;
+})();
+
+// Mock: available dates (keys) and their available (unbooked) time slots (30-min intervals)
+// Slots NOT in this list for a date are considered booked (greyed out)
 const MOCK_AVAILABILITY: Record<string, string[]> = {
-  '2026-02-05': ['10:00', '10:45', '13:00', '13:45', '14:30', '15:15', '16:00'],
-  '2026-02-06': ['09:00', '09:45', '11:00', '14:00'],
-  '2026-02-09': ['10:00', '13:00', '15:00'],
-  '2026-02-10': ['10:00', '10:45', '13:00', '13:45', '14:30', '15:15', '16:00'],
-  '2026-02-11': ['10:00', '10:45', '13:00', '13:45', '14:30', '15:15', '16:00'],
-  '2026-02-12': ['10:00', '10:45', '13:00', '13:45', '14:30', '15:15', '16:00'],
-  '2026-02-13': ['10:00', '11:00', '14:00'],
-  '2026-03-02': ['10:00', '13:00', '16:00'],
-  '2026-03-03': ['09:00', '10:00', '11:00'],
-  '2026-03-04': ['10:00', '14:00', '15:00'],
-  '2026-03-05': ['10:00', '13:00', '16:00'],
-  '2026-03-06': ['09:00', '10:00', '14:00'],
+  '2026-02-05': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
+  '2026-02-06': ['09:00', '09:30', '11:00', '11:30', '14:00', '14:30'],
+  '2026-02-09': ['10:00', '10:30', '13:00', '13:30', '15:00', '15:30'],
+  '2026-02-10': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
+  '2026-02-11': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
+  '2026-02-12': ['10:00', '10:30', '11:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00'],
+  '2026-02-13': ['10:00', '10:30', '11:00', '14:00', '14:30'],
+  '2026-03-02': ['10:00', '10:30', '13:00', '13:30', '16:00', '16:30'],
+  '2026-03-03': ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30'],
+  '2026-03-04': ['10:00', '10:30', '14:00', '14:30', '15:00', '15:30'],
+  '2026-03-05': ['10:00', '10:30', '13:00', '13:30', '16:00', '16:30'],
+  '2026-03-06': ['09:00', '09:30', '10:00', '10:30', '14:00', '14:30'],
 };
 
 const getAvailableDateKeys = () => Object.keys(MOCK_AVAILABILITY);
 
-const getTimeSlotsForDate = (dateKey: string): string[] =>
-  MOCK_AVAILABILITY[dateKey] || [];
-
-const getAvailableDatesInRange = (start: Date, end: Date): Date[] => {
-  const keys = getAvailableDateKeys();
-  const result: Date[] = [];
-  const current = new Date(start);
-  while (current <= end) {
-    const key = formatDateKey(current);
-    if (keys.includes(key)) result.push(new Date(current));
-    current.setDate(current.getDate() + 1);
-  }
-  return result;
-};
+const getAvailableSlotsForDate = (dateKey: string): Set<string> =>
+  new Set(MOCK_AVAILABILITY[dateKey] || []);
 
 interface BookingCalendarProps {
   onTimeSlotSelect?: (date: Date, time: string) => void;
@@ -71,7 +72,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
     const d = new Date(2026, 1, 5);
     return d;
   });
-  const [dayOffset, setDayOffset] = useState(0);
 
   const availableDateKeys = useMemo(() => new Set(getAvailableDateKeys()), []);
 
@@ -110,39 +110,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
     const key = formatDateKey(date);
     if (availableDateKeys.has(key)) {
       setSelectedDate(date);
-      setDayOffset(0);
     }
-  };
-
-  const allAvailableInView = useMemo(() => {
-    const start = new Date(selectedDate);
-    start.setDate(start.getDate() - 7);
-    const end = new Date(selectedDate);
-    end.setDate(end.getDate() + 14);
-    return getAvailableDatesInRange(start, end);
-  }, [selectedDate]);
-
-  const visibleDays = useMemo(() => {
-    const idx = allAvailableInView.findIndex(
-      (d) => d.toDateString() === selectedDate.toDateString()
-    );
-    const start = Math.max(0, (idx + dayOffset));
-    return allAvailableInView.slice(start, start + 3);
-  }, [allAvailableInView, selectedDate, dayOffset]);
-
-  const selectedIdx = allAvailableInView.findIndex(
-    (d) => d.toDateString() === selectedDate.toDateString()
-  );
-  const canPrevDays = selectedIdx + dayOffset > 0;
-  const canNextDays =
-    selectedIdx >= 0 && selectedIdx + dayOffset + 3 < allAvailableInView.length;
-
-  const handlePrevDays = () => {
-    if (canPrevDays) setDayOffset((o) => o - 1);
-  };
-
-  const handleNextDays = () => {
-    if (canNextDays) setDayOffset((o) => o + 1);
   };
 
   const handleSlotClick = (date: Date, time: string) => {
@@ -289,141 +257,69 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
         })}
       </div>
 
-      {/* Time Slots Section */}
+      {/* Time Slots Section - Selected date only, 6am–9pm in 30-min intervals */}
       <div style={{ borderTop: `1px solid ${BOOKING_COLORS.slotBorder}`, paddingTop: SPACING.lg }}>
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
+            ...TYPOGRAPHY.label,
+            color: COLORS.textSecondary,
+            fontWeight: 600,
+            textTransform: 'uppercase',
             marginBottom: SPACING.md,
           }}
         >
-          <span
-            style={{
-              ...TYPOGRAPHY.label,
-              color: COLORS.textSecondary,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-            }}
-          >
-            Available times
-          </span>
-          <div style={{ display: 'flex', gap: SPACING.xs }}>
-            <button
-              onClick={handlePrevDays}
-              disabled={!canPrevDays}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: RADIUS.circle,
-                border: 'none',
-                backgroundColor: COLORS.iconBg,
-                color: COLORS.textPrimary,
-                cursor: canPrevDays ? 'pointer' : 'not-allowed',
-                opacity: canPrevDays ? 1 : 0.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <IconChevronLeft size={14} />
-            </button>
-            <button
-              onClick={handleNextDays}
-              disabled={!canNextDays}
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: RADIUS.circle,
-                border: 'none',
-                backgroundColor: COLORS.iconBg,
-                color: COLORS.textPrimary,
-                cursor: canNextDays ? 'pointer' : 'not-allowed',
-                opacity: canNextDays ? 1 : 0.5,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <IconChevronRight size={14} />
-            </button>
-          </div>
+          Available times
+        </div>
+
+        <div
+          style={{
+            ...TYPOGRAPHY.label,
+            color: COLORS.textSecondary,
+            fontWeight: 600,
+            marginBottom: SPACING.sm,
+          }}
+        >
+          {DAY_LABELS[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]} {selectedDate.getDate()}
         </div>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(3, visibleDays.length)}, minmax(0, 1fr))`,
-            gap: SPACING.lg,
+            gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+            gap: SPACING.sm,
             minWidth: 0,
           }}
         >
-          {visibleDays.map((day) => {
-            const dateKey = formatDateKey(day);
-            const slots = getTimeSlotsForDate(dateKey);
-            const dayName = DAY_LABELS[day.getDay() === 0 ? 6 : day.getDay() - 1];
-            const dayNum = day.getDate();
+          {ALL_TIME_SLOTS.map((time) => {
+            const dateKey = formatDateKey(selectedDate);
+            const availableSlots = getAvailableSlotsForDate(dateKey);
+            const isAvailable = availableSlots.has(time);
 
             return (
-              <div key={dateKey} style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    ...TYPOGRAPHY.label,
-                    color: COLORS.textSecondary,
-                    fontWeight: 600,
-                    marginBottom: SPACING.sm,
-                  }}
-                >
-                  {dayName} {dayNum}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: SPACING.sm,
-                    minWidth: 0,
-                  }}
-                >
-                  {slots.map((time) => (
-                    <button
-                      key={time}
-                      type="button"
-                      onClick={() => handleSlotClick(day, time)}
-                      style={{
-                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                        borderRadius: RADIUS.md,
-                        border: `1px solid ${BOOKING_COLORS.slotBorder}`,
-                        backgroundColor: COLORS.white,
-                        color: BOOKING_COLORS.availableText,
-                        ...TYPOGRAPHY.bodySmall,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        minWidth: 0,
-                      }}
-                    >
-                      {time}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                key={time}
+                type="button"
+                onClick={() => isAvailable && handleSlotClick(selectedDate, time)}
+                disabled={!isAvailable}
+                style={{
+                  padding: `${SPACING.sm}px ${SPACING.md}px`,
+                  borderRadius: RADIUS.md,
+                  border: `1px solid ${BOOKING_COLORS.slotBorder}`,
+                  backgroundColor: isAvailable ? COLORS.white : COLORS.iconBg,
+                  color: isAvailable ? BOOKING_COLORS.availableText : COLORS.textMuted,
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 500,
+                  cursor: isAvailable ? 'pointer' : 'default',
+                  textAlign: 'center',
+                  minWidth: 0,
+                  opacity: isAvailable ? 1 : 0.6,
+                }}
+              >
+                {time}
+              </button>
             );
           })}
         </div>
-
-        {visibleDays.length === 0 && (
-          <p
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              color: COLORS.textSecondary,
-              textAlign: 'center',
-              margin: 0,
-            }}
-          >
-            Select an available date to see time slots
-          </p>
-        )}
       </div>
     </Card>
   );
