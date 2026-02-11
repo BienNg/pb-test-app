@@ -1,7 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import confetti from 'canvas-confetti';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
-import { IconChevronLeft, IconChevronRight, IconUsers } from './Icons';
+import { IconChevronLeft, IconChevronRight, IconUsers, IconCheck } from './Icons';
 import { COACH_AVAILABILITY } from '../data/coachAvailability';
 
 // Booking-specific colors matching the reference design
@@ -98,6 +99,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return d;
   });
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
+  const [sheetAnimatedIn, setSheetAnimatedIn] = useState(false);
+  const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sheetCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const SHEET_TRANSITION_MS = 300;
 
   const availableDateKeys = useMemo(
     () => getAvailableDateKeys(selectedCoachId, coachIds),
@@ -166,7 +174,79 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     onTimeSlotSelect?.(date, time);
   };
 
+  // Slide-in animation for bottom sheet; reset success state when opening
+  useEffect(() => {
+    if (showBottomSheet) {
+      setRequestSubmitted(false);
+      setSheetAnimatedIn(false);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSheetAnimatedIn(true));
+      });
+      return () => cancelAnimationFrame(id);
+    } else {
+      setSheetAnimatedIn(false);
+    }
+  }, [showBottomSheet]);
+
+  // Clear timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+      if (sheetCloseTimeoutRef.current) clearTimeout(sheetCloseTimeoutRef.current);
+    };
+  }, []);
+
+  const selectedCoach = selectedCoachId ? coaches.find((c) => c.id === selectedCoachId) : null;
+  const closeSheet = () => {
+    if (sheetCloseTimeoutRef.current) return; // already closing
+    setSheetAnimatedIn(false);
+    sheetCloseTimeoutRef.current = setTimeout(() => {
+      sheetCloseTimeoutRef.current = null;
+      setShowBottomSheet(false);
+    }, SHEET_TRANSITION_MS);
+  };
+  const handleRequestSession = () => {
+    if (requestSubmitted) return;
+    setRequestSubmitted(true);
+
+    // Confetti from center-bottom of the sheet
+    const rect = document.querySelector('[data-booking-sheet]')?.getBoundingClientRect();
+    const x = rect ? (rect.left + rect.width / 2) / window.innerWidth : 0.5;
+    const y = rect ? (rect.bottom - 80) / window.innerHeight : 0.85;
+    confetti({
+      particleCount: 80,
+      spread: 60,
+      origin: { x, y },
+      colors: [COLORS.primary, '#B8E986', '#7ED957', '#fff', COLORS.textPrimary],
+    });
+    confetti({
+      particleCount: 40,
+      angle: 60,
+      spread: 55,
+      origin: { x: x - 0.2, y },
+      colors: [COLORS.primary, '#B8E986', '#fff'],
+    });
+    confetti({
+      particleCount: 40,
+      angle: 120,
+      spread: 55,
+      origin: { x: x + 0.2, y },
+      colors: [COLORS.primary, '#B8E986', '#fff'],
+    });
+
+    if (closeTimeoutRef.current) clearTimeout(closeTimeoutRef.current);
+    closeTimeoutRef.current = setTimeout(() => {
+      closeTimeoutRef.current = null;
+      onBookSession?.();
+      closeSheet();
+    }, 1400);
+  };
+
+  const formatSheetDate = (d: Date) =>
+    `${DAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1]}, ${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+
   return (
+    <>
     <Card style={{ width: '100%', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
       {/* Month Header */}
       <div
@@ -535,16 +615,16 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
         <button
           type="button"
-          onClick={() => !isBookDisabled && onBookSession?.()}
+          onClick={() => !isBookDisabled && setShowBottomSheet(true)}
           disabled={isBookDisabled}
           style={{
             width: '100%',
             marginTop: SPACING.lg,
             padding: `${SPACING.sm}px ${SPACING.lg}px`,
-            borderRadius: RADIUS.md,
+            borderRadius: 9999,
             border: 'none',
             backgroundColor: isBookDisabled ? COLORS.iconBg : COLORS.primary,
-            color: isBookDisabled ? COLORS.textMuted : COLORS.textPrimary,
+            color: isBookDisabled ? COLORS.textMuted : '#fff',
             ...TYPOGRAPHY.bodySmall,
             fontWeight: 600,
             cursor: isBookDisabled ? 'default' : 'pointer',
@@ -556,5 +636,117 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         </button>
       </div>
     </Card>
+
+    {/* Bottom sheet: confirm booking */}
+    {showBottomSheet && (
+      <div
+        role="presentation"
+        onClick={closeSheet}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          opacity: sheetAnimatedIn ? 1 : 0,
+          transition: `opacity ${SHEET_TRANSITION_MS}ms ease-out`,
+        }}
+      >
+        <div
+          role="dialog"
+          aria-label="Booking summary"
+          data-booking-sheet
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: COLORS.white,
+            borderTopLeftRadius: RADIUS.xl,
+            borderTopRightRadius: RADIUS.xl,
+            padding: SPACING.xxl,
+            paddingBottom: `calc(${SPACING.xxl}px + env(safe-area-inset-bottom, 0px))`,
+            boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+            transform: sheetAnimatedIn ? 'translateY(0)' : 'translateY(100%)',
+            transition: `transform ${SHEET_TRANSITION_MS}ms ease-out`,
+          }}
+        >
+          <div
+            style={{
+              width: 36,
+              height: 4,
+              borderRadius: 2,
+              backgroundColor: COLORS.textMuted,
+              marginBottom: SPACING.xl,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}
+          />
+          <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: `0 0 ${SPACING.lg}px` }}>
+            Session summary
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md, marginBottom: SPACING.xxl }}>
+            <div>
+              <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Coach</span>
+              <div style={{ ...TYPOGRAPHY.body, color: COLORS.textPrimary }}>
+                {selectedCoach ? selectedCoach.name : 'Any coach'}
+              </div>
+            </div>
+            <div>
+              <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Date</span>
+              <div style={{ ...TYPOGRAPHY.body, color: COLORS.textPrimary }}>
+                {formatSheetDate(selectedDate)}
+              </div>
+            </div>
+            <div>
+              <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>Time</span>
+              <div style={{ ...TYPOGRAPHY.body, color: COLORS.textPrimary }}>
+                {selectedTime ?? '—'}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleRequestSession}
+            disabled={requestSubmitted}
+            style={{
+              width: '100%',
+              padding: `${SPACING.sm}px ${SPACING.lg}px`,
+              borderRadius: 9999,
+              border: 'none',
+              backgroundColor: COLORS.primary,
+              color: '#fff',
+              ...TYPOGRAPHY.bodySmall,
+              fontWeight: 600,
+              cursor: requestSubmitted ? 'default' : 'pointer',
+              boxShadow: '0 4px 12px rgba(155, 225, 93, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 36,
+              transition: 'transform 0.25s ease, opacity 0.2s ease',
+              transform: requestSubmitted ? 'scale(0.98)' : 'scale(1)',
+              opacity: requestSubmitted ? 0.95 : 1,
+            }}
+          >
+            {requestSubmitted ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  animation: 'bookingCheckPop 0.4s ease-out forwards',
+                }}
+              >
+                <IconCheck size={24} style={{ color: '#fff' }} />
+              </span>
+            ) : (
+              'Request Session'
+            )}
+          </button>
+        </div>
+      </div>
+    )}
+    </>
   );
 };
