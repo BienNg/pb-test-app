@@ -160,7 +160,7 @@ export const LessonsPage: React.FC = () => {
               marginBottom: SPACING.md,
             }}
           >
-            Pickleball Training Library 🎾
+            Pickleball Training Library
           </h1>
           <p
             style={{

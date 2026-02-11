@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
+import { IconCalendar, IconClock } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
 
 export interface TrainingSessionDetailProps {
@@ -175,19 +176,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             >
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span role="img" aria-label="calendar">
-                  📅
+                  <IconCalendar size={16} />
                 </span>
                 <span>{session.dateLabel}</span>
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span role="img" aria-label="time">
-                  🕒
+                  <IconClock size={16} />
                 </span>
                 <span>{session.time}</span>
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 <span role="img" aria-label="duration">
-                  ⏱️
+                  <IconClock size={16} />
                 </span>
                 <span>{session.duration}</span>
               </span>

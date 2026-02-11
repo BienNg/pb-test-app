@@ -1,6 +1,7 @@
 import React from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
+import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
 
 interface TrainerCardProps {
   name: string;
@@ -36,7 +37,7 @@ export const TrainerCard: React.FC<TrainerCardProps> = ({
           overflow: 'hidden',
         }}
       >
-        {avatar || '👤'}
+        {avatar || <IconUser size={32} />}
       </div>
 
       {/* Content */}
@@ -113,7 +114,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         overflow: 'hidden',
       }}
     >
-      {/* YouTube-style play icon */}
+      {/* Play icon overlay */}
       <div
         style={{
           width: 72,
@@ -124,17 +125,10 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'rgba(0, 0, 0, 0.35)',
+          color: '#FFFFFF',
         }}
       >
-        <span
-          style={{
-            fontSize: 32,
-            color: '#FFFFFF',
-            marginLeft: 3,
-          }}
-        >
-          ▶
-        </span>
+        <IconPlay size={32} />
       </div>
       {isCompleted && (
         <div
@@ -145,10 +139,10 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '40px',
+            color: '#FFFFFF',
           }}
         >
-          ✓
+          <IconCheck size={40} />
         </div>
       )}
     </div>
@@ -222,8 +216,11 @@ export const LessonCard: React.FC<LessonCardProps> = ({
       <div style={{
         ...TYPOGRAPHY.label,
         color: COLORS.textSecondary,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
       }}>
-        ⏱️ {duration}
+        <IconClock size={16} /> {duration}
       </div>
     </div>
   </Card>
@@ -257,14 +254,14 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
           height: '48px',
           borderRadius: RADIUS.circle,
           backgroundColor: COLORS.primary,
+          color: COLORS.textPrimary,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '24px',
         }}
       >
-        📅
+        <IconCalendar size={24} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <h3 style={{
@@ -277,19 +274,19 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>👩‍🏫</span>
+            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconGraduationCap size={16} /></span>
             <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{coachName}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>📆</span>
+            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconCalendarDays size={16} /></span>
             <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{date}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>🕐</span>
+            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconClock size={16} /></span>
             <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{timeRange}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>📍</span>
+            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconMapPin size={16} /></span>
             <div>
               <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{address}</span>
               <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, fontWeight: 600 }}>
@@ -298,7 +295,7 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>👥</span>
+            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconUsers size={16} /></span>
             <div>
               <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>You</span>
               {otherParticipants && otherParticipants.length > 0 && (
@@ -382,13 +379,13 @@ export const UpcomingSessionCard: React.FC<UpcomingSessionProps> = ({
           height: '56px',
           borderRadius: RADIUS.circle,
           backgroundColor: statusColors[status],
+          color: COLORS.textPrimary,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '24px',
           flexShrink: 0,
         }}>
-          {status === 'in-progress' ? '▶️' : status === 'completed' ? '✓' : '📅'}
+          {status === 'in-progress' ? <IconPlay size={24} /> : status === 'completed' ? <IconCheck size={24} /> : <IconCalendar size={24} />}
         </div>
       </div>
     </Card>

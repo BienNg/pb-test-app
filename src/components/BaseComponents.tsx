@@ -1,5 +1,6 @@
 import React from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
+import { IconChevronRight } from './Icons';
 
 interface CardProps {
   children: React.ReactNode;
@@ -45,7 +46,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   unit?: string;
-  icon?: string;
+  icon?: React.ReactNode;
   accentColor?: string;
   onClick?: () => void;
 }
@@ -93,7 +94,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         </div>
         {icon && (
           <div style={{
-            fontSize: '24px',
+            color: COLORS.textPrimary,
             backgroundColor: accentColor ?? COLORS.iconBg,
             width: '48px',
             height: '48px',
@@ -112,13 +113,12 @@ export const StatCard: React.FC<StatCardProps> = ({
             position: 'absolute',
             bottom: 0,
             right: 0,
-            fontSize: '20px',
             color: COLORS.textSecondary,
             cursor: 'pointer',
           }}
           aria-label="Navigate"
         >
-          →
+          <IconChevronRight size={20} />
         </span>
       )}
     </div>
@@ -259,7 +259,7 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 interface ActivityButtonProps {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   onClick?: () => void;
 }
@@ -274,7 +274,7 @@ export const ActivityButton: React.FC<ActivityButtonProps> = ({ icon, label, onC
       backgroundColor: COLORS.white,
       border: 'none',
       boxShadow: SHADOWS.light,
-      fontSize: '24px',
+      color: COLORS.textPrimary,
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',

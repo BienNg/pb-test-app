@@ -1,6 +1,7 @@
 import React from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
+import { IconUser, IconChevronRight } from './Icons';
 
 export interface StudentInfo {
   id: string;
@@ -34,14 +35,14 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
           height: 56,
           borderRadius: RADIUS.circle,
           backgroundColor: COLORS.primary,
+          color: COLORS.textPrimary,
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 24,
         }}
       >
-        {student.avatar ?? '👤'}
+        {student.avatar ?? <IconUser size={24} />}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
@@ -65,7 +66,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
           )}
         </div>
       </div>
-      <span style={{ color: COLORS.textMuted, fontSize: 18 }}>›</span>
+      <IconChevronRight size={20} style={{ color: COLORS.textMuted }} />
     </div>
   </Card>
 );

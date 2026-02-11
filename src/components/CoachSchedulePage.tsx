@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
+import { IconMapPin, IconCalendar } from './Icons';
 import { Calendar } from './Calendar';
 
 const formatDateKey = (date: Date) =>
@@ -315,7 +316,7 @@ export const CoachSchedulePage: React.FC = () => {
                             gap: SPACING.xs,
                           }}
                         >
-                          <span>📍</span>
+                          <span><IconMapPin size={16} /></span>
                           <span>{session.address}</span>
                         </p>
                       )}
@@ -345,13 +346,13 @@ export const CoachSchedulePage: React.FC = () => {
                           height: 48,
                           borderRadius: '50%',
                           backgroundColor: COLORS.primary,
+                          color: COLORS.textPrimary,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 20,
                         }}
                       >
-                        📅
+                        <IconCalendar size={24} />
                       </div>
                     </div>
                   </div>

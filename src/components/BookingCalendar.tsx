@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
+import { IconChevronLeft, IconChevronRight } from './Icons';
 
 // Booking-specific colors matching the reference design
 const BOOKING_COLORS = {
@@ -177,14 +178,14 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
               borderRadius: RADIUS.circle,
               border: 'none',
               backgroundColor: COLORS.iconBg,
+              color: COLORS.textPrimary,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 14,
             }}
           >
-            ‹
+            <IconChevronLeft size={18} />
           </button>
           <button
             onClick={handleNextMonth}
@@ -194,14 +195,14 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
               borderRadius: RADIUS.circle,
               border: 'none',
               backgroundColor: COLORS.iconBg,
+              color: COLORS.textPrimary,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 14,
             }}
           >
-            ›
+            <IconChevronRight size={18} />
           </button>
         </div>
       </div>
@@ -318,15 +319,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
                 borderRadius: RADIUS.circle,
                 border: 'none',
                 backgroundColor: COLORS.iconBg,
+                color: COLORS.textPrimary,
                 cursor: canPrevDays ? 'pointer' : 'not-allowed',
                 opacity: canPrevDays ? 1 : 0.5,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 12,
               }}
             >
-              ‹
+              <IconChevronLeft size={14} />
             </button>
             <button
               onClick={handleNextDays}
@@ -337,15 +338,15 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({ onTimeSlotSele
                 borderRadius: RADIUS.circle,
                 border: 'none',
                 backgroundColor: COLORS.iconBg,
+                color: COLORS.textPrimary,
                 cursor: canNextDays ? 'pointer' : 'not-allowed',
                 opacity: canNextDays ? 1 : 0.5,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 12,
               }}
             >
-              ›
+              <IconChevronRight size={14} />
             </button>
           </div>
         </div>

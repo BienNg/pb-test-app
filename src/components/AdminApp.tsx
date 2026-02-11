@@ -2,6 +2,7 @@ import React, { type ReactNode, useState, useEffect } from 'react';
 import { globalStyles } from '../styles/globals';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
+import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
 import type { StudentInfo } from './CoachStudentsPage';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
@@ -248,28 +249,28 @@ function AdminOverviewPage({
             title="Students"
             value={OVERVIEW_STATS.totalStudents}
             unit="total"
-            icon="👥"
+            icon={<IconUsers size={24} />}
             accentColor={COLORS.lavender}
           />
           <StatCard
             title="Coaches"
             value={OVERVIEW_STATS.totalCoaches}
             unit="active"
-            icon="🎾"
+            icon={<IconCircle size={24} />}
             accentColor={COLORS.primary}
           />
           <StatCard
             title="Sessions"
             value={OVERVIEW_STATS.totalSessions}
             unit="all time"
-            icon="📅"
+            icon={<IconCalendar size={24} />}
             accentColor={COLORS.blue}
           />
           <StatCard
             title="Lesson completions"
             value={OVERVIEW_STATS.totalLessonCompletions}
             unit="VOD"
-            icon="✓"
+            icon={<IconCheck size={24} />}
             accentColor={COLORS.green}
           />
         </div>
@@ -387,14 +388,14 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
                     height: 56,
                     borderRadius: RADIUS.circle,
                     backgroundColor: COLORS.lavender,
+                    color: COLORS.textPrimary,
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 24,
                   }}
                 >
-                  {student.avatar ?? '👤'}
+                {student.avatar ?? <IconUser size={24} />}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
@@ -536,14 +537,14 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
                     height: 56,
                     borderRadius: RADIUS.circle,
                     backgroundColor: COLORS.primary,
+                    color: COLORS.textPrimary,
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 24,
                   }}
                 >
-                  🎾
+                  <IconCircle size={24} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
@@ -763,11 +764,10 @@ function AdminRequestsPage({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                ...TYPOGRAPHY.h2,
                 color: COLORS.textMuted,
               }}
             >
-              ✓
+              <IconCheck size={32} />
             </div>
             <p style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
               All caught up

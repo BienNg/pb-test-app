@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { Card } from './BaseComponents';
+import { IconChevronLeft, IconChevronRight } from './Icons';
 
 export interface DayDots {
   /** Number of confirmed lessons (shown as green dots) */
@@ -107,7 +108,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
             justifyContent: 'center',
           }}
         >
-          ←
+          <IconChevronLeft size={18} />
         </button>
         <h2 style={{
           ...TYPOGRAPHY.h3,
@@ -131,7 +132,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
             justifyContent: 'center',
           }}
         >
-          →
+          <IconChevronRight size={18} />
         </button>
       </div>
 

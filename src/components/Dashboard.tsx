@@ -3,6 +3,7 @@ import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { StatCard } from './BaseComponents';
 import { BookingCalendar } from './BookingCalendar';
 import { UpcomingLessonCard } from './Cards';
+import { IconCheck, IconClock } from './Icons';
 
 type TabId = 'home' | 'progress' | 'library';
 
@@ -42,7 +43,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
               marginBottom: SPACING.md,
             }}
           >
-            Welcome back, Alex! 🎾
+            Welcome back, Alex
           </h1>
         </div>
 
@@ -60,7 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             title="Video Lessons Completed"
             value="12"
             unit="of 16"
-            icon="✓"
+            icon={<IconCheck size={24} />}
             accentColor={COLORS.primary}
             onClick={onNavigateToTab ? () => onNavigateToTab('library') : undefined}
           />
@@ -68,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             title="Training Hours"
             value="18.5"
             unit="hrs"
-            icon="⏱️"
+            icon={<IconClock size={24} />}
             accentColor={COLORS.blue}
             onClick={onNavigateToTab ? () => onNavigateToTab('progress') : undefined}
           />
