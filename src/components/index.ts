@@ -8,3 +8,5 @@ export { TrainerCard, LessonCard, UpcomingLessonCard, UpcomingSessionCard } from
 export { LessonsPage } from './LessonsPage';
 export { AdminApp } from './AdminApp';
 export type { CoachInfo, RequestedSession } from './AdminApp';
+export { MOCK_COACHES, TIER_HOURLY_RATES } from '../data/mockCoaches';
+export type { CoachTier } from '../data/mockCoaches';

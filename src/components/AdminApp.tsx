@@ -25,14 +25,8 @@ function useIsDesktop(): boolean {
   return isDesktop;
 }
 
-export interface CoachInfo {
-  id: string;
-  name: string;
-  email: string;
-  studentCount: number;
-  sessionCount: number;
-  lastActive?: string;
-}
+export type { CoachInfo } from '../data/mockCoaches';
+import { MOCK_COACHES } from '../data/mockCoaches';
 
 // Platform-wide mock data (admin sees all)
 const MOCK_ALL_STUDENTS: StudentInfo[] = [
@@ -43,12 +37,6 @@ const MOCK_ALL_STUDENTS: StudentInfo[] = [
   { id: '5', name: 'Jordan Kim', email: 'jordan@example.com', lessonsCompleted: 3, lastActive: 'Jan 28, 2026' },
   { id: '6', name: 'Sam Davis', email: 'sam@example.com', lessonsCompleted: 7, lastActive: 'Feb 1, 2026' },
   { id: '7', name: 'Casey Brown', email: 'casey@example.com', lessonsCompleted: 11, lastActive: 'Feb 3, 2026' },
-];
-
-const MOCK_COACHES: CoachInfo[] = [
-  { id: 'c1', name: 'Sarah Martinez', email: 'sarah@pbacademy.com', studentCount: 5, sessionCount: 15, lastActive: 'Feb 6, 2026' },
-  { id: 'c2', name: 'Mike Johnson', email: 'mike@pbacademy.com', studentCount: 3, sessionCount: 8, lastActive: 'Feb 5, 2026' },
-  { id: 'c3', name: 'Emma Wilson', email: 'emma@pbacademy.com', studentCount: 4, sessionCount: 12, lastActive: 'Feb 4, 2026' },
 ];
 
 export interface RequestedSession {
@@ -553,6 +541,23 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
                   <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
                     {coach.email}
                   </p>
+                  <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.xs, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span
+                      style={{
+                        ...TYPOGRAPHY.label,
+                        color: COLORS.primary,
+                        backgroundColor: COLORS.primaryLight,
+                        padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                        borderRadius: RADIUS.sm,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {coach.tier}
+                    </span>
+                    <span style={{ ...TYPOGRAPHY.label, color: COLORS.textPrimary, fontWeight: 600 }}>
+                      ${coach.hourlyRate}/hr
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', gap: SPACING.lg, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
                     <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
                       {coach.studentCount} students
