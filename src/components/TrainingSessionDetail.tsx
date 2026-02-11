@@ -35,6 +35,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, []);
 
   const [commentDraft, setCommentDraft] = useState('');
+  const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [comments, setComments] = useState<SessionComment[]>(() => {
@@ -94,22 +95,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const insertTimestampAtCursor = useCallback(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    const ts = formatTimestamp(currentVideoTime);
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const before = commentDraft.slice(0, start);
-    const after = commentDraft.slice(end);
-    setCommentDraft(before + ts + after);
-    setTimeout(() => {
-      el.focus();
-      const newPos = start + ts.length;
-      el.setSelectionRange(newPos, newPos);
-    }, 0);
-  }, [commentDraft, currentVideoTime]);
-
   const handleAddComment = () => {
     if (!commentDraft.trim()) return;
 
@@ -121,7 +106,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       role: 'You',
       createdAt: 'Just now',
       text: commentDraft.trim(),
-      timestampSeconds: Math.round(currentTime),
+      ...(includeTimestamp && { timestampSeconds: Math.round(currentTime) }),
     };
 
     setComments((prev) => [...prev, newComment]);
@@ -682,9 +667,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         </span>
                       </div>
                       {comment.timestampSeconds != null && (
-                        <button
-                          type="button"
-                          onClick={() => seekTo(comment.timestampSeconds!)}
+                        <span
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -697,21 +680,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             color: COLORS.primary,
                             ...TYPOGRAPHY.label,
                             fontWeight: 600,
-                            cursor: 'pointer',
-                            transition: 'background-color 0.15s, transform 0.1s',
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              'rgba(49, 203, 0, 0.22)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              'rgba(49, 203, 0, 0.12)';
                           }}
                         >
                           <span style={{ opacity: 0.9 }}>▶</span>
                           {formatTimestamp(comment.timestampSeconds)}
-                        </button>
+                        </span>
                       )}
                       <p
                         style={{
@@ -757,26 +730,56 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   Comment
                 </label>
-                <button
-                  type="button"
-                  onClick={insertTimestampAtCursor}
+                <div
+                  role="group"
+                  aria-label="Comment timestamp"
                   style={{
                     display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                    padding: 2,
                     borderRadius: RADIUS.sm,
-                    border: `1px solid ${COLORS.primaryLight}`,
-                    backgroundColor: 'rgba(49, 203, 0, 0.1)',
-                    color: COLORS.primary,
-                    ...TYPOGRAPHY.label,
-                    fontWeight: 600,
-                    cursor: 'pointer',
+                    backgroundColor: COLORS.backgroundLight,
+                    gap: 0,
                   }}
                 >
-                  <IconClock size={14} />
-                  {formatTimestamp(currentVideoTime)}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setIncludeTimestamp(false)}
+                    style={{
+                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                      borderRadius: RADIUS.sm - 2,
+                      border: 'none',
+                      backgroundColor: !includeTimestamp ? COLORS.white : 'transparent',
+                      color: !includeTimestamp ? COLORS.textPrimary : COLORS.textSecondary,
+                      ...TYPOGRAPHY.label,
+                      fontWeight: !includeTimestamp ? 600 : 500,
+                      cursor: 'pointer',
+                      boxShadow: !includeTimestamp ? SHADOWS.light : 'none',
+                    }}
+                  >
+                    No timestamp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIncludeTimestamp(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                      borderRadius: RADIUS.sm - 2,
+                      border: 'none',
+                      backgroundColor: includeTimestamp ? COLORS.white : 'transparent',
+                      color: includeTimestamp ? COLORS.primary : COLORS.textSecondary,
+                      ...TYPOGRAPHY.label,
+                      fontWeight: includeTimestamp ? 600 : 500,
+                      cursor: 'pointer',
+                      boxShadow: includeTimestamp ? SHADOWS.light : 'none',
+                    }}
+                  >
+                    <IconClock size={14} />
+                    {formatTimestamp(currentVideoTime)}
+                  </button>
+                </div>
               </div>
               <textarea
                 ref={textareaRef}
