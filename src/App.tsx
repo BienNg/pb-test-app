@@ -277,7 +277,7 @@ function App() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(155, 225, 93, 0.4)',
+                boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
                 cursor: 'default',
               }}
             >

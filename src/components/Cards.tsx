@@ -282,7 +282,7 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
         top: 0,
         bottom: 0,
         width: 4,
-        background: `linear-gradient(180deg, ${COLORS.primary} 0%, #7BC94A 100%)`,
+        background: `linear-gradient(180deg, ${COLORS.primary} 0%, #19a000 100%)`,
         borderRadius: '4px 0 0 4px',
       }}
     />
@@ -328,7 +328,7 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
               width: 24,
               height: 24,
               borderRadius: 6,
-              backgroundColor: 'rgba(155, 225, 93, 0.15)',
+              backgroundColor: 'rgba(49, 203, 0, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -399,7 +399,7 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
               height: '100%',
               minHeight: 80,
               borderRadius: RADIUS.circle,
-              background: `linear-gradient(145deg, ${COLORS.primary} 0%, #7BC94A 100%)`,
+              background: `linear-gradient(145deg, ${COLORS.primary} 0%, #19a000 100%)`,
               color: COLORS.textPrimary,
               display: 'flex',
               alignItems: 'center',

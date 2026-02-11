@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '../styles/theme';
 import { LessonCard } from './Cards';
+import { Card } from './BaseComponents';
 
 export interface MyProgressPageProps {
   /** Override page title (e.g. "Alex's Progress" when coach views a student) */
@@ -124,7 +125,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
 
 export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, onOpenSession }) => {
   const sessions = TRAINING_SESSIONS;
-  const [selectedSegment, setSelectedSegment] = useState<'videos' | 'analytics'>('videos');
+  const [selectedSegment, setSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
 
   return (
     <div
@@ -206,26 +207,26 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
                 boxShadow: selectedSegment === 'videos' ? SHADOWS.light : 'none',
               }}
             >
-              Videos
+              Your Sessions
             </button>
             <button
               type="button"
-              onClick={() => setSelectedSegment('analytics')}
+              onClick={() => setSelectedSegment('duprCoach')}
               style={{
                 flex: 1,
                 padding: `${SPACING.sm}px ${SPACING.md}px`,
                 borderRadius: RADIUS.sm,
                 border: 'none',
-                backgroundColor: selectedSegment === 'analytics' ? COLORS.white : 'transparent',
-                color: selectedSegment === 'analytics' ? COLORS.textPrimary : COLORS.textSecondary,
+                backgroundColor: selectedSegment === 'duprCoach' ? COLORS.white : 'transparent',
+                color: selectedSegment === 'duprCoach' ? COLORS.textPrimary : COLORS.textSecondary,
                 ...TYPOGRAPHY.bodySmall,
-                fontWeight: selectedSegment === 'analytics' ? 600 : 400,
+                fontWeight: selectedSegment === 'duprCoach' ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: selectedSegment === 'analytics' ? SHADOWS.light : 'none',
+                boxShadow: selectedSegment === 'duprCoach' ? SHADOWS.light : 'none',
               }}
             >
-              Analytics
+              DUPR Coach
             </button>
           </div>
         </div>
@@ -263,9 +264,265 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
           </div>
         )}
 
-        {selectedSegment === 'analytics' && (
+        {selectedSegment === 'duprCoach' && (
           <div style={{ marginBottom: SPACING.xl }}>
-            {/* Empty for now */}
+            {/* User Profile Section */}
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: RADIUS.lg,
+                overflow: 'hidden',
+                marginBottom: SPACING.xl,
+                background: `linear-gradient(135deg, ${COLORS.lavender} 0%, ${COLORS.purple} 100%)`,
+                padding: `${SPACING.xxl * 2}px ${SPACING.xl}px ${SPACING.xl}px`,
+              }}
+            >
+              {/* Background blur effect */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23D6C9FF\'/%3E%3C/svg%3E")',
+                  opacity: 0.3,
+                  filter: 'blur(20px)',
+                }}
+              />
+              
+              {/* Content */}
+              <div style={{ position: 'relative', zIndex: 1 }}>
+                {/* Avatar */}
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    backgroundColor: COLORS.white,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto',
+                    marginBottom: SPACING.md,
+                    color: COLORS.purple,
+                    ...TYPOGRAPHY.h2,
+                    fontWeight: 700,
+                  }}
+                >
+                  BN
+                </div>
+
+                {/* Name */}
+                <h2
+                  style={{
+                    ...TYPOGRAPHY.h2,
+                    color: COLORS.white,
+                    textAlign: 'center',
+                    margin: 0,
+                    marginBottom: SPACING.xl,
+                    fontWeight: 700,
+                  }}
+                >
+                  BIEN
+                </h2>
+
+                {/* DUPR Metrics */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: SPACING.md,
+                    marginBottom: SPACING.xl,
+                  }}
+                >
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
+                      DUPR
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: SPACING.xs,
+                        marginBottom: SPACING.xs,
+                      }}
+                    >
+                      <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, fontWeight: 700 }}>
+                        NR
+                      </span>
+                      <span style={{ color: COLORS.white, fontSize: '16px' }}>+</span>
+                    </div>
+                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>
+                      Not Rated
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
+                      Your DUPR Goal
+                    </div>
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.h3,
+                        color: COLORS.white,
+                        fontWeight: 700,
+                        marginBottom: SPACING.xs,
+                      }}
+                    >
+                      NR
+                    </div>
+                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>
+                      Not Rated
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
+                      DUPR Coach
+                    </div>
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.h3,
+                        color: COLORS.white,
+                        fontWeight: 700,
+                        marginBottom: SPACING.xs,
+                      }}
+                    >
+                      David
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: SPACING.md,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => console.log('Subscribe clicked')}
+                    style={{
+                      flex: 1,
+                      padding: `${SPACING.md}px ${SPACING.lg}px`,
+                      borderRadius: RADIUS.md,
+                      border: 'none',
+                      backgroundColor: COLORS.purple,
+                      color: COLORS.white,
+                      ...TYPOGRAPHY.bodySmall,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    SUBSCRIBE
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => console.log('View Roadmap clicked')}
+                    style={{
+                      flex: 1,
+                      padding: `${SPACING.md}px ${SPACING.lg}px`,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${COLORS.white}`,
+                      backgroundColor: 'transparent',
+                      color: COLORS.white,
+                      ...TYPOGRAPHY.bodySmall,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    VIEW ROADMAP
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* DUPR Skills Section */}
+            <div>
+              <h2
+                style={{
+                  ...TYPOGRAPHY.h3,
+                  color: COLORS.textPrimary,
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  marginBottom: SPACING.md,
+                  textTransform: 'uppercase',
+                }}
+              >
+                DUPR SKILLS
+              </h2>
+              
+              <p
+                style={{
+                  ...TYPOGRAPHY.body,
+                  color: COLORS.textSecondary,
+                  marginBottom: SPACING.xl,
+                  textAlign: 'left',
+                }}
+              >
+                See below your scores for your game areas. Your coach has rated each area on a DUPR scale of 2 to 8.
+              </p>
+
+              {/* Skill Cards Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                  gap: SPACING.md,
+                }}
+              >
+                {[
+                  'Serve',
+                  'Return',
+                  'Non Bounce Volley',
+                  'Dinking',
+                  '3rd Shot Drop',
+                  'Kitchen Readiness',
+                  'Court Position',
+                  'Partner Chemistry',
+                ].map((skill) => (
+                  <Card
+                    key={skill}
+                    padding={SPACING.lg}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        ...TYPOGRAPHY.bodySmall,
+                        color: COLORS.textPrimary,
+                        fontWeight: 500,
+                        flex: 1,
+                      }}
+                    >
+                      {skill}
+                    </div>
+                    <div
+                      style={{
+                        backgroundColor: COLORS.iconBg,
+                        borderRadius: RADIUS.full,
+                        padding: `${SPACING.xs}px ${SPACING.md}px`,
+                        ...TYPOGRAPHY.h3,
+                        color: COLORS.textPrimary,
+                        fontWeight: 700,
+                        minWidth: '50px',
+                        textAlign: 'center',
+                      }}
+                    >
+                      0.0
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
         )}
       </div>

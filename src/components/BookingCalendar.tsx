@@ -628,7 +628,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             ...TYPOGRAPHY.bodySmall,
             fontWeight: 600,
             cursor: isBookDisabled ? 'default' : 'pointer',
-            boxShadow: isBookDisabled ? 'none' : '0 4px 12px rgba(155, 225, 93, 0.4)',
+            boxShadow: isBookDisabled ? 'none' : '0 4px 12px rgba(49, 203, 0, 0.4)',
             opacity: isBookDisabled ? 0.8 : 1,
           }}
         >
@@ -719,7 +719,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               ...TYPOGRAPHY.bodySmall,
               fontWeight: 600,
               cursor: requestSubmitted ? 'default' : 'pointer',
-              boxShadow: '0 4px 12px rgba(155, 225, 93, 0.4)',
+              boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

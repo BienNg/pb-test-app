@@ -215,7 +215,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 borderRadius: RADIUS.lg,
                 overflow: 'hidden',
                 background:
-                  'radial-gradient(circle at 10% 20%, #9BE15D 0%, #1C1C1E 45%, #000000 100%)',
+                  'radial-gradient(circle at 10% 20%, #31cb00 0%, #1C1C1E 45%, #000000 100%)',
                 boxShadow: '0 20px 40px rgba(0, 0, 0, 0.28)',
                 marginBottom: SPACING.md,
                 border: '1px solid rgba(255, 255, 255, 0.06)',
@@ -560,7 +560,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       : COLORS.primaryLight,
                     color: COLORS.textPrimary,
                     boxShadow: commentDraft.trim()
-                      ? '0 6px 14px rgba(155, 225, 93, 0.45)'
+                      ? '0 6px 14px rgba(49, 203, 0, 0.45)'
                       : 'none',
                     transition:
                       'background-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out',

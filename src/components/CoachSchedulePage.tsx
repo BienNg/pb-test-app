@@ -236,7 +236,7 @@ export const CoachSchedulePage: React.FC = () => {
               width: 120,
               height: 120,
               borderRadius: '50%',
-              background: 'rgba(155, 225, 93, 0.12)',
+              background: 'rgba(49, 203, 0, 0.12)',
               pointerEvents: 'none',
             }}
           />

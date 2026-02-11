@@ -220,7 +220,7 @@ function AdminOverviewPage({
               width: 120,
               height: 120,
               borderRadius: '50%',
-              background: 'rgba(155, 225, 93, 0.12)',
+              background: 'rgba(49, 203, 0, 0.12)',
               pointerEvents: 'none',
             }}
           />
@@ -503,7 +503,7 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
               width: 120,
               height: 120,
               borderRadius: '50%',
-              background: 'rgba(155, 225, 93, 0.12)',
+              background: 'rgba(49, 203, 0, 0.12)',
               pointerEvents: 'none',
             }}
           />
@@ -1512,7 +1512,7 @@ export const AdminApp: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(155, 225, 93, 0.4)',
+                  boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
                   cursor: 'default',
                 }}
               >
