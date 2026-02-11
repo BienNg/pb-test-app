@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import './App.css';
 import { globalStyles } from './styles/globals';
-import { COLORS, SPACING, TYPOGRAPHY, SHADOWS } from './styles/theme';
+import { COLORS, TYPOGRAPHY, SHADOWS } from './styles/theme';
 import { Dashboard } from './components/Dashboard';
 import { CoachApp } from './components/CoachApp';
 import { AdminApp } from './components/AdminApp';
