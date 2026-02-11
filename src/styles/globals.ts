@@ -38,23 +38,16 @@ export const globalStyles = `
     box-sizing: border-box;
   }
 
-  /* Scrollbar styling */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  /* Hide scrollbars while keeping scroll functionality */
+  html, body, * {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 
-  ::-webkit-scrollbar-track {
-    background: #F7F8FA;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #C7C7CC;
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #8E8E93;
+  html ::-webkit-scrollbar,
+  body ::-webkit-scrollbar,
+  *::-webkit-scrollbar {
+    display: none;
   }
 
   /* Selection */
