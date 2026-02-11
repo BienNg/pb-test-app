@@ -1,5 +1,5 @@
 import React from 'react';
-import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
+import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
 
@@ -234,6 +234,8 @@ interface UpcomingLessonCardProps {
   courtName: string;
   /** Other students in this session (account holder is always in) */
   otherParticipants?: string[];
+  /** Coach profile picture URL (transparent PNG) */
+  profilePicture?: string;
   onClick?: () => void;
 }
 
@@ -244,60 +246,121 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
   address,
   courtName,
   otherParticipants,
+  profilePicture,
   onClick,
 }) => (
-  <Card onClick={onClick} padding={SPACING.lg}>
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACING.lg }}>
-      <div
-        style={{
-          width: '48px',
-          height: '48px',
-          borderRadius: RADIUS.circle,
-          backgroundColor: COLORS.primary,
-          color: COLORS.textPrimary,
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <IconCalendar size={24} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <h3 style={{
-          ...TYPOGRAPHY.h3,
-          color: COLORS.textPrimary,
-          margin: 0,
-          marginBottom: SPACING.md,
-        }}>
-          Upcoming Lesson
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconGraduationCap size={16} /></span>
-            <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{coachName}</span>
+  <div
+    onClick={onClick}
+    role={onClick ? 'button' : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
+    style={{
+      position: 'relative',
+      overflow: 'hidden',
+      borderRadius: 24,
+      padding: `${SPACING.md}px`,
+      paddingLeft: `${SPACING.md + 6}px`,
+      background: 'linear-gradient(145deg, #FFFFFF 0%, #FAFBFC 100%)',
+      border: '1px solid rgba(0, 0, 0, 0.05)',
+      boxShadow: `
+        ${SHADOWS.subtle},
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+        0 2px 4px rgba(0, 0, 0, 0.02)
+      `,
+      cursor: onClick ? 'pointer' : 'default',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+    }}
+    onMouseDown={onClick ? (e) => ((e.currentTarget as HTMLElement).style.transform = 'scale(0.99)') : undefined}
+    onMouseUp={onClick ? (e) => ((e.currentTarget as HTMLElement).style.transform = 'scale(1)') : undefined}
+    onMouseLeave={onClick ? (e) => ((e.currentTarget as HTMLElement).style.transform = 'scale(1)') : undefined}
+  >
+    {/* Left accent bar */}
+    <div
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 4,
+        background: `linear-gradient(180deg, ${COLORS.primary} 0%, #7BC94A 100%)`,
+        borderRadius: '4px 0 0 4px',
+      }}
+    />
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'stretch',
+        gap: SPACING.lg,
+        minHeight: 100,
+      }}
+    >
+      {/* Left: All info */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+        <div style={{ marginBottom: 2 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: 1.2,
+              color: COLORS.primary,
+              textTransform: 'uppercase',
+            }}
+          >
+            Upcoming
+          </span>
+          <h3
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              lineHeight: '24px',
+              color: COLORS.textPrimary,
+              margin: 0,
+              marginTop: 1,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Lesson
+          </h3>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: 6,
+              backgroundColor: 'rgba(155, 225, 93, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <IconGraduationCap size={12} style={{ color: COLORS.primary }} />
           </div>
+          <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary, fontWeight: 600 }}>{coachName}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconCalendarDays size={16} /></span>
+            <IconCalendarDays size={14} style={{ color: COLORS.textSecondary, flexShrink: 0, opacity: 0.8 }} />
             <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{date}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconClock size={16} /></span>
+            <IconClock size={14} style={{ color: COLORS.textSecondary, flexShrink: 0, opacity: 0.8 }} />
             <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{timeRange}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconMapPin size={16} /></span>
+            <IconMapPin size={14} style={{ color: COLORS.textSecondary, flexShrink: 0, opacity: 0.8, marginTop: 2 }} />
             <div>
               <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>{address}</span>
-              <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, fontWeight: 600 }}>
+              <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, fontWeight: 500 }}>
                 {' '}— {courtName}
               </span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SPACING.sm }}>
-            <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}><IconUsers size={16} /></span>
+            <IconUsers size={14} style={{ color: COLORS.textSecondary, flexShrink: 0, opacity: 0.8, marginTop: 2 }} />
             <div>
-              <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>You</span>
+              <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary, fontWeight: 500 }}>You</span>
               {otherParticipants && otherParticipants.length > 0 && (
                 <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary }}>
                   {' '}· Also: {otherParticipants.join(', ')}
@@ -307,8 +370,48 @@ export const UpcomingLessonCard: React.FC<UpcomingLessonCardProps> = ({
           </div>
         </div>
       </div>
+      {/* Right: Profile picture - fills width */}
+      <div
+        style={{
+          width: 120,
+          flexShrink: 0,
+          display: 'flex',
+          alignItems: 'stretch',
+          justifyContent: 'stretch',
+          alignSelf: 'stretch',
+        }}
+      >
+        {profilePicture ? (
+          <img
+            src={profilePicture}
+            alt={coachName}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              objectPosition: 'center right',
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              minHeight: 80,
+              borderRadius: RADIUS.circle,
+              background: `linear-gradient(145deg, ${COLORS.primary} 0%, #7BC94A 100%)`,
+              color: COLORS.textPrimary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <IconCalendar size={32} />
+          </div>
+        )}
+      </div>
     </div>
-  </Card>
+  </div>
 );
 
 interface UpcomingSessionProps {

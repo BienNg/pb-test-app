@@ -5,6 +5,7 @@ import { BookingCalendar } from './BookingCalendar';
 import { UpcomingLessonCard } from './Cards';
 import { IconCheck, IconClock } from './Icons';
 import { MOCK_COACHES } from '../data/mockCoaches';
+import coachJamesKim from '../assets/coach-profile-pictures/3b1cfb78-b2ba-4cc5-a57a-42f9247304c9.png';
 
 type TabId = 'home' | 'progress' | 'library';
 
@@ -80,12 +81,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
         {/* Upcoming Lesson */}
         <div style={{ marginBottom: `${SPACING.lg}px` }}>
           <UpcomingLessonCard
-            coachName="Coach Sarah Martinez"
+            coachName="Coach James Kim"
             date="Saturday, Feb 8, 2025"
             timeRange="2:00 PM – 3:00 PM"
             address="123 Sunset Blvd, San Diego, CA"
             courtName="Court 3"
             otherParticipants={['Jamie', 'Morgan']}
+            profilePicture={coachJamesKim}
           />
         </div>
 

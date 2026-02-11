@@ -23,6 +23,8 @@ export interface CoachInfo {
   studentCount: number;
   sessionCount: number;
   lastActive?: string;
+  /** Profile picture path relative to src/assets */
+  profilePicture?: string;
 }
 
 export const MOCK_COACHES: CoachInfo[] = [
@@ -136,5 +138,19 @@ export const MOCK_COACHES: CoachInfo[] = [
     studentCount: 5,
     sessionCount: 16,
     lastActive: 'Feb 4, 2026',
+  },
+  // Senior Coach with profile picture
+  {
+    id: 'c10',
+    name: 'James Kim',
+    email: 'james@pbacademy.com',
+    tier: 'Senior Coach',
+    hourlyRate: 70,
+    bio: 'USAPA-certified coach with 6+ years of experience. Specializes in technique refinement and competitive strategy.',
+    specialties: ['Advanced dinking', 'Third-shot strategy', 'Tournament play'],
+    studentCount: 9,
+    sessionCount: 25,
+    lastActive: 'Feb 7, 2026',
+    profilePicture: 'coach-profile-pictures/3b1cfb78-b2ba-4cc5-a57a-42f9247304c9.png',
   },
 ];
