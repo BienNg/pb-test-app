@@ -22,6 +22,8 @@ import {
   Target,
   Brain,
   Footprints,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -144,5 +146,17 @@ export const IconBrain: React.FC<{ size?: number; style?: React.CSSProperties }>
 export const IconFootprints: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Footprints size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconVolume2: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Volume2 size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconVolumeX: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <VolumeX size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

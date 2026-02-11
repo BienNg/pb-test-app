@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
-import { IconCalendar, IconClock } from './Icons';
+import { IconCalendar, IconClock, IconVolume2, IconVolumeX } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
 
 export interface TrainingSessionDetailProps {
@@ -18,6 +18,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const [isNarrow, setIsNarrow] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -260,6 +261,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 border: '1px solid rgba(255, 255, 255, 0.06)',
               }}
             >
+              <div style={{ position: 'relative', width: '100%' }}>
               <div
                 style={{
                   position: 'absolute',
@@ -316,6 +318,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               </div>
               <video
                 ref={videoRef}
+                muted={isMuted}
                 style={{
                   width: '100%',
                   display: 'block',
@@ -334,12 +337,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               >
                 <source src={session.videoUrl} type="video/mp4" />
               </video>
+              </div>
 
               {/* Frame.io-style timeline with comment markers */}
               {videoDuration > 0 && (
                 <div
                   style={{
-                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
                     backgroundColor: 'rgba(0, 0, 0, 0.4)',
                     borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                   }}
@@ -348,8 +352,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: SPACING.sm,
-                    marginBottom: SPACING.xs,
+                    gap: SPACING.xs,
                   }}
                 >
                   <button
@@ -360,8 +363,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       v.paused ? v.play() : v.pause();
                     }}
                     style={{
-                      width: 28,
-                      height: 28,
+                      width: 22,
+                      height: 22,
                       borderRadius: RADIUS.sm,
                       border: 'none',
                       backgroundColor: COLORS.primary,
@@ -375,16 +378,41 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     aria-label={isVideoPlaying ? 'Pause' : 'Play'}
                   >
                     {isVideoPlaying ? (
-                      <span style={{ fontSize: 14 }}>⏸</span>
+                      <span style={{ fontSize: 11 }}>⏸</span>
                     ) : (
-                      <span style={{ marginLeft: 2, fontSize: 12 }}>▶</span>
+                      <span style={{ marginLeft: 1, fontSize: 10 }}>▶</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMuted((m) => !m)}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted ? (
+                      <IconVolumeX size={14} />
+                    ) : (
+                      <IconVolume2 size={14} />
                     )}
                   </button>
                   <span
                     style={{
                       ...TYPOGRAPHY.label,
+                      fontSize: 11,
                       color: 'rgba(255, 255, 255, 0.9)',
-                      minWidth: 36,
+                      minWidth: 32,
                     }}
                   >
                     {formatTimestamp(currentVideoTime)}
@@ -393,7 +421,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       style={{
                         flex: 1,
                         position: 'relative',
-                        height: 24,
+                        height: 16,
                         cursor: 'pointer',
                         borderRadius: RADIUS.sm,
                         overflow: 'visible',
@@ -441,11 +469,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               }}
                               style={{
                                 position: 'absolute',
-                                left: `calc(${left}% - 5px)`,
+                                left: `calc(${left}% - 4px)`,
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                width: 10,
-                                height: 10,
+                                width: 8,
+                                height: 8,
                                 borderRadius: '50%',
                                 backgroundColor: COLORS.primary,
                                 border: '2px solid white',
@@ -461,8 +489,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <span
                       style={{
                         ...TYPOGRAPHY.label,
+                        fontSize: 11,
                         color: 'rgba(255, 255, 255, 0.7)',
-                        minWidth: 36,
+                        minWidth: 32,
                       }}
                     >
                       {formatTimestamp(videoDuration)}
