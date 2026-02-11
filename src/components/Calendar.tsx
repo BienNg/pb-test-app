@@ -85,7 +85,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
   };
 
   return (
-    <Card>
+    <Card style={{ width: '100%', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
       {/* Month Header */}
       <div style={{
         display: 'flex',
@@ -139,7 +139,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
       {/* Day Headers */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
+        gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
         gap: SPACING.xs,
         marginBottom: SPACING.md,
       }}>
@@ -148,6 +148,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
             key={day}
             style={{
               textAlign: 'center',
+              minWidth: 0,
               ...TYPOGRAPHY.label,
               color: COLORS.textSecondary,
               fontWeight: 600,
@@ -163,7 +164,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
+          gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
           gap: SPACING.xs,
         }}
       >
@@ -180,6 +181,7 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
               disabled={!date || !isActive}
               style={{
                 aspectRatio: '1',
+                minWidth: 0,
                 border: 'none',
                 backgroundColor: isSelected ? COLORS.primaryLight : 'transparent',
                 color: date
