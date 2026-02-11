@@ -5,6 +5,7 @@ import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
 import { MyProgressPage } from './MyProgressPage';
+import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
@@ -12,6 +13,7 @@ type CoachTabId = 'schedule' | 'students' | 'library';
 export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
 
   useEffect(() => {
     const styleSheet = document.createElement('style');
@@ -22,6 +24,18 @@ export const CoachApp: React.FC = () => {
     };
   }, []);
 
+  // When viewing a training session detail, show full-screen overlay
+  if (activeTrainingSessionId != null) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+        <TrainingSessionDetail
+          sessionId={activeTrainingSessionId}
+          onBack={() => setActiveTrainingSessionId(null)}
+        />
+      </div>
+    );
+  }
+
   // When viewing a student's progress, show full-screen overlay
   if (selectedStudent) {
     return (
@@ -29,6 +43,7 @@ export const CoachApp: React.FC = () => {
         <MyProgressPage
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}
+          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
         />
       </div>
     );
@@ -39,7 +54,12 @@ export const CoachApp: React.FC = () => {
       case 'schedule':
         return <CoachSchedulePage />;
       case 'students':
-        return <CoachStudentsPage onSelectStudent={setSelectedStudent} />;
+        return (
+          <CoachStudentsPage
+            onSelectStudent={setSelectedStudent}
+            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          />
+        );
       case 'library':
         return <LessonsPage />;
       default:

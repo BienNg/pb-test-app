@@ -76,11 +76,13 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
 interface CoachStudentsPageProps {
   students?: StudentInfo[];
   onSelectStudent: (student: StudentInfo) => void;
+  onOpenSession?: (sessionId: number) => void;
 }
 
 export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   students = MOCK_STUDENTS,
   onSelectStudent,
+  onOpenSession,
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
   const sessions = TRAINING_SESSIONS;
@@ -234,7 +236,9 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                     thumbnail={session.thumbnail}
                     isVOD
                     onClick={() =>
-                      console.log(`Open video for training session ${session.id}`)
+                      onOpenSession
+                        ? onOpenSession(session.id)
+                        : console.log(`Open video for training session ${session.id}`)
                     }
                   />
                 </div>
