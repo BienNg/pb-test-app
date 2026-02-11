@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import { IconCalendar, IconClock } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
@@ -13,6 +13,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onBack,
 }) => {
   const session = TRAINING_SESSIONS.find((s) => s.id === sessionId);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [isNarrow, setIsNarrow] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -32,6 +34,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, []);
 
   const [commentDraft, setCommentDraft] = useState('');
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
 
@@ -42,7 +46,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           author: 'Coach Riley',
           role: 'Coach',
           createdAt: '2h ago',
-          text: 'Great use of your split step on wide balls. Watch the clip at 08:12 for a perfect example.',
+          text: 'Great use of your split step on wide balls.',
+          timestampSeconds: 492, // 08:12
         },
         {
           id: 2,
@@ -50,6 +55,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           role: 'You',
           createdAt: '1h ago',
           text: 'I can feel how much smoother my transitions are. Next time I want to focus on staying lower.',
+          timestampSeconds: 145, // 02:25
         },
       ];
     }
@@ -62,6 +68,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           role: 'Coach',
           createdAt: 'Yesterday',
           text: 'Your returns are landing much deeper. Let’s keep targeting the backhand corner.',
+          timestampSeconds: 89,
         },
       ];
     }
@@ -73,8 +80,39 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return null;
   }
 
+  const seekTo = useCallback((seconds: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = seconds;
+    video.play().catch(() => {});
+  }, []);
+
+  const formatTimestamp = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const insertTimestampAtCursor = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const ts = formatTimestamp(currentVideoTime);
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = commentDraft.slice(0, start);
+    const after = commentDraft.slice(end);
+    setCommentDraft(before + ts + after);
+    setTimeout(() => {
+      el.focus();
+      const newPos = start + ts.length;
+      el.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [commentDraft, currentVideoTime]);
+
   const handleAddComment = () => {
     if (!commentDraft.trim()) return;
+
+    const currentTime = videoRef.current?.currentTime ?? 0;
 
     const newComment: SessionComment = {
       id: Date.now(),
@@ -82,6 +120,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       role: 'You',
       createdAt: 'Just now',
       text: commentDraft.trim(),
+      timestampSeconds: Math.round(currentTime),
     };
 
     setComments((prev) => [...prev, newComment]);
@@ -221,17 +260,34 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 border: '1px solid rgba(255, 255, 255, 0.06)',
               }}
             >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 1,
+                }}
+                onClick={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  v.paused ? v.play() : v.pause();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === ' ' || e.key === 'Enter') {
+                    e.preventDefault();
+                    const v = videoRef.current;
+                    if (!v) return;
+                    v.paused ? v.play() : v.pause();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
+              >
               {!isVideoPlaying && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    pointerEvents: 'none',
-                  }}
-                >
                   <div
                     style={{
                       width: 72,
@@ -256,10 +312,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       }}
                     />
                   </div>
-                </div>
               )}
+              </div>
               <video
-                controls
+                ref={videoRef}
                 style={{
                   width: '100%',
                   display: 'block',
@@ -269,9 +325,151 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
                 onEnded={() => setIsVideoPlaying(false)}
+                onTimeUpdate={(e) =>
+                  setCurrentVideoTime((e.target as HTMLVideoElement).currentTime)
+                }
+                onLoadedMetadata={(e) =>
+                  setVideoDuration((e.target as HTMLVideoElement).duration)
+                }
               >
                 <source src={session.videoUrl} type="video/mp4" />
               </video>
+
+              {/* Frame.io-style timeline with comment markers */}
+              {videoDuration > 0 && (
+                <div
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: SPACING.sm,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = videoRef.current;
+                      if (!v) return;
+                      v.paused ? v.play() : v.pause();
+                    }}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: COLORS.primary,
+                      color: COLORS.textPrimary,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                    }}
+                    aria-label={isVideoPlaying ? 'Pause' : 'Play'}
+                  >
+                    {isVideoPlaying ? (
+                      <span style={{ fontSize: 14 }}>⏸</span>
+                    ) : (
+                      <span style={{ marginLeft: 2, fontSize: 12 }}>▶</span>
+                    )}
+                  </button>
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.label,
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      minWidth: 36,
+                    }}
+                  >
+                    {formatTimestamp(currentVideoTime)}
+                  </span>
+                    <div
+                      style={{
+                        flex: 1,
+                        position: 'relative',
+                        height: 24,
+                        cursor: 'pointer',
+                        borderRadius: RADIUS.sm,
+                        overflow: 'visible',
+                      }}
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const pct = Math.max(0, Math.min(1, x / rect.width));
+                        const time = pct * videoDuration;
+                        seekTo(time);
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                          borderRadius: RADIUS.sm,
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${(currentVideoTime / videoDuration) * 100}%`,
+                          backgroundColor: COLORS.primary,
+                          borderRadius: RADIUS.sm,
+                          transition: 'width 0.1s linear',
+                        }}
+                      />
+                      {comments
+                        .filter((c) => c.timestampSeconds != null)
+                        .map((c) => {
+                          const left =
+                            ((c.timestampSeconds ?? 0) / videoDuration) * 100;
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                seekTo(c.timestampSeconds!);
+                              }}
+                              style={{
+                                position: 'absolute',
+                                left: `calc(${left}% - 5px)`,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                backgroundColor: COLORS.primary,
+                                border: '2px solid white',
+                                boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+                                cursor: 'pointer',
+                                padding: 0,
+                              }}
+                              title={`${c.author}: ${c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text}`}
+                            />
+                          );
+                        })}
+                    </div>
+                    <span
+                      style={{
+                        ...TYPOGRAPHY.label,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        minWidth: 36,
+                      }}
+                    >
+                      {formatTimestamp(videoDuration)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <h2
@@ -454,6 +652,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           {comment.createdAt}
                         </span>
                       </div>
+                      {comment.timestampSeconds != null && (
+                        <button
+                          type="button"
+                          onClick={() => seekTo(comment.timestampSeconds!)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            marginTop: SPACING.xs,
+                            padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                            borderRadius: RADIUS.sm,
+                            border: `1px solid ${COLORS.primaryLight}`,
+                            backgroundColor: 'rgba(49, 203, 0, 0.12)',
+                            color: COLORS.primary,
+                            ...TYPOGRAPHY.label,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'background-color 0.15s, transform 0.1s',
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              'rgba(49, 203, 0, 0.22)';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              'rgba(49, 203, 0, 0.12)';
+                          }}
+                        >
+                          <span style={{ opacity: 0.9 }}>▶</span>
+                          {formatTimestamp(comment.timestampSeconds)}
+                        </button>
+                      )}
                       <p
                         style={{
                           ...TYPOGRAPHY.bodySmall,
@@ -479,43 +709,53 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 boxShadow: SHADOWS.light,
               }}
             >
-              <label
-                htmlFor="session-comment-input"
+              <div
                 style={{
-                  ...TYPOGRAPHY.label,
-                  textTransform: 'uppercase',
-                  color: COLORS.textSecondary,
-                  display: 'block',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: SPACING.sm,
                   marginBottom: SPACING.xs,
                 }}
               >
-                Reflection
-              </label>
-              <p
-                style={{
-                  ...TYPOGRAPHY.bodySmall,
-                  color: COLORS.textPrimary,
-                  fontWeight: 500,
-                  margin: `0 0 ${SPACING.xs}px`,
-                }}
-              >
-                What did you notice in this session?
-              </p>
-              <p
-                style={{
-                  ...TYPOGRAPHY.bodySmall,
-                  color: COLORS.textSecondary,
-                  margin: `0 0 ${SPACING.sm}px`,
-                }}
-              >
-                Where did you feel challenged, or what do you want to focus on next time?
-              </p>
+                <label
+                  htmlFor="session-comment-input"
+                  style={{
+                    ...TYPOGRAPHY.label,
+                    textTransform: 'uppercase',
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  Comment
+                </label>
+                <button
+                  type="button"
+                  onClick={insertTimestampAtCursor}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                    borderRadius: RADIUS.sm,
+                    border: `1px solid ${COLORS.primaryLight}`,
+                    backgroundColor: 'rgba(49, 203, 0, 0.1)',
+                    color: COLORS.primary,
+                    ...TYPOGRAPHY.label,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <IconClock size={14} />
+                  {formatTimestamp(currentVideoTime)}
+                </button>
+              </div>
               <textarea
+                ref={textareaRef}
                 id="session-comment-input"
                 rows={3}
                 value={commentDraft}
                 onChange={(e) => setCommentDraft(e.target.value)}
-                placeholder="Capture a quick note for future you..."
+                placeholder="Add a note..."
                 style={{
                   width: '100%',
                   resize: 'none',
@@ -527,22 +767,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   marginBottom: SPACING.sm,
                 }}
               />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: SPACING.sm,
-                }}
-              >
-                <span
-                  style={{
-                    ...TYPOGRAPHY.label,
-                    color: COLORS.textSecondary,
-                  }}
-                >
-                  Visible to you and your coach.
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
                   onClick={handleAddComment}
@@ -570,15 +795,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </button>
               </div>
             </div>
-            <p
-              style={{
-                ...TYPOGRAPHY.bodySmall,
-                color: COLORS.textSecondary,
-                marginTop: SPACING.sm,
-              }}
-            >
-              Set one focus you want to carry into your next session.
-            </p>
           </div>
         </div>
       </div>

@@ -30,6 +30,8 @@ export interface SessionComment {
   role: 'Coach' | 'You';
   createdAt: string;
   text: string;
+  /** Timestamp in seconds - clicking jumps video to this point (Frame.io style) */
+  timestampSeconds?: number;
 }
 
 export const TRAINING_SESSIONS: TrainingSession[] = [
@@ -273,10 +275,23 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
                 borderRadius: RADIUS.lg,
                 overflow: 'hidden',
                 marginBottom: SPACING.xl,
-                background: `linear-gradient(135deg, ${COLORS.lavender} 0%, ${COLORS.purple} 100%)`,
+                background: `linear-gradient(135deg, #9B7ED6 0%, #7B5FB8 50%, #6B4FA8 100%)`,
                 padding: `${SPACING.xxl * 2}px ${SPACING.xl}px ${SPACING.xl}px`,
+                boxShadow: SHADOWS.md,
               }}
             >
+              {/* Dark overlay for better contrast */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: 'rgba(0, 0, 0, 0.15)',
+                }}
+              />
+              
               {/* Background blur effect */}
               <div
                 style={{
@@ -286,7 +301,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
                   right: 0,
                   bottom: 0,
                   backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23D6C9FF\'/%3E%3C/svg%3E")',
-                  opacity: 0.3,
+                  opacity: 0.2,
                   filter: 'blur(20px)',
                 }}
               />
