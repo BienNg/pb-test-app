@@ -1,12 +1,6 @@
-import React from 'react';
-import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
-import { Calendar } from './Calendar';
+import React, { useState } from 'react';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '../styles/theme';
 import { LessonCard } from './Cards';
-
-const formatDateKey = (date: Date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate(),
-  ).padStart(2, '0')}`;
 
 export interface MyProgressPageProps {
   /** Override page title (e.g. "Alex's Progress" when coach views a student) */
@@ -130,17 +124,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
 
 export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, onOpenSession }) => {
   const sessions = TRAINING_SESSIONS;
-
-  const handleDateSelect = (date: Date) => {
-    const key = formatDateKey(date);
-    const session = sessions.find((s) => s.dateKey === key);
-    if (!session) return;
-
-    const el = document.getElementById(`session-${session.id}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  const [selectedSegment, setSelectedSegment] = useState<'videos' | 'analytics'>('videos');
 
   return (
     <div
@@ -188,82 +172,102 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
               ...TYPOGRAPHY.h1,
               color: COLORS.textPrimary,
               margin: 0,
-              marginBottom: SPACING.md,
+              marginBottom: SPACING.xl,
             }}
           >
             {title ?? 'My Progress'}
           </h1>
-          <p
-            style={{
-              ...TYPOGRAPHY.body,
-              color: COLORS.textSecondary,
-              margin: 0,
-            }}
-          >
-            Track how your pickleball skills are improving over time.
-          </p>
-        </div>
 
-        {/* Schedule */}
-        <div style={{ marginBottom: SPACING.xl }}>
-          <h2
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              fontWeight: 600,
-              color: COLORS.textSecondary,
-              textTransform: 'uppercase',
-              marginBottom: SPACING.md,
-            }}
-          >
-            Schedule
-          </h2>
-          <Calendar
-            onDateSelect={handleDateSelect}
-            activeDateKeys={sessions.map((s) => s.dateKey)}
-          />
-        </div>
-
-        {/* Training Session Videos */}
-        <div style={{ marginBottom: SPACING.xl }}>
-          <h2
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              fontWeight: 600,
-              color: COLORS.textSecondary,
-              textTransform: 'uppercase',
-              marginBottom: SPACING.md,
-            }}
-          >
-            Training Session Videos
-          </h2>
+          {/* Segmented Control */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: `${SPACING.lg}px`,
+              display: 'flex',
+              backgroundColor: COLORS.iconBg,
+              borderRadius: RADIUS.md,
+              padding: SPACING.xs,
+              gap: SPACING.xs,
+              marginBottom: SPACING.xl,
             }}
           >
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                id={`session-${session.id}`}
-              >
-                <LessonCard
-                  title={`${session.dateLabel} • ${session.time}`}
-                  category="Training Session"
-                  duration={session.duration}
-                  thumbnail={session.thumbnail}
-                  isVOD
-                  onClick={() =>
-                    onOpenSession
-                      ? onOpenSession(session.id)
-                      : console.log(`Open video for training session ${session.id}`)
-                  }
-                />
-              </div>
-            ))}
+            <button
+              type="button"
+              onClick={() => setSelectedSegment('videos')}
+              style={{
+                flex: 1,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: RADIUS.sm,
+                border: 'none',
+                backgroundColor: selectedSegment === 'videos' ? COLORS.white : 'transparent',
+                color: selectedSegment === 'videos' ? COLORS.textPrimary : COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
+                fontWeight: selectedSegment === 'videos' ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: selectedSegment === 'videos' ? SHADOWS.light : 'none',
+              }}
+            >
+              Videos
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedSegment('analytics')}
+              style={{
+                flex: 1,
+                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                borderRadius: RADIUS.sm,
+                border: 'none',
+                backgroundColor: selectedSegment === 'analytics' ? COLORS.white : 'transparent',
+                color: selectedSegment === 'analytics' ? COLORS.textPrimary : COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
+                fontWeight: selectedSegment === 'analytics' ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: selectedSegment === 'analytics' ? SHADOWS.light : 'none',
+              }}
+            >
+              Analytics
+            </button>
           </div>
         </div>
+
+        {/* Content based on selected segment */}
+        {selectedSegment === 'videos' && (
+          <div style={{ marginBottom: SPACING.xl }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                gap: `${SPACING.lg}px`,
+              }}
+            >
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  id={`session-${session.id}`}
+                >
+                  <LessonCard
+                    title={`${session.dateLabel} • ${session.time}`}
+                    category="Training Session"
+                    duration={session.duration}
+                    thumbnail={session.thumbnail}
+                    isVOD
+                    onClick={() =>
+                      onOpenSession
+                        ? onOpenSession(session.id)
+                        : console.log(`Open video for training session ${session.id}`)
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedSegment === 'analytics' && (
+          <div style={{ marginBottom: SPACING.xl }}>
+            {/* Empty for now */}
+          </div>
+        )}
       </div>
     </div>
   );
