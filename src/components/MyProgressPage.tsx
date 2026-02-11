@@ -185,28 +185,59 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
           <div
             style={{
               display: 'flex',
-              backgroundColor: COLORS.iconBg,
-              borderRadius: RADIUS.md,
+              background: `linear-gradient(135deg, ${COLORS.backgroundLight} 0%, ${COLORS.iconBg} 100%)`,
+              borderRadius: RADIUS.lg,
               padding: SPACING.xs,
               gap: SPACING.xs,
               marginBottom: SPACING.xl,
+              boxShadow: 'inset 0px 1px 2px rgba(0, 0, 0, 0.04), 0px 1px 3px rgba(0, 0, 0, 0.06)',
+              border: `1px solid rgba(0, 0, 0, 0.04)`,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {/* Subtle shimmer overlay */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%)',
+                pointerEvents: 'none',
+              }}
+            />
             <button
               type="button"
               onClick={() => setSelectedSegment('videos')}
               style={{
                 flex: 1,
-                padding: `${SPACING.sm}px ${SPACING.md}px`,
-                borderRadius: RADIUS.sm,
+                padding: `${SPACING.md}px ${SPACING.lg}px`,
+                borderRadius: RADIUS.md,
                 border: 'none',
                 backgroundColor: selectedSegment === 'videos' ? COLORS.white : 'transparent',
                 color: selectedSegment === 'videos' ? COLORS.textPrimary : COLORS.textSecondary,
                 ...TYPOGRAPHY.bodySmall,
-                fontWeight: selectedSegment === 'videos' ? 600 : 400,
+                fontWeight: selectedSegment === 'videos' ? 600 : 500,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: selectedSegment === 'videos' ? SHADOWS.light : 'none',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: selectedSegment === 'videos' 
+                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
+                  : 'none',
+                transform: selectedSegment === 'videos' ? 'translateY(-1px)' : 'translateY(0)',
+                position: 'relative',
+                zIndex: selectedSegment === 'videos' ? 1 : 0,
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSegment !== 'videos') {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSegment !== 'videos') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
               }}
             >
               Your Sessions
@@ -216,16 +247,31 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
               onClick={() => setSelectedSegment('duprCoach')}
               style={{
                 flex: 1,
-                padding: `${SPACING.sm}px ${SPACING.md}px`,
-                borderRadius: RADIUS.sm,
+                padding: `${SPACING.md}px ${SPACING.lg}px`,
+                borderRadius: RADIUS.md,
                 border: 'none',
                 backgroundColor: selectedSegment === 'duprCoach' ? COLORS.white : 'transparent',
                 color: selectedSegment === 'duprCoach' ? COLORS.textPrimary : COLORS.textSecondary,
                 ...TYPOGRAPHY.bodySmall,
-                fontWeight: selectedSegment === 'duprCoach' ? 600 : 400,
+                fontWeight: selectedSegment === 'duprCoach' ? 600 : 500,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: selectedSegment === 'duprCoach' ? SHADOWS.light : 'none',
+                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: selectedSegment === 'duprCoach' 
+                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
+                  : 'none',
+                transform: selectedSegment === 'duprCoach' ? 'translateY(-1px)' : 'translateY(0)',
+                position: 'relative',
+                zIndex: selectedSegment === 'duprCoach' ? 1 : 0,
+              }}
+              onMouseEnter={(e) => {
+                if (selectedSegment !== 'duprCoach') {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (selectedSegment !== 'duprCoach') {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
               }}
             >
               DUPR Coach
