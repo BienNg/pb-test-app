@@ -179,15 +179,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             >
               Training session
             </div>
-            <h1
-              style={{
-                ...TYPOGRAPHY.h2,
-                margin: 0,
-                color: COLORS.textPrimary,
-              }}
-            >
-              {session.title}
-            </h1>
             <div
               style={{
                 display: 'flex',
@@ -204,18 +195,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   <IconCalendar size={16} />
                 </span>
                 <span>{session.dateLabel}</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span role="img" aria-label="time">
-                  <IconClock size={16} />
-                </span>
-                <span>{session.time}</span>
-              </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span role="img" aria-label="duration">
-                  <IconClock size={16} />
-                </span>
-                <span>{session.duration}</span>
               </span>
             </div>
           </div>
@@ -484,64 +463,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </div>
                 </div>
               )}
-            </div>
-
-            <h2
-              style={{
-                ...TYPOGRAPHY.h3,
-                margin: 0,
-                marginBottom: SPACING.xs,
-                color: COLORS.textPrimary,
-              }}
-            >
-              Session overview
-            </h2>
-            <p
-              style={{
-                ...TYPOGRAPHY.bodySmall,
-                margin: 0,
-                marginBottom: SPACING.md,
-                color: COLORS.textSecondary,
-              }}
-            >
-              Session focus: {session.focus}
-            </p>
-
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: SPACING.sm,
-              }}
-            >
-              <div
-                style={{
-                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                  borderRadius: 999,
-                  backgroundColor: COLORS.backgroundLight,
-                  ...TYPOGRAPHY.label,
-                  color: COLORS.textSecondary,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: SPACING.xs,
-                  opacity: 0.9,
-                }}
-              >
-                <span>{session.thumbnail}</span>
-                <span>Training session</span>
-              </div>
-              <div
-                style={{
-                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                  borderRadius: 999,
-                  backgroundColor: COLORS.backgroundLight,
-                  ...TYPOGRAPHY.label,
-                  color: COLORS.textSecondary,
-                  opacity: 0.8,
-                }}
-              >
-                Saved to My Progress
-              </div>
             </div>
           </div>
 
