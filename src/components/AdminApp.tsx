@@ -389,11 +389,6 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
                   <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
                     {student.name}
                   </h3>
-                  {student.email && (
-                    <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xs }}>
-                      {student.email}
-                    </p>
-                  )}
                   <div style={{ display: 'flex', gap: SPACING.lg, marginTop: SPACING.sm }}>
                     {student.lessonsCompleted != null && (
                       <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>

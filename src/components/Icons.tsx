@@ -24,6 +24,8 @@ import {
   Footprints,
   Volume2,
   VolumeX,
+  Search,
+  ChevronDown,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -158,5 +160,17 @@ export const IconVolume2: React.FC<{ size?: number; style?: React.CSSProperties 
 export const IconVolumeX: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <VolumeX size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconSearch: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Search size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconChevronDown: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <ChevronDown size={size} strokeWidth={stroke} />
   </IconWrapper>
 );
