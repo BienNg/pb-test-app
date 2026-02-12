@@ -144,6 +144,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   onOpenSession,
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
+  const [selectedSubSegment, setSelectedSubSegment] = useState<'completed' | 'new'>('completed');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortField>('name');
   const [sortAsc, setSortAsc] = useState(true);
@@ -285,9 +286,112 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                 }
               }}
             >
-              My Session
+              My Sessions
             </button>
           </div>
+
+          {/* Sub Segmented Control - only shown when My Sessions is selected */}
+          {selectedSegment === 'mySession' && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SPACING.lg }}>
+              <div
+                style={{
+                  display: 'flex',
+                  background: `linear-gradient(135deg, rgba(30, 30, 35, 0.95) 0%, rgba(40, 40, 45, 0.95) 100%)`,
+                  borderRadius: RADIUS.md,
+                  padding: 2,
+                  gap: 2,
+                  boxShadow: 'inset 0px 1px 2px rgba(0, 0, 0, 0.2), 0px 2px 8px rgba(0, 0, 0, 0.15)',
+                  border: `1px solid rgba(0, 0, 0, 0.2)`,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  maxWidth: 300,
+                }}
+              >
+                {/* Subtle shimmer overlay */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubSegment('completed')}
+                  style={{
+                    flex: 1,
+                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                    borderRadius: RADIUS.sm,
+                    border: 'none',
+                    backgroundColor: selectedSubSegment === 'completed' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+                    color: selectedSubSegment === 'completed' ? COLORS.textPrimary : 'rgba(255, 255, 255, 0.7)',
+                    ...TYPOGRAPHY.label,
+                    fontSize: '13px',
+                    fontWeight: selectedSubSegment === 'completed' ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: selectedSubSegment === 'completed' 
+                      ? '0px 2px 8px rgba(0, 0, 0, 0.2), 0px 1px 2px rgba(0, 0, 0, 0.1)' 
+                      : 'none',
+                    transform: selectedSubSegment === 'completed' ? 'translateY(-1px)' : 'translateY(0)',
+                    position: 'relative',
+                    zIndex: selectedSubSegment === 'completed' ? 1 : 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedSubSegment !== 'completed') {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedSubSegment !== 'completed') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  Completed
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedSubSegment('new')}
+                  style={{
+                    flex: 1,
+                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                    borderRadius: RADIUS.sm,
+                    border: 'none',
+                    backgroundColor: selectedSubSegment === 'new' ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+                    color: selectedSubSegment === 'new' ? COLORS.textPrimary : 'rgba(255, 255, 255, 0.7)',
+                    ...TYPOGRAPHY.label,
+                    fontSize: '13px',
+                    fontWeight: selectedSubSegment === 'new' ? 600 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: selectedSubSegment === 'new' 
+                      ? '0px 2px 8px rgba(0, 0, 0, 0.2), 0px 1px 2px rgba(0, 0, 0, 0.1)' 
+                      : 'none',
+                    transform: selectedSubSegment === 'new' ? 'translateY(-1px)' : 'translateY(0)',
+                    position: 'relative',
+                    zIndex: selectedSubSegment === 'new' ? 1 : 0,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (selectedSubSegment !== 'new') {
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (selectedSubSegment !== 'new') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  New
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Content based on selected segment */}
@@ -456,33 +560,42 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
 
         {selectedSegment === 'mySession' && (
           <div style={{ marginBottom: SPACING.xl }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: `${SPACING.lg}px`,
-              }}
-            >
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  id={`session-${session.id}`}
-                >
-                  <LessonCard
-                    title={`${session.dateLabel} • ${session.time}`}
-                    category="Training Session"
-                    duration={session.duration}
-                    thumbnail={session.thumbnail}
-                    isVOD
-                    onClick={() =>
-                      onOpenSession
-                        ? onOpenSession(session.id)
-                        : console.log(`Open video for training session ${session.id}`)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
+            {selectedSubSegment === 'completed' && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                  gap: `${SPACING.lg}px`,
+                }}
+              >
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    id={`session-${session.id}`}
+                  >
+                    <LessonCard
+                      title={`${session.dateLabel} • ${session.time}`}
+                      category="Training Session"
+                      duration={session.duration}
+                      thumbnail={session.thumbnail}
+                      isVOD
+                      onClick={() =>
+                        onOpenSession
+                          ? onOpenSession(session.id)
+                          : console.log(`Open video for training session ${session.id}`)
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            {selectedSubSegment === 'new' && (
+              <div style={{ padding: SPACING.xl, textAlign: 'center' }}>
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                  No new sessions available.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

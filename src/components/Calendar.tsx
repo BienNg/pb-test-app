@@ -29,7 +29,7 @@ const formatDateKey = (date: Date) =>
     date.getDate(),
   ).padStart(2, '0')}`;
 
-export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys = [], dayDots }) => {
+export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys: _activeDateKeys = [], dayDots }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -170,28 +170,24 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
       >
         {days.map((date, index) => {
           const dateKey = date ? formatDateKey(date) : '';
-          const isActive = !!(date && activeDateKeys.includes(dateKey));
-          const isSelected = isDateSelected(date) && isActive;
+          const isSelected = isDateSelected(date);
+          const today = isToday(date);
           const dots = date && dayDots ? dayDots[dateKey] : null;
 
           return (
             <button
               key={index}
-              onClick={() => date && isActive && handleDateClick(date)}
-              disabled={!date || !isActive}
+              onClick={() => date && handleDateClick(date)}
+              disabled={!date}
               style={{
                 aspectRatio: '1',
                 minWidth: 0,
-                border: 'none',
-                backgroundColor: isSelected ? COLORS.primaryLight : 'transparent',
-                color: date
-                  ? isActive
-                    ? COLORS.textPrimary
-                    : COLORS.textMuted
-                  : COLORS.textMuted,
+                border: today ? `2px solid ${COLORS.primary}` : 'none',
+                backgroundColor: isSelected ? COLORS.primaryLight : today ? COLORS.primaryLight : 'transparent',
+                color: date ? COLORS.textPrimary : COLORS.textMuted,
                 borderRadius: '12px',
-                cursor: date && isActive ? 'pointer' : 'default',
-                fontWeight: isSelected ? 600 : 400,
+                cursor: date ? 'pointer' : 'default',
+                fontWeight: isSelected || today ? 600 : 400,
                 fontSize: '14px',
                 transition: 'all 0.2s',
                 display: 'flex',
@@ -199,11 +195,11 @@ export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                opacity: date && !isActive ? 0.4 : 1,
+                opacity: 1,
                 gap: 2,
               }}
               onMouseDown={(e) => {
-                if (date && isActive) (e.currentTarget as HTMLElement).style.transform = 'scale(0.95)';
+                if (date) (e.currentTarget as HTMLElement).style.transform = 'scale(0.95)';
               }}
               onMouseUp={(e) => {
                 (e.currentTarget as HTMLElement).style.transform = 'scale(1)';

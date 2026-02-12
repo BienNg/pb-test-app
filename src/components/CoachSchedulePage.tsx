@@ -152,12 +152,9 @@ export const CoachSchedulePage: React.FC = () => {
     >
       <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: SPACING.md }}>
-          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
+          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0 }}>
             My Schedule
           </h1>
-          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            Your upcoming lessons and sessions.
-          </p>
         </div>
 
         {/* Stats — primary content, top placement */}
