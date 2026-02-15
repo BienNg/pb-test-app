@@ -240,6 +240,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setIsMuted((m) => !m);
   }, [isYoutube]);
 
+  const skipBy = useCallback(
+    (deltaSeconds: number) => {
+      const getNow = () =>
+        isYoutube && playerRef.current
+          ? playerRef.current.getCurrentTime()
+          : videoRef.current?.currentTime ?? 0;
+      const dur = videoDuration || (videoRef.current?.duration ?? 0);
+      const now = getNow();
+      const next = Math.max(0, Math.min(dur, now + deltaSeconds));
+      seekTo(next);
+    },
+    [isYoutube, videoDuration, seekTo]
+  );
+
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -405,6 +419,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       zIndex: 1,
                       pointerEvents: !isVideoPlaying ? 'auto' : 'none',
+                      backgroundColor: !isVideoPlaying ? 'rgba(0, 0, 0, 0.85)' : 'transparent',
                     }}
                     onClick={handlePlayPause}
                     onKeyDown={(e) => {
@@ -694,7 +709,112 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       {formatTimestamp(videoDuration)}
                     </span>
                   </div>
+                {/* Skip buttons below the player */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: SPACING.sm,
+                    paddingTop: SPACING.xs,
+                    paddingBottom: SPACING.xs,
+                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => skipBy(-10)}
+                    style={{
+                      width: 36,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip back 10 seconds"
+                    title="−10s"
+                  >
+                    −10s
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skipBy(-5)}
+                    style={{
+                      width: 34,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip back 5 seconds"
+                    title="−5s"
+                  >
+                    −5s
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skipBy(5)}
+                    style={{
+                      width: 34,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip forward 5 seconds"
+                    title="+5s"
+                  >
+                    +5s
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skipBy(10)}
+                    style={{
+                      width: 36,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip forward 10 seconds"
+                    title="+10s"
+                  >
+                    +10s
+                  </button>
                 </div>
+              </div>
               )}
             </div>
           </div>
