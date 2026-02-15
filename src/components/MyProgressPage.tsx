@@ -44,7 +44,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '28:30',
     title: 'Match Play + Net Game',
     focus: 'Transition game and third-shot drops.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 2,
@@ -55,7 +55,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '24:10',
     title: 'Serve & Return Focus',
     focus: 'Depth on returns and targeting open space.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 3,
@@ -66,7 +66,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '32:45',
     title: 'Defensive Scramble Drills',
     focus: 'Resetting from off-balance positions.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 4,
@@ -77,7 +77,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '26:05',
     title: 'Dinking & Soft Game',
     focus: 'Consistency and patience at the kitchen.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 5,
@@ -88,7 +88,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '30:20',
     title: 'Power vs. Control',
     focus: 'Blending pace with precise placement.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 6,
@@ -99,7 +99,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '22:15',
     title: 'Footwork Foundations',
     focus: 'Split step timing and recovery steps.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 7,
@@ -110,7 +110,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '29:40',
     title: 'Transition Zone Tactics',
     focus: 'Moving safely from baseline to kitchen.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
   {
     id: 8,
@@ -121,7 +121,7 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
     duration: '25:50',
     title: 'Shot Selection Review',
     focus: 'Choosing the highest-percentage option.',
-    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo',
   },
 ];
 

@@ -3,6 +3,49 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import { IconCalendar, IconClock, IconVolume2, IconVolumeX } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
 
+declare global {
+  interface Window {
+    YT?: { Player: new (el: string | HTMLElement, opts: object) => YTPlayer; PlayerState: { PLAYING: number; PAUSED: number; ENDED: number } };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+interface YTPlayer {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  getPlayerState: () => number;
+  mute: () => void;
+  unMute: () => void;
+  isMuted: () => boolean;
+}
+
+/** Load YouTube IFrame API. Resolves when ready. */
+function loadYoutubeAPI(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.YT?.Player) return Promise.resolve();
+  return new Promise((resolve) => {
+    window.onYouTubeIframeAPIReady = () => resolve();
+    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const first = document.getElementsByTagName('script')[0];
+      first.parentNode?.insertBefore(tag, first);
+    }
+  });
+}
+
+/** Extract YouTube video ID from watch or share link. Returns null if not YouTube. */
+function getYoutubeVideoId(url: string): string | null {
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
 export interface TrainingSessionDetailProps {
   sessionId: number;
   onBack: () => void;
@@ -13,12 +56,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onBack,
 }) => {
   const session = TRAINING_SESSIONS.find((s) => s.id === sessionId);
+  const youtubeVideoId = session ? getYoutubeVideoId(session.videoUrl) : null;
+  const isYoutube = !!youtubeVideoId;
   const videoRef = useRef<HTMLVideoElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
+  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   const [isNarrow, setIsNarrow] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -33,6 +81,66 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       window.removeEventListener('resize', updateLayout);
     };
   }, []);
+
+  useEffect(() => {
+    setVideoError(null);
+  }, [sessionId]);
+
+  // Load YouTube API and create player when YouTube video
+  useEffect(() => {
+    if (!isYoutube || !youtubeVideoId || !playerContainerRef.current) return;
+
+    let pollId: ReturnType<typeof setInterval> | null = null;
+
+    const createPlayer = (yt: NonNullable<typeof window.YT>) => {
+      playerRef.current = new yt.Player(playerContainerRef.current!, {
+        videoId: youtubeVideoId,
+        playerVars: {
+          controls: 0,
+          disablekb: 0,
+          playsinline: 1,
+          rel: 0,
+        },
+        events: {
+          onReady: (e: { target: YTPlayer }) => {
+            const p = e.target;
+            const dur = p.getDuration();
+            if (dur && isFinite(dur)) setVideoDuration(dur);
+            setIsMuted(p.isMuted());
+            pollId = setInterval(() => {
+              if (!playerRef.current) return;
+              try {
+                const t = playerRef.current.getCurrentTime();
+                if (isFinite(t)) setCurrentVideoTime(t);
+                const d = playerRef.current.getDuration();
+                if (isFinite(d) && d > 0) setVideoDuration(d);
+              } catch {}
+            }, 250);
+          },
+          onStateChange: (e: { data: number }) => {
+            const YT = window.YT!;
+            if (e.data === YT.PlayerState.PLAYING) setIsVideoPlaying(true);
+            else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED)
+              setIsVideoPlaying(false);
+          },
+        },
+      });
+    };
+
+    if (window.YT?.Player) {
+      createPlayer(window.YT);
+    } else {
+      loadYoutubeAPI().then(() => {
+        if (window.YT?.Player && playerContainerRef.current) createPlayer(window.YT);
+      });
+    }
+
+    return () => {
+      if (pollId) clearInterval(pollId);
+      if (playerRef.current?.pauseVideo) playerRef.current.pauseVideo();
+      playerRef.current = null;
+    };
+  }, [isYoutube, youtubeVideoId, sessionId]);
 
   const [commentDraft, setCommentDraft] = useState('');
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
@@ -78,16 +186,59 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return [];
   });
 
-  if (!session) {
-    return null;
-  }
+  const handlePlayPause = useCallback(async () => {
+    setVideoError(null);
+    if (isYoutube && playerRef.current) {
+      const p = playerRef.current;
+      const state = p.getPlayerState();
+      const YT = window.YT!;
+      if (state === YT.PlayerState.PLAYING) p.pauseVideo();
+      else p.playVideo();
+      return;
+    }
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      if (v.paused) {
+        await v.play();
+      } else {
+        v.pause();
+      }
+    } catch {
+      v.muted = true;
+      setIsMuted(true);
+      await v.play().catch(() => {});
+    }
+  }, [isYoutube]);
 
-  const seekTo = useCallback((seconds: number) => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = seconds;
-    video.play().catch(() => {});
-  }, []);
+  const seekTo = useCallback(
+    (seconds: number) => {
+      if (isYoutube && playerRef.current) {
+        playerRef.current.seekTo(seconds, true);
+        playerRef.current.playVideo();
+        return;
+      }
+      const video = videoRef.current;
+      if (!video) return;
+      video.currentTime = seconds;
+      video.play().catch(() => {});
+    },
+    [isYoutube]
+  );
+
+  const handleMuteToggle = useCallback(() => {
+    if (isYoutube && playerRef.current) {
+      if (playerRef.current.isMuted()) {
+        playerRef.current.unMute();
+        setIsMuted(false);
+      } else {
+        playerRef.current.mute();
+        setIsMuted(true);
+      }
+      return;
+    }
+    setIsMuted((m) => !m);
+  }, [isYoutube]);
 
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -98,7 +249,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const handleAddComment = () => {
     if (!commentDraft.trim()) return;
 
-    const currentTime = videoRef.current?.currentTime ?? 0;
+    const currentTime = isYoutube && playerRef.current
+      ? playerRef.current.getCurrentTime()
+      : videoRef.current?.currentTime ?? 0;
 
     const newComment: SessionComment = {
       id: Date.now(),
@@ -112,6 +265,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setComments((prev) => [...prev, newComment]);
     setCommentDraft('');
   };
+
+  if (!session) {
+    return null;
+  }
 
   return (
     <div
@@ -226,6 +383,70 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               }}
             >
               <div style={{ position: 'relative', width: '100%' }}>
+              {isYoutube && youtubeVideoId ? (
+                <>
+                  <div
+                    ref={playerContainerRef}
+                    key={`yt-${session.id}`}
+                    style={{
+                      width: '100%',
+                      aspectRatio: '16 / 9',
+                      display: 'block',
+                      minHeight: 200,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 1,
+                      pointerEvents: !isVideoPlaying ? 'auto' : 'none',
+                    }}
+                    onClick={handlePlayPause}
+                    onKeyDown={(e) => {
+                      if (e.key === ' ' || e.key === 'Enter') {
+                        e.preventDefault();
+                        handlePlayPause();
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
+                  >
+                    {!isVideoPlaying && (
+                      <div
+                        style={{
+                          width: 72,
+                          height: 72,
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          border: '1px solid rgba(255, 255, 255, 0.4)',
+                          backdropFilter: 'blur(6px)',
+                        }}
+                      >
+                        <div
+                          style={{
+                            marginLeft: 4,
+                            width: 0,
+                            height: 0,
+                            borderTop: '12px solid transparent',
+                            borderBottom: '12px solid transparent',
+                            borderLeft: '20px solid #FFFFFF',
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
               <div
                 style={{
                   position: 'absolute',
@@ -236,24 +457,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   cursor: 'pointer',
                   zIndex: 1,
                 }}
-                onClick={() => {
-                  const v = videoRef.current;
-                  if (!v) return;
-                  v.paused ? v.play() : v.pause();
-                }}
+                onClick={handlePlayPause}
                 onKeyDown={(e) => {
                   if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
-                    const v = videoRef.current;
-                    if (!v) return;
-                    v.paused ? v.play() : v.pause();
+                    handlePlayPause();
                   }
                 }}
                 role="button"
                 tabIndex={0}
                 aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
               >
-              {!isVideoPlaying && (
+              {videoError && (
+                <div
+                  style={{
+                    padding: SPACING.md,
+                    textAlign: 'center',
+                    color: 'rgba(255,255,255,0.95)',
+                    ...TYPOGRAPHY.bodySmall,
+                    maxWidth: 280,
+                  }}
+                >
+                  {videoError}
+                </div>
+              )}
+              {!isVideoPlaying && !videoError && (
                   <div
                     style={{
                       width: 72,
@@ -281,8 +509,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               )}
               </div>
               <video
+                key={session.id}
                 ref={videoRef}
                 muted={isMuted}
+                playsInline
+                preload="metadata"
                 style={{
                   width: '100%',
                   display: 'block',
@@ -295,12 +526,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 onTimeUpdate={(e) =>
                   setCurrentVideoTime((e.target as HTMLVideoElement).currentTime)
                 }
-                onLoadedMetadata={(e) =>
-                  setVideoDuration((e.target as HTMLVideoElement).duration)
-                }
+                onLoadedMetadata={(e) => {
+                  setVideoDuration((e.target as HTMLVideoElement).duration);
+                  setVideoError(null);
+                }}
+                onError={() => {
+                  setVideoError('Video failed to load. The source may be unavailable or blocked.');
+                }}
               >
                 <source src={session.videoUrl} type="video/mp4" />
               </video>
+              </>
+              )}
               </div>
 
               {/* Frame.io-style timeline with comment markers */}
@@ -321,11 +558,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   <button
                     type="button"
-                    onClick={() => {
-                      const v = videoRef.current;
-                      if (!v) return;
-                      v.paused ? v.play() : v.pause();
-                    }}
+                    onClick={handlePlayPause}
                     style={{
                       width: 22,
                       height: 22,
@@ -349,7 +582,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setIsMuted((m) => !m)}
+                    onClick={handleMuteToggle}
                     style={{
                       width: 22,
                       height: 22,
