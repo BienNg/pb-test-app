@@ -87,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
             address="123 Sunset Blvd, San Diego, CA"
             courtName="Court 3"
             otherParticipants={['Jamie', 'Morgan']}
-            profilePicture={coachJamesKim}
+            profilePicture={coachJamesKim.src}
           />
         </div>
 

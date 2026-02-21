@@ -67,6 +67,46 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [commentDraft, setCommentDraft] = useState('');
+  const [includeTimestamp, setIncludeTimestamp] = useState(true);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [comments, setComments] = useState<SessionComment[]>(() => {
+    if (!session) return [];
+    if (session.id === 1) {
+      return [
+        {
+          id: 1,
+          author: 'Coach Riley',
+          role: 'Coach',
+          createdAt: '2h ago',
+          text: 'Great use of your split step on wide balls.',
+          timestampSeconds: 492,
+        },
+        {
+          id: 2,
+          author: 'You',
+          role: 'You',
+          createdAt: '1h ago',
+          text: 'I can feel how much smoother my transitions are. Next time I want to focus on staying lower.',
+          timestampSeconds: 145,
+        },
+      ];
+    }
+    if (session.id === 2) {
+      return [
+        {
+          id: 3,
+          author: 'Coach Riley',
+          role: 'Coach',
+          createdAt: 'Yesterday',
+          text: "Your returns are landing much deeper. Let's keep targeting the backhand corner.",
+          timestampSeconds: 89,
+        },
+      ];
+    }
+    return [];
+  });
 
   useEffect(() => {
     const updateLayout = () => {
@@ -83,7 +123,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, []);
 
   useEffect(() => {
-    setVideoError(null);
+    const t = setTimeout(() => setVideoError(null), 0);
+    return () => clearTimeout(t);
   }, [sessionId]);
 
   // Load YouTube API and create player when YouTube video
@@ -114,7 +155,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 if (isFinite(t)) setCurrentVideoTime(t);
                 const d = playerRef.current.getDuration();
                 if (isFinite(d) && d > 0) setVideoDuration(d);
-              } catch {}
+              } catch { /* ignore getCurrentTime/getDuration errors */ }
             }, 250);
           },
           onStateChange: (e: { data: number }) => {
@@ -142,54 +183,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     };
   }, [isYoutube, youtubeVideoId, sessionId]);
 
-  const [commentDraft, setCommentDraft] = useState('');
-  const [includeTimestamp, setIncludeTimestamp] = useState(true);
-  const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
-  const [comments, setComments] = useState<SessionComment[]>(() => {
-    if (!session) return [];
-
-    if (session.id === 1) {
-      return [
-        {
-          id: 1,
-          author: 'Coach Riley',
-          role: 'Coach',
-          createdAt: '2h ago',
-          text: 'Great use of your split step on wide balls.',
-          timestampSeconds: 492, // 08:12
-        },
-        {
-          id: 2,
-          author: 'You',
-          role: 'You',
-          createdAt: '1h ago',
-          text: 'I can feel how much smoother my transitions are. Next time I want to focus on staying lower.',
-          timestampSeconds: 145, // 02:25
-        },
-      ];
-    }
-
-    if (session.id === 2) {
-      return [
-        {
-          id: 3,
-          author: 'Coach Riley',
-          role: 'Coach',
-          createdAt: 'Yesterday',
-          text: 'Your returns are landing much deeper. Let’s keep targeting the backhand corner.',
-          timestampSeconds: 89,
-        },
-      ];
-    }
-
-    return [];
-  });
-
   const handlePlayPause = useCallback(async () => {
     setVideoError(null);
     if (isYoutube && playerRef.current) {
       const p = playerRef.current;
+      if (typeof p.getPlayerState !== 'function') return; // player not ready yet
       const state = p.getPlayerState();
       const YT = window.YT!;
       if (state === YT.PlayerState.PLAYING) p.pauseVideo();
@@ -214,8 +212,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const seekTo = useCallback(
     (seconds: number) => {
       if (isYoutube && playerRef.current) {
-        playerRef.current.seekTo(seconds, true);
-        playerRef.current.playVideo();
+        const p = playerRef.current;
+        if (typeof p.seekTo === 'function') p.seekTo(seconds, true);
+        if (typeof p.playVideo === 'function') p.playVideo();
         return;
       }
       const video = videoRef.current;
@@ -228,11 +227,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const handleMuteToggle = useCallback(() => {
     if (isYoutube && playerRef.current) {
-      if (playerRef.current.isMuted()) {
-        playerRef.current.unMute();
+      const p = playerRef.current;
+      if (typeof p.isMuted !== 'function') return;
+      if (p.isMuted()) {
+        p.unMute();
         setIsMuted(false);
       } else {
-        playerRef.current.mute();
+        p.mute();
         setIsMuted(true);
       }
       return;
@@ -242,10 +243,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const skipBy = useCallback(
     (deltaSeconds: number) => {
-      const getNow = () =>
-        isYoutube && playerRef.current
-          ? playerRef.current.getCurrentTime()
-          : videoRef.current?.currentTime ?? 0;
+      const getNow = () => {
+        if (isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+          return playerRef.current.getCurrentTime();
+        }
+        return videoRef.current?.currentTime ?? 0;
+      };
       const dur = videoDuration || (videoRef.current?.duration ?? 0);
       const now = getNow();
       const next = Math.max(0, Math.min(dur, now + deltaSeconds));
@@ -263,7 +266,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const handleAddComment = () => {
     if (!commentDraft.trim()) return;
 
-    const currentTime = isYoutube && playerRef.current
+    const currentTime = isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function'
       ? playerRef.current.getCurrentTime()
       : videoRef.current?.currentTime ?? 0;
 

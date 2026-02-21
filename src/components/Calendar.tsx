@@ -29,7 +29,8 @@ const formatDateKey = (date: Date) =>
     date.getDate(),
   ).padStart(2, '0')}`;
 
-export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys: _activeDateKeys = [], dayDots }) => {
+export const Calendar: React.FC<CalendarProps> = ({ onDateSelect, activeDateKeys = [], dayDots }) => {
+  void activeDateKeys; // reserved for future use (highlight active dates)
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 

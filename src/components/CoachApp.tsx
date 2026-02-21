@@ -1,5 +1,6 @@
-import React, { type ReactNode, useState, useEffect } from 'react';
-import { globalStyles } from '../styles/globals';
+'use client';
+
+import React, { type ReactNode, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
@@ -14,15 +15,6 @@ export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
-
-  useEffect(() => {
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = globalStyles;
-    document.head.appendChild(styleSheet);
-    return () => {
-      document.head.removeChild(styleSheet);
-    };
-  }, []);
 
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {

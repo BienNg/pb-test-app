@@ -1,5 +1,6 @@
+'use client';
+
 import React, { type ReactNode, useState, useEffect } from 'react';
-import { globalStyles } from '../styles/globals';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
@@ -15,12 +16,16 @@ const formatDateLabel = (dateKey: string) => {
 const SIDEBAR_WIDTH = 220;
 
 function useIsDesktop(): boolean {
-  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= DESKTOP_MIN);
+  const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${DESKTOP_MIN}px)`);
     const handler = () => setIsDesktop(mq.matches);
+    const id = requestAnimationFrame(() => handler());
     mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
+    return () => {
+      cancelAnimationFrame(id);
+      mq.removeEventListener('change', handler);
+    };
   }, []);
   return isDesktop;
 }
@@ -1231,15 +1236,6 @@ export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
   const [requestedSessions, setRequestedSessions] = useState<RequestedSession[]>(() => [...MOCK_REQUESTED_SESSIONS_INITIAL]);
   const isDesktop = useIsDesktop();
-
-  useEffect(() => {
-    const styleSheet = document.createElement('style');
-    styleSheet.textContent = globalStyles;
-    document.head.appendChild(styleSheet);
-    return () => {
-      document.head.removeChild(styleSheet);
-    };
-  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
