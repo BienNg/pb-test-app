@@ -1467,6 +1467,7 @@ export const AdminApp: React.FC = () => {
 
       {!isDesktop && (
         <nav
+          aria-label="Admin navigation"
           style={{
             position: 'fixed',
             left: 0,
@@ -1474,8 +1475,11 @@ export const AdminApp: React.FC = () => {
             bottom: 0,
             backgroundColor: COLORS.white,
             boxShadow: SHADOWS.md,
-            padding: `${SPACING.sm}px ${SPACING.lg}px`,
+            padding: '5px 16px 10px',
             zIndex: 100,
+            overflow: 'visible',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
           }}
         >
           <div
@@ -1485,18 +1489,104 @@ export const AdminApp: React.FC = () => {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              gap: SPACING.xs,
+              gap: 0,
+              position: 'relative',
+              minHeight: 60,
             }}
           >
-            {tabs.slice(0, 2).map((tab) => tabButton(tab))}
-            <div style={{ flex: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {tabs.slice(0, 2).map((tab) => {
+              const isActive = tab.id === activeTab;
+              const showRequestsBadge = tab.id === 'requests' && pendingRequestsCount > 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    flex: 1,
+                    background: 'none',
+                    border: 'none',
+                    outline: 'none',
+                    padding: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {tab.icon}
+                    {showRequestsBadge && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          minWidth: 18,
+                          height: 18,
+                          paddingLeft: 4,
+                          paddingRight: 4,
+                          borderRadius: 9,
+                          backgroundColor: COLORS.red,
+                          color: COLORS.white,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isActive && (
+                      <div
+                        style={{
+                          width: 18,
+                          height: 2,
+                          borderRadius: 999,
+                          backgroundColor: COLORS.primary,
+                        }}
+                      />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+            <div
+              style={{
+                flex: 1,
+                position: 'relative',
+                height: 1,
+                display: 'flex',
+                justifyContent: 'center',
+                alignSelf: 'flex-start',
+              }}
+            >
               <button
                 type="button"
-                onClick={() => {}}
                 aria-label="Add"
                 style={{
-                  width: 56,
-                  height: 56,
+                  position: 'absolute',
+                  left: '50%',
+                  top: 0,
+                  transform: 'translate(-50%, -38%)',
+                  width: 58,
+                  height: 58,
                   borderRadius: '50%',
                   backgroundColor: COLORS.primary,
                   border: 'none',
@@ -1507,13 +1597,85 @@ export const AdminApp: React.FC = () => {
                   cursor: 'default',
                 }}
               >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1C1C1E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
             </div>
-            {tabs.slice(2).map((tab) => tabButton(tab))}
+            {tabs.slice(2).map((tab) => {
+              const isActive = tab.id === activeTab;
+              const showRequestsBadge = tab.id === 'requests' && pendingRequestsCount > 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  style={{
+                    flex: 1,
+                    background: 'none',
+                    border: 'none',
+                    outline: 'none',
+                    padding: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    {tab.icon}
+                    {showRequestsBadge && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: -4,
+                          right: -4,
+                          minWidth: 18,
+                          height: 18,
+                          paddingLeft: 4,
+                          paddingRight: 4,
+                          borderRadius: 9,
+                          backgroundColor: COLORS.red,
+                          color: COLORS.white,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                      </span>
+                    )}
+                  </span>
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isActive && (
+                      <div
+                        style={{
+                          width: 18,
+                          height: 2,
+                          borderRadius: 999,
+                          backgroundColor: COLORS.primary,
+                        }}
+                      />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </nav>
       )}

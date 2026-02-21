@@ -14,6 +14,10 @@ export default function LoginPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    if (!supabase) {
+      setError('Auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -31,6 +35,10 @@ export default function LoginPage() {
 
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
+    if (!supabase) {
+      setError('Auth is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+      return;
+    }
     setError(null);
     setLoading(true);
     try {

@@ -116,189 +116,53 @@ export function StudentShell() {
             minHeight: 60,
           }}
         >
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {tabs.slice(0, 1).map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  type="button"
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                type="button"
+                style={{
+                  flex: 1,
+                  background: 'none',
+                  border: 'none',
+                  outline: 'none',
+                  padding: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 2,
+                  color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
+                <span
                   style={{
-                    flex: 1,
-                    background: 'none',
-                    border: 'none',
-                    outline: 'none',
-                    padding: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
+                    ...TYPOGRAPHY.label,
+                    fontSize: 11,
+                    fontWeight: isActive ? 600 : 500,
                     color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
-                  <span
-                    style={{
-                      ...TYPOGRAPHY.label,
-                      fontSize: 11,
-                      fontWeight: isActive ? 600 : 500,
-                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isActive && (
-                      <div
-                        style={{
-                          width: 18,
-                          height: 2,
-                          borderRadius: 999,
-                          backgroundColor: COLORS.primary,
-                        }}
-                      />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {tabs.slice(1, 2).map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  type="button"
-                  style={{
-                    flex: 1,
-                    background: 'none',
-                    border: 'none',
-                    outline: 'none',
-                    padding: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
-                  <span
-                    style={{
-                      ...TYPOGRAPHY.label,
-                      fontSize: 11,
-                      fontWeight: isActive ? 600 : 500,
-                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isActive && (
-                      <div
-                        style={{
-                          width: 18,
-                          height: 2,
-                          borderRadius: 999,
-                          backgroundColor: COLORS.primary,
-                        }}
-                      />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div
-            style={{
-              flex: 1,
-              position: 'relative',
-              height: 1,
-              display: 'flex',
-              justifyContent: 'center',
-              alignSelf: 'flex-start',
-            }}
-          >
-            <button
-              type="button"
-              aria-label="Add"
-              style={{
-                position: 'absolute',
-                left: '50%',
-                top: 0,
-                transform: 'translate(-50%, -38%)',
-                width: 58,
-                height: 58,
-                borderRadius: '50%',
-                backgroundColor: COLORS.primary,
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
-                cursor: 'default',
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </button>
-          </div>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {tabs.slice(2, 3).map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  type="button"
-                  style={{
-                    flex: 1,
-                    background: 'none',
-                    border: 'none',
-                    outline: 'none',
-                    padding: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 2,
-                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                  }}
-                >
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
-                  <span
-                    style={{
-                      ...TYPOGRAPHY.label,
-                      fontSize: 11,
-                      fontWeight: isActive ? 600 : 500,
-                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {tab.label}
-                  </span>
-                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {isActive && (
-                      <div
-                        style={{
-                          width: 18,
-                          height: 2,
-                          borderRadius: 999,
-                          backgroundColor: COLORS.primary,
-                        }}
-                      />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                  {tab.label}
+                </span>
+                <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isActive && (
+                    <div
+                      style={{
+                        width: 18,
+                        height: 2,
+                        borderRadius: 999,
+                        backgroundColor: COLORS.primary,
+                      }}
+                    />
+                  )}
+                </div>
+              </button>
+            );
+          })}
           <div
             style={{
               flex: 1,
