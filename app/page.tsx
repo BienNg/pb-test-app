@@ -1,5 +1,10 @@
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { StudentShell } from '@/components/StudentShell';
 
 export default function HomePage() {
-  return <StudentShell />;
+  return (
+    <ProtectedRoute>
+      <StudentShell />
+    </ProtectedRoute>
+  );
 }
