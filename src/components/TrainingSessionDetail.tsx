@@ -1,6 +1,13 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
-import { IconCalendar, IconClock, IconVolume2, IconVolumeX } from './Icons';
+import {
+  IconCalendar,
+  IconClock,
+  IconVolume2,
+  IconVolumeX,
+  IconChevronLeft,
+  IconChevronRight,
+} from './Icons';
 import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -100,6 +107,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
+  const [commentSort, setCommentSort] = useState<CommentSortMode>('date-desc');
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
     if (sessionsProp != null) return [];
@@ -281,6 +290,61 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     },
     [isYoutube, videoDuration, seekTo]
   );
+
+  const sortedCommentTimestamps = useMemo(
+    () =>
+      [...new Set(comments.filter((c) => c.timestampSeconds != null).map((c) => c.timestampSeconds!))].sort(
+        (a, b) => a - b
+      ),
+    [comments]
+  );
+
+  const getCurrentTime = useCallback(() => {
+    if (isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
+      return playerRef.current.getCurrentTime();
+    }
+    return videoRef.current?.currentTime ?? 0;
+  }, [isYoutube]);
+
+  const goToPrevTimestamp = useCallback(() => {
+    if (sortedCommentTimestamps.length === 0) return;
+    const now = getCurrentTime();
+    const prev = sortedCommentTimestamps.filter((t) => t < now - 0.5).pop();
+    const target = prev ?? sortedCommentTimestamps[sortedCommentTimestamps.length - 1];
+    seekTo(target);
+  }, [sortedCommentTimestamps, getCurrentTime, seekTo]);
+
+  const goToNextTimestamp = useCallback(() => {
+    if (sortedCommentTimestamps.length === 0) return;
+    const now = getCurrentTime();
+    const next = sortedCommentTimestamps.find((t) => t > now + 0.5);
+    const target = next ?? sortedCommentTimestamps[0];
+    seekTo(target);
+  }, [sortedCommentTimestamps, getCurrentTime, seekTo]);
+
+  const sortedComments = useMemo(() => {
+    if (commentSort === 'date-asc' || commentSort === 'date-desc') {
+      const desc = commentSort === 'date-desc';
+      return [...comments].map((c, i) => ({ c, i })).sort((a, b) => {
+        const isoA = a.c.createdAtIso ?? '';
+        const isoB = b.c.createdAtIso ?? '';
+        if (isoA && isoB) return desc ? isoB.localeCompare(isoA) : isoA.localeCompare(isoB);
+        return a.i - b.i;
+      }).map(({ c }) => c);
+    }
+    const asc = commentSort === 'timestamp-asc';
+    return [...comments].sort((a, b) => {
+      const hasA = a.timestampSeconds != null ? 1 : 0;
+      const hasB = b.timestampSeconds != null ? 1 : 0;
+      if (hasA !== hasB) return hasB - hasA;
+      if (hasA && hasB) {
+        const ta = a.timestampSeconds ?? 0;
+        const tb = b.timestampSeconds ?? 0;
+        return asc ? ta - tb : tb - ta;
+      }
+      return 0;
+    });
+  }, [comments, commentSort]);
 
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -930,6 +994,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   <button
                     type="button"
+                    onClick={goToPrevTimestamp}
+                    disabled={sortedCommentTimestamps.length === 0}
+                    style={{
+                      width: 36,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: sortedCommentTimestamps.length === 0 ? 'default' : 'pointer',
+                      padding: 0,
+                      opacity: sortedCommentTimestamps.length === 0 ? 0.5 : 1,
+                    }}
+                    aria-label="Previous comment timestamp"
+                    title="Previous timestamp"
+                  >
+                    <IconChevronLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => skipBy(-10)}
                     style={{
                       width: 36,
@@ -1020,6 +1107,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   >
                     +10s
                   </button>
+                  <button
+                    type="button"
+                    onClick={goToNextTimestamp}
+                    disabled={sortedCommentTimestamps.length === 0}
+                    style={{
+                      width: 36,
+                      height: 28,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: sortedCommentTimestamps.length === 0 ? 'default' : 'pointer',
+                      padding: 0,
+                      opacity: sortedCommentTimestamps.length === 0 ? 0.5 : 1,
+                    }}
+                    aria-label="Next comment timestamp"
+                    title="Next timestamp"
+                  >
+                    <IconChevronRight size={14} />
+                  </button>
                 </div>
               </div>
               )}
@@ -1035,18 +1145,69 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               maxHeight: isNarrow ? 'none' : 520,
             }}
           >
-            <h3
+            <div
               style={{
-                ...TYPOGRAPHY.bodySmall,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                color: COLORS.textSecondary,
-                margin: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: SPACING.sm,
                 marginBottom: SPACING.sm,
               }}
             >
-              Comments
-            </h3>
+              <h3
+                style={{
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  color: COLORS.textSecondary,
+                  margin: 0,
+                }}
+              >
+                Comments
+              </h3>
+              <button
+                type="button"
+                onClick={() =>
+                  setCommentSort((s) =>
+                    s === 'date-desc'
+                      ? 'date-asc'
+                      : s === 'date-asc'
+                        ? 'timestamp-asc'
+                        : s === 'timestamp-asc'
+                          ? 'timestamp-desc'
+                          : 'date-desc'
+                  )
+                }
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '4px 8px',
+                  borderRadius: RADIUS.sm,
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  color: COLORS.textSecondary,
+                  ...TYPOGRAPHY.label,
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+                aria-label={`Sort: ${commentSort}`}
+                title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
+              >
+                {commentSort.startsWith('date') ? (
+                  <>
+                    <IconCalendar size={12} />
+                    Date {commentSort === 'date-desc' ? '↓' : '↑'}
+                  </>
+                ) : (
+                  <>
+                    <IconClock size={12} />
+                    Time {commentSort === 'timestamp-desc' ? '↓' : '↑'}
+                  </>
+                )}
+              </button>
+            </div>
 
             <div
               style={{
@@ -1071,7 +1232,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   No comments yet. Be the first to leave a note about this session.
                 </p>
               ) : (
-                comments.map((comment) => {
+                sortedComments.map((comment) => {
                   const isCoach = comment.role === 'Coach';
 
                   return (
