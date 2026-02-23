@@ -406,6 +406,20 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       .finally(() => setLoadingSessions(false));
   }, [selectedStudent?.id]);
 
+  const handleSaveVideoUrl = async (sid: string, youtubeUrl: string) => {
+    const supabase = createClient();
+    if (!supabase) throw new Error('Supabase not configured');
+    const { error } = await supabase
+      .from('sessions')
+      .update({ youtube_url: youtubeUrl })
+      .eq('id', sid);
+    if (error) throw new Error(error.message);
+    if (selectedStudent) {
+      const next = await fetchSessionsForStudent(supabase, selectedStudent.id);
+      setSessionsForStudent(next);
+    }
+  };
+
   // When viewing a training session detail (from progress page), show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
@@ -414,6 +428,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+          onSaveVideoUrl={handleSaveVideoUrl}
         />
       </div>
     );

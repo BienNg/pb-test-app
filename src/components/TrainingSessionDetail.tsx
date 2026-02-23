@@ -51,17 +51,27 @@ export interface TrainingSessionDetailProps {
   onBack: () => void;
   /** When provided (e.g. sessions from DB for a student), lookup session from this list. Otherwise uses TRAINING_SESSIONS. */
   sessions?: TrainingSession[];
+  /** When provided (e.g. admin), allows adding a YouTube URL when session has no video. Called with session id and the new YouTube URL; persist to sessions.youtube_url. */
+  onSaveVideoUrl?: (sessionId: string, youtubeUrl: string) => Promise<void>;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   sessionId,
   onBack,
   sessions: sessionsProp,
+  onSaveVideoUrl,
 }) => {
   const sessionList = sessionsProp ?? TRAINING_SESSIONS;
   const session = sessionList.find((s) => s.id === sessionId);
+  const hasVideoUrl = !!(session?.videoUrl?.trim());
   const youtubeVideoId = session ? getYoutubeVideoId(session.videoUrl) : null;
   const isYoutube = !!youtubeVideoId;
+  const canAddVideoUrl = !!onSaveVideoUrl;
+
+  const [showAddUrlForm, setShowAddUrlForm] = useState(false);
+  const [addUrlDraft, setAddUrlDraft] = useState('');
+  const [addUrlSaving, setAddUrlSaving] = useState(false);
+  const [addUrlError, setAddUrlError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
@@ -383,7 +393,162 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               }}
             >
               <div style={{ position: 'relative', width: '100%' }}>
-              {isYoutube && youtubeVideoId ? (
+              {!hasVideoUrl ? (
+                canAddVideoUrl ? (
+                  <div
+                    style={{
+                      width: '100%',
+                      aspectRatio: '16 / 9',
+                      minHeight: 200,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: SPACING.lg,
+                      gap: SPACING.md,
+                    }}
+                  >
+                    {!showAddUrlForm ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAddUrlForm(true);
+                          setAddUrlError(null);
+                          setAddUrlDraft('');
+                        }}
+                        style={{
+                          padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                          borderRadius: RADIUS.md,
+                          border: `2px solid ${COLORS.primary}`,
+                          backgroundColor: 'rgba(49, 203, 0, 0.15)',
+                          color: COLORS.primary,
+                          ...TYPOGRAPHY.labelMed,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Add Video URL
+                      </button>
+                    ) : (
+                      <>
+                        <p
+                          style={{
+                            margin: 0,
+                            ...TYPOGRAPHY.bodySmall,
+                            color: 'rgba(255,255,255,0.9)',
+                          }}
+                        >
+                          Enter a YouTube URL only
+                        </p>
+                        <input
+                          type="url"
+                          value={addUrlDraft}
+                          onChange={(e) => {
+                            setAddUrlDraft(e.target.value);
+                            setAddUrlError(null);
+                          }}
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          style={{
+                            width: '100%',
+                            maxWidth: 400,
+                            padding: `${SPACING.sm}px ${SPACING.md}px`,
+                            borderRadius: RADIUS.sm,
+                            border: `1px solid rgba(255,255,255,0.3)`,
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                            color: COLORS.textPrimary,
+                            ...TYPOGRAPHY.bodySmall,
+                          }}
+                        />
+                        {addUrlError && (
+                          <p style={{ margin: 0, ...TYPOGRAPHY.bodySmall, color: '#ff6b6b' }}>
+                            {addUrlError}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: SPACING.sm }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAddUrlForm(false);
+                              setAddUrlDraft('');
+                              setAddUrlError(null);
+                            }}
+                            style={{
+                              padding: `${SPACING.xs}px ${SPACING.md}px`,
+                              borderRadius: RADIUS.sm,
+                              border: 'none',
+                              backgroundColor: 'rgba(255,255,255,0.2)',
+                              color: 'rgba(255,255,255,0.95)',
+                              ...TYPOGRAPHY.label,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            disabled={addUrlSaving || !addUrlDraft.trim()}
+                            onClick={async () => {
+                              const trimmed = addUrlDraft.trim();
+                              if (!trimmed || !session) return;
+                              const vid = getYoutubeVideoId(trimmed);
+                              if (!vid) {
+                                setAddUrlError('Only YouTube URLs are allowed (e.g. youtube.com/watch?v=... or youtu.be/...)');
+                                return;
+                              }
+                              setAddUrlError(null);
+                              setAddUrlSaving(true);
+                              try {
+                                await onSaveVideoUrl!(session.id, trimmed);
+                                setShowAddUrlForm(false);
+                                setAddUrlDraft('');
+                              } catch (e) {
+                                setAddUrlError(e instanceof Error ? e.message : 'Failed to save URL');
+                              } finally {
+                                setAddUrlSaving(false);
+                              }
+                            }}
+                            style={{
+                              padding: `${SPACING.xs}px ${SPACING.md}px`,
+                              borderRadius: RADIUS.sm,
+                              border: 'none',
+                              backgroundColor: COLORS.primary,
+                              color: COLORS.textPrimary,
+                              ...TYPOGRAPHY.label,
+                              fontWeight: 600,
+                              cursor: addUrlSaving ? 'default' : 'pointer',
+                              opacity: addUrlSaving ? 0.8 : 1,
+                            }}
+                          >
+                            {addUrlSaving ? 'Saving…' : 'Save'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      width: '100%',
+                      aspectRatio: '16 / 9',
+                      minHeight: 200,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: SPACING.lg,
+                    }}
+                  >
+                    <p
+                      style={{
+                        margin: 0,
+                        ...TYPOGRAPHY.bodySmall,
+                        color: 'rgba(255,255,255,0.7)',
+                      }}
+                    >
+                      No video for this session.
+                    </p>
+                  </div>
+                )
+              ) : isYoutube && youtubeVideoId ? (
                 <>
                   <div
                     ref={playerContainerRef}
