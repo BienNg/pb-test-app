@@ -1314,9 +1314,12 @@ export const AdminApp: React.FC = () => {
   const [supabaseStudents, setSupabaseStudents] = useState<{ id: string; name: string; email: string }[]>([]);
   const [supabaseStudentsLoading, setSupabaseStudentsLoading] = useState(false);
   const [supabaseStudentsError, setSupabaseStudentsError] = useState<string | null>(null);
+  const [addSessionSaving, setAddSessionSaving] = useState(false);
+  const [addSessionError, setAddSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (showAddSessionSheet) {
+      setAddSessionError(null);
       setAddSessionSheetAnimatedIn(false);
       const id = requestAnimationFrame(() => {
         requestAnimationFrame(() => setAddSessionSheetAnimatedIn(true));
@@ -1346,6 +1349,55 @@ export const AdminApp: React.FC = () => {
     setNewSessionStudentIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
+  };
+
+  const handleAddSession = async () => {
+    if (!canAddSession) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setAddSessionError('Supabase not configured');
+      return;
+    }
+    setAddSessionSaving(true);
+    setAddSessionError(null);
+    try {
+      const { data: sessionRow, error: sessionError } = await supabase
+        .from('sessions')
+        .insert({
+          date: newSessionDate,
+          youtube_url: newSessionYoutubeUrl.trim() || null,
+          coach_id: newSessionCoachId,
+        })
+        .select('id')
+        .single();
+      if (sessionError) {
+        setAddSessionError(sessionError.message);
+        return;
+      }
+      const sessionId = sessionRow?.id;
+      if (!sessionId) {
+        setAddSessionError('Failed to create session');
+        return;
+      }
+      if (newSessionStudentIds.length > 0) {
+        const { error: studentsError } = await supabase.from('session_students').insert(
+          newSessionStudentIds.map((student_id) => ({ session_id: sessionId, student_id }))
+        );
+        if (studentsError) {
+          setAddSessionError(studentsError.message);
+          return;
+        }
+      }
+      setNewSessionDate(new Date().toISOString().slice(0, 10));
+      setNewSessionYoutubeUrl('');
+      setNewSessionStudentIds([]);
+      setNewSessionCoachId('');
+      closeAddSessionSheet();
+    } catch (err) {
+      setAddSessionError(err instanceof Error ? err.message : 'Failed to add session');
+    } finally {
+      setAddSessionSaving(false);
+    }
   };
 
   // Fetch students from Supabase profiles when add-session sheet opens
@@ -1468,6 +1520,11 @@ export const AdminApp: React.FC = () => {
   ];
 
   const pendingRequestsCount = requestedSessions.length;
+
+  const canAddSession =
+    !!newSessionDate &&
+    !!newSessionCoachId &&
+    newSessionStudentIds.length > 0;
 
   const tabButton = (tab: (typeof tabs)[0]) => {
     const isActive = tab.id === activeTab;
@@ -1609,6 +1666,33 @@ export const AdminApp: React.FC = () => {
             Admin
           </div>
           {tabs.map((tab) => tabButton(tab))}
+          <button
+            type="button"
+            aria-label="Add session"
+            onClick={() => setShowAddSessionSheet(true)}
+            style={{
+              marginTop: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: SPACING.sm,
+              padding: SPACING.md,
+              borderRadius: RADIUS.md,
+              backgroundColor: COLORS.primary,
+              color: COLORS.white,
+              border: 'none',
+              ...TYPOGRAPHY.label,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(49, 203, 0, 0.3)',
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add session
+          </button>
         </aside>
       )}
 
@@ -2033,6 +2117,20 @@ export const AdminApp: React.FC = () => {
               </div>
             </div>
 
+            {addSessionError && (
+              <div
+                style={{
+                  marginTop: SPACING.lg,
+                  padding: SPACING.md,
+                  borderRadius: RADIUS.md,
+                  backgroundColor: 'rgba(255,107,107,0.1)',
+                  color: COLORS.red,
+                  ...TYPOGRAPHY.bodySmall,
+                }}
+              >
+                {addSessionError}
+              </div>
+            )}
             <div
               style={{
                 display: 'flex',
@@ -2043,6 +2141,7 @@ export const AdminApp: React.FC = () => {
               <button
                 type="button"
                 onClick={closeAddSessionSheet}
+                disabled={addSessionSaving}
                 style={{
                   flex: 1,
                   padding: `${SPACING.sm}px ${SPACING.lg}px`,
@@ -2052,31 +2151,30 @@ export const AdminApp: React.FC = () => {
                   color: COLORS.textSecondary,
                   ...TYPOGRAPHY.bodySmall,
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: addSessionSaving ? 'not-allowed' : 'pointer',
                 }}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  // View only – no backend logic yet
-                  closeAddSessionSheet();
-                }}
+                disabled={!canAddSession || addSessionSaving}
+                onClick={handleAddSession}
                 style={{
                   flex: 1,
                   padding: `${SPACING.sm}px ${SPACING.lg}px`,
                   borderRadius: 9999,
                   border: 'none',
-                  backgroundColor: COLORS.primary,
+                  backgroundColor: canAddSession && !addSessionSaving ? COLORS.primary : COLORS.textMuted,
                   color: '#fff',
                   ...TYPOGRAPHY.bodySmall,
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
+                  cursor: canAddSession && !addSessionSaving ? 'pointer' : 'not-allowed',
+                  boxShadow: canAddSession && !addSessionSaving ? '0 4px 12px rgba(49, 203, 0, 0.4)' : 'none',
+                  opacity: canAddSession && !addSessionSaving ? 1 : 0.7,
                 }}
               >
-                Add session
+                {addSessionSaving ? 'Saving…' : 'Add session'}
               </button>
             </div>
           </div>
