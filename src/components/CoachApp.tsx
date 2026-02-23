@@ -23,14 +23,14 @@ export const CoachApp: React.FC = () => {
 
   useEffect(() => {
     if (!selectedStudent) {
-      setSessionsForStudent([]);
+      queueMicrotask(() => setSessionsForStudent([]));
       return;
     }
-    setLoadingSessions(true);
+    queueMicrotask(() => setLoadingSessions(true));
     fetchSessionsForStudent(createClient(), selectedStudent.id)
       .then(setSessionsForStudent)
       .finally(() => setLoadingSessions(false));
-  }, [selectedStudent?.id]);
+  }, [selectedStudent, selectedStudent?.id]);
 
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {

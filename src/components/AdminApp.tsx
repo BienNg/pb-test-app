@@ -3,7 +3,7 @@
 import React, { type ReactNode, useState, useEffect, useRef } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
-import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
+import { IconUsers, IconCircle, IconCalendar, IconCheck } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { MyProgressPage, type TrainingSession } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
@@ -359,19 +359,23 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) {
-      setError('Supabase not configured');
-      setLoading(false);
+      queueMicrotask(() => {
+        setError('Supabase not configured');
+        setLoading(false);
+      });
       return;
     }
-    setLoading(true);
-    setError(null);
-    supabase
+    queueMicrotask(() => {
+      setLoading(true);
+      setError(null);
+    });
+    void supabase
       .from('profiles')
       .select('id, email, full_name, role')
-      .then(({ data, err }) => {
+      .then(({ data, error }) => {
         setLoading(false);
-        if (err) {
-          setError(err.message);
+        if (error) {
+          setError(error.message);
           setStudents([]);
           return;
         }
@@ -387,7 +391,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           }))
         );
       })
-      .catch((err) => {
+      .then(undefined, (err: unknown) => {
         setLoading(false);
         setError(err instanceof Error ? err.message : 'Failed to load students');
         setStudents([]);
@@ -397,14 +401,14 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When a student is selected, fetch their sessions from DB (session_students -> sessions)
   useEffect(() => {
     if (!selectedStudent) {
-      setSessionsForStudent([]);
+      queueMicrotask(() => setSessionsForStudent([]));
       return;
     }
-    setLoadingSessions(true);
+    queueMicrotask(() => setLoadingSessions(true));
     fetchSessionsForStudent(createClient(), selectedStudent.id)
       .then(setSessionsForStudent)
       .finally(() => setLoadingSessions(false));
-  }, [selectedStudent?.id]);
+  }, [selectedStudent, selectedStudent?.id]);
 
   const handleSaveVideoUrl = async (sid: string, youtubeUrl: string) => {
     const supabase = createClient();
@@ -1414,7 +1418,7 @@ export const AdminApp: React.FC = () => {
     }
     setSupabaseStudentsLoading(true);
     setSupabaseStudentsError(null);
-    supabase
+    void supabase
       .from('profiles')
       .select('id, email, full_name, role')
       .then(({ data, error }) => {
@@ -1434,7 +1438,7 @@ export const AdminApp: React.FC = () => {
           }))
         );
       })
-      .catch((err) => {
+      .then(undefined, (err: unknown) => {
         setSupabaseStudentsLoading(false);
         setSupabaseStudentsError(err instanceof Error ? err.message : 'Failed to load students');
         setSupabaseStudents([]);

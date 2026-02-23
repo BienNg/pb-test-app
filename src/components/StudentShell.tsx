@@ -11,7 +11,7 @@ type TabId = 'home' | 'progress' | 'library';
 
 export function StudentShell() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
 
   const renderContent = () => {
     if (activeTrainingSessionId != null) {
