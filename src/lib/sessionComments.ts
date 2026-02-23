@@ -1,0 +1,197 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SessionComment } from '@/components/MyProgressPage';
+
+export type SessionCommentRow = {
+  id: string;
+  session_id: string;
+  author_id: string;
+  text: string;
+  timestamp_seconds: number | null;
+  created_at: string;
+};
+
+export type SessionCommentWithAuthor = SessionCommentRow & {
+  author?: { id: string; full_name: string | null; role: string | null } | null;
+  mentions?: { profile_id: string; full_name: string | null }[];
+};
+
+/** Format created_at to relative time for display */
+function formatRelativeTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const sec = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (sec < 60) return 'Just now';
+  if (sec < 3600) return `${Math.floor(sec / 60)}m ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)}h ago`;
+  if (sec < 604800) return `${Math.floor(sec / 86400)}d ago`;
+  if (sec < 2592000) return `${Math.floor(sec / 604800)}w ago`;
+  return d.toLocaleDateString();
+}
+
+/** Map DB row + author + mentions to SessionComment (id as string for DB comments) */
+export function mapDbCommentToSessionComment(
+  row: SessionCommentWithAuthor,
+  currentUserId: string | null
+): SessionComment {
+  const authorName = row.author?.full_name?.trim() || 'Unknown';
+  const role = row.author?.role === 'coach' ? 'Coach' : currentUserId === row.author_id ? 'You' : (row.author?.role ?? 'Student');
+  const displayRole = role === 'Coach' ? 'Coach' : role === 'You' ? 'You' : role;
+  return {
+    id: row.id,
+    author: authorName,
+    role: displayRole as 'Coach' | 'You',
+    createdAt: formatRelativeTime(row.created_at),
+    createdAtIso: row.created_at,
+    text: row.text,
+    timestampSeconds: row.timestamp_seconds ?? undefined,
+    taggedUsers: (row.mentions ?? []).map((m) => ({
+      id: m.profile_id,
+      name: m.full_name?.trim() || 'Unknown',
+    })),
+  };
+}
+
+/** Fetch all comments for a session (with author and mentions). Returns [] on error. */
+export async function fetchSessionComments(
+  supabase: SupabaseClient | null,
+  sessionId: string
+): Promise<SessionCommentWithAuthor[]> {
+  if (!supabase) return [];
+  const { data: comments, error: commentsError } = await supabase
+    .from('session_comments')
+    .select(`
+      id,
+      session_id,
+      author_id,
+      text,
+      timestamp_seconds,
+      created_at
+    `)
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+  if (commentsError || !comments) return [];
+  const rows = comments as SessionCommentRow[];
+  if (rows.length === 0) return [];
+
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name, role')
+    .in('id', authorIds);
+  const profileMap = new Map(
+    (profiles as { id: string; full_name: string | null; role: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
+  );
+
+  const { data: mentions } = await supabase
+    .from('session_comment_mentions')
+    .select('comment_id, profile_id')
+    .in('comment_id', rows.map((r) => r.id));
+  const mentionCommentIds = (mentions as { comment_id: string; profile_id: string }[] | null) ?? [];
+  const mentionedProfileIds = [...new Set(mentionCommentIds.map((m) => m.profile_id))];
+  const { data: mentionProfiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', mentionedProfileIds);
+  const mentionProfileMap = new Map(
+    (mentionProfiles as { id: string; full_name: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
+  );
+
+  const mentionsByComment = new Map<string, { profile_id: string; full_name: string | null }[]>();
+  for (const m of mentionCommentIds) {
+    const list = mentionsByComment.get(m.comment_id) ?? [];
+    list.push({
+      profile_id: m.profile_id,
+      full_name: mentionProfileMap.get(m.profile_id)?.full_name ?? null,
+    });
+    mentionsByComment.set(m.comment_id, list);
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    author: profileMap.get(r.author_id) ?? null,
+    mentions: mentionsByComment.get(r.id) ?? [],
+  }));
+}
+
+/** Insert a comment and optional mentions. Returns the new comment row or null on error. */
+export async function insertSessionComment(
+  supabase: SupabaseClient | null,
+  sessionId: string,
+  authorId: string,
+  text: string,
+  timestampSeconds: number | null,
+  mentionedProfileIds: string[] = []
+): Promise<SessionCommentWithAuthor | null> {
+  if (!supabase) return null;
+  const { data: inserted, error: insertError } = await supabase
+    .from('session_comments')
+    .insert({
+      session_id: sessionId,
+      author_id: authorId,
+      text,
+      timestamp_seconds: timestampSeconds,
+    })
+    .select('id, session_id, author_id, text, timestamp_seconds, created_at')
+    .single();
+  if (insertError || !inserted) return null;
+  const row = inserted as SessionCommentRow;
+  if (mentionedProfileIds.length > 0) {
+    await supabase.from('session_comment_mentions').insert(
+      mentionedProfileIds.map((profile_id) => ({
+        comment_id: row.id,
+        profile_id,
+      }))
+    );
+  }
+  const authorIds = [row.author_id, ...mentionedProfileIds];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name, role')
+    .in('id', authorIds);
+  const profileMap = new Map(
+    (profiles as { id: string; full_name: string | null; role: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
+  );
+  const mentions = mentionedProfileIds
+    .filter((id) => id !== row.author_id)
+    .map((profile_id) => ({
+      profile_id,
+      full_name: profileMap.get(profile_id)?.full_name ?? null,
+    }));
+  return {
+    ...row,
+    author: profileMap.get(row.author_id) ?? null,
+    mentions,
+  };
+}
+
+/** Fetch profiles that can be tagged in a session (students in session + coach). */
+export async function fetchSessionTaggableProfiles(
+  supabase: SupabaseClient | null,
+  sessionId: string
+): Promise<{ id: string; name: string }[]> {
+  if (!supabase) return [];
+  const { data: sessionRow, error: sessionError } = await supabase
+    .from('sessions')
+    .select('coach_id')
+    .eq('id', sessionId)
+    .single();
+  if (sessionError || !sessionRow) return [];
+  const { data: studentLinks } = await supabase
+    .from('session_students')
+    .select('student_id')
+    .eq('session_id', sessionId);
+  const studentIds = (studentLinks as { student_id: string }[] | null)?.map((r) => r.student_id) ?? [];
+  const coachId = (sessionRow as { coach_id: string }).coach_id;
+  const ids = [...new Set([coachId, ...studentIds])].filter(Boolean);
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name')
+    .in('id', ids);
+  return (
+    (profiles as { id: string; full_name: string | null }[] | null)?.map((p) => ({
+      id: p.id,
+      name: p.full_name?.trim() || 'Unknown',
+    })) ?? []
+  );
+}

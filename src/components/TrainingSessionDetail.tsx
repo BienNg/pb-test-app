@@ -2,6 +2,14 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import { IconCalendar, IconClock, IconVolume2, IconVolumeX } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
+import { createClient } from '@/lib/supabase/client';
+import {
+  fetchSessionComments,
+  insertSessionComment,
+  mapDbCommentToSessionComment,
+  fetchSessionTaggableProfiles,
+} from '@/lib/sessionComments';
+import { useAuth } from './providers/AuthProvider';
 
 declare global {
   interface Window {
@@ -61,12 +69,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   sessions: sessionsProp,
   onSaveVideoUrl,
 }) => {
+  const { user } = useAuth();
   const sessionList = sessionsProp ?? TRAINING_SESSIONS;
   const session = sessionList.find((s) => s.id === sessionId);
   const hasVideoUrl = !!(session?.videoUrl?.trim());
   const youtubeVideoId = session ? getYoutubeVideoId(session.videoUrl) : null;
   const isYoutube = !!youtubeVideoId;
   const canAddVideoUrl = !!onSaveVideoUrl;
+  const isDbSession = sessionsProp != null && session != null;
 
   const [showAddUrlForm, setShowAddUrlForm] = useState(false);
   const [addUrlDraft, setAddUrlDraft] = useState('');
@@ -85,8 +95,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [postingComment, setPostingComment] = useState(false);
+  const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
+  const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
+    if (sessionsProp != null) return [];
     if (session.id === '1') {
       return [
         { id: 1, author: 'Coach Riley', role: 'Coach', createdAt: '2h ago', text: 'Great use of your split step on wide balls.', timestampSeconds: 492 },
@@ -114,6 +130,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       window.removeEventListener('resize', updateLayout);
     };
   }, []);
+
+  // Load comments and taggable profiles when viewing a DB session
+  useEffect(() => {
+    if (!isDbSession || !sessionId) return;
+    const supabase = createClient();
+    setCommentsLoading(true);
+    Promise.all([
+      fetchSessionComments(supabase, sessionId),
+      fetchSessionTaggableProfiles(supabase, sessionId),
+    ])
+      .then(([rows, taggable]) => {
+        setComments(rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null)));
+        setTaggableProfiles(taggable);
+      })
+      .finally(() => setCommentsLoading(false));
+  }, [isDbSession, sessionId, user?.id]);
 
   useEffect(() => {
     const t = setTimeout(() => setVideoError(null), 0);
@@ -256,12 +288,37 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (!commentDraft.trim()) return;
 
     const currentTime = isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function'
       ? playerRef.current.getCurrentTime()
       : videoRef.current?.currentTime ?? 0;
+    const timestampSeconds = includeTimestamp ? Math.round(currentTime) : null;
+
+    if (isDbSession && user?.id) {
+      const supabase = createClient();
+      setPostingComment(true);
+      try {
+        const inserted = await insertSessionComment(
+          supabase,
+          sessionId,
+          user.id,
+          commentDraft.trim(),
+          timestampSeconds,
+          selectedMentionIds
+        );
+        if (inserted) {
+          const mapped = mapDbCommentToSessionComment(inserted, user.id);
+          setComments((prev) => [...prev, mapped]);
+          setCommentDraft('');
+          setSelectedMentionIds([]);
+        }
+      } finally {
+        setPostingComment(false);
+      }
+      return;
+    }
 
     const newComment: SessionComment = {
       id: Date.now(),
@@ -269,9 +326,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       role: 'You',
       createdAt: 'Just now',
       text: commentDraft.trim(),
-      ...(includeTimestamp && { timestampSeconds: Math.round(currentTime) }),
+      ...(timestampSeconds != null && { timestampSeconds }),
     };
-
     setComments((prev) => [...prev, newComment]);
     setCommentDraft('');
   };
@@ -1000,7 +1056,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 marginBottom: SPACING.md,
               }}
             >
-              {comments.length === 0 ? (
+              {commentsLoading ? (
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
+                  Loading comments…
+                </p>
+              ) : comments.length === 0 ? (
                 <p
                   style={{
                     ...TYPOGRAPHY.bodySmall,
@@ -1091,6 +1151,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           {comment.createdAt}
                         </span>
                       </div>
+                      {comment.taggedUsers && comment.taggedUsers.length > 0 && (
+                        <div
+                          style={{
+                            marginTop: SPACING.xs,
+                            ...TYPOGRAPHY.label,
+                            color: COLORS.textSecondary,
+                            fontSize: 11,
+                          }}
+                        >
+                          Tagged: {comment.taggedUsers.map((u) => u.name).join(', ')}
+                        </div>
+                      )}
                       {comment.timestampSeconds != null && (
                         <button
                           type="button"
@@ -1209,6 +1281,119 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                 </div>
               </div>
+              {isDbSession && taggableProfiles.length > 0 && (
+                <div style={{ marginBottom: SPACING.sm, position: 'relative' }}>
+                  <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, marginRight: SPACING.sm }}>
+                    Tag:
+                  </span>
+                  {selectedMentionIds.length > 0 && (
+                    <span style={{ marginRight: SPACING.sm }}>
+                      {selectedMentionIds.map((id) => {
+                        const p = taggableProfiles.find((x) => x.id === id);
+                        return p ? (
+                          <span
+                            key={id}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              marginRight: 4,
+                              padding: '2px 8px',
+                              borderRadius: RADIUS.sm,
+                              backgroundColor: COLORS.primaryLight,
+                              color: COLORS.primary,
+                              ...TYPOGRAPHY.label,
+                              fontSize: 12,
+                            }}
+                          >
+                            {p.name}
+                            <button
+                              type="button"
+                              onClick={() => setSelectedMentionIds((prev) => prev.filter((x) => x !== id))}
+                              style={{
+                                marginLeft: 4,
+                                padding: 0,
+                                border: 'none',
+                                background: 'none',
+                                cursor: 'pointer',
+                                color: 'inherit',
+                                fontSize: 14,
+                                lineHeight: 1,
+                              }}
+                              aria-label={`Remove ${p.name}`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ) : null;
+                      })}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowTagDropdown((b) => !b)}
+                    style={{
+                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                      borderRadius: RADIUS.sm,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      backgroundColor: COLORS.cardBg,
+                      color: COLORS.textSecondary,
+                      ...TYPOGRAPHY.label,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    + Add person
+                  </button>
+                  {showTagDropdown && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: '100%',
+                        marginTop: 4,
+                        minWidth: 180,
+                        maxHeight: 200,
+                        overflowY: 'auto',
+                        backgroundColor: COLORS.cardBg,
+                        border: `1px solid ${COLORS.backgroundLight}`,
+                        borderRadius: RADIUS.sm,
+                        boxShadow: SHADOWS.light,
+                        zIndex: 10,
+                      }}
+                    >
+                      {taggableProfiles
+                        .filter((p) => !selectedMentionIds.includes(p.id))
+                        .map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMentionIds((prev) => [...prev, p.id]);
+                              setShowTagDropdown(false);
+                            }}
+                            style={{
+                              display: 'block',
+                              width: '100%',
+                              padding: `${SPACING.sm}px ${SPACING.md}px`,
+                              border: 'none',
+                              background: 'none',
+                              textAlign: 'left',
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      {taggableProfiles.filter((p) => !selectedMentionIds.includes(p.id)).length === 0 && (
+                        <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                          All selected
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 id="session-comment-input"
@@ -1230,8 +1415,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
-                  onClick={handleAddComment}
-                  disabled={!commentDraft.trim()}
+                  onClick={() => handleAddComment()}
+                  disabled={!commentDraft.trim() || postingComment}
                   style={{
                     padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
                     borderRadius: 999,
@@ -1251,7 +1436,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       'background-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out',
                   }}
                 >
-                  Post
+                  {postingComment ? 'Posting…' : 'Post'}
                 </button>
               </div>
             </div>

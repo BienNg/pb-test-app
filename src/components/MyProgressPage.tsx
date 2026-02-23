@@ -27,13 +27,17 @@ export interface TrainingSession {
 }
 
 export interface SessionComment {
-  id: number;
+  id: number | string;
   author: string;
-  role: 'Coach' | 'You';
+  role: 'Coach' | 'You' | string;
   createdAt: string;
   text: string;
   /** Timestamp in seconds - clicking jumps video to this point (Frame.io style) */
   timestampSeconds?: number;
+  /** ISO date string when from DB (optional) */
+  createdAtIso?: string;
+  /** Tagged/mentioned users when from DB */
+  taggedUsers?: { id: string; name: string }[];
 }
 
 export const TRAINING_SESSIONS: TrainingSession[] = [
