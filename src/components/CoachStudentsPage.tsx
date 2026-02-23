@@ -131,17 +131,26 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
 };
 
 interface CoachStudentsPageProps {
+  /** Page title (e.g. "Student Progress" or "All Students") */
+  title?: string;
+  /** Students to display. Pass from parent (e.g. coach mock list or admin Supabase list). */
   students?: StudentInfo[];
+  /** Called when a student card is clicked. */
   onSelectStudent: (student: StudentInfo) => void;
+  /** Optional: when provided, show "My Sessions" tab and use this to open a session. */
   onOpenSession?: (sessionId: number) => void;
+  /** When false, only show the students list (no Students | My Sessions tabs). Default true for coach, false for admin. */
+  showMySessionsTab?: boolean;
 }
 
 type SortField = 'name' | 'lessons' | 'lastActive' | 'level';
 
 export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
+  title = 'Student Progress',
   students = MOCK_STUDENTS,
   onSelectStudent,
   onOpenSession,
+  showMySessionsTab = true,
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
   const [selectedSubSegment, setSelectedSubSegment] = useState<'completed' | 'new'>('completed');
@@ -151,6 +160,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
   const sessions = TRAINING_SESSIONS;
+  const showStudentsOnly = !showMySessionsTab;
 
   const filteredAndSortedStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -190,10 +200,11 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
       <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ marginBottom: SPACING.xl }}>
           <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xl }}>
-            Student Progress
+            {title}
           </h1>
 
-          {/* Segmented Control */}
+          {/* Segmented Control - only when showing My Sessions tab */}
+          {!showStudentsOnly && (
           <div
             style={{
               display: 'flex',
@@ -289,9 +300,10 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
               My Sessions
             </button>
           </div>
+          )}
 
           {/* Sub Segmented Control - only shown when My Sessions is selected */}
-          {selectedSegment === 'mySession' && (
+          {!showStudentsOnly && selectedSegment === 'mySession' && (
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SPACING.lg }}>
               <div
                 style={{
@@ -394,8 +406,8 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
           )}
         </div>
 
-        {/* Content based on selected segment */}
-        {selectedSegment === 'students' && (
+        {/* Content based on selected segment (or always students list when showMySessionsTab is false) */}
+        {(showStudentsOnly || selectedSegment === 'students') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.lg }}>
             {/* Search */}
             <div
@@ -558,7 +570,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
           </div>
         )}
 
-        {selectedSegment === 'mySession' && (
+        {!showStudentsOnly && selectedSegment === 'mySession' && (
           <div style={{ marginBottom: SPACING.xl }}>
             {selectedSubSegment === 'completed' && (
               <div

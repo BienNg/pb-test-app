@@ -4,7 +4,9 @@ import React, { type ReactNode, useState, useEffect, useRef } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
-import type { StudentInfo } from './CoachStudentsPage';
+import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
+import { MyProgressPage } from './MyProgressPage';
+import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
@@ -348,6 +350,8 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -387,6 +391,31 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       });
   }, []);
 
+  // When viewing a training session detail (from progress page), show full-screen overlay
+  if (activeTrainingSessionId != null) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+        <TrainingSessionDetail
+          sessionId={activeTrainingSessionId}
+          onBack={() => setActiveTrainingSessionId(null)}
+        />
+      </div>
+    );
+  }
+
+  // When viewing a student's progress, show same view as coach (MyProgressPage with Your Sessions / DUPR Coach)
+  if (selectedStudent) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+        <MyProgressPage
+          title={`${selectedStudent.name}'s Progress`}
+          onBack={() => setSelectedStudent(null)}
+          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -398,79 +427,21 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
         overflowX: 'hidden',
       }}
     >
-      <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ marginBottom: SPACING.xl }}>
-          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
-            All Students
-          </h1>
-          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            {loading ? 'Loading…' : error ? 'Could not load students.' : `${students.length} students on the platform.`}
-          </p>
+      {error && (
+        <div style={{ padding: SPACING.lg, marginBottom: SPACING.lg, background: 'rgba(255,107,107,0.1)', borderRadius: RADIUS.md, color: COLORS.red, margin: SPACING.md }}>
+          {error}
         </div>
-
-        {error && (
-          <div style={{ padding: SPACING.lg, marginBottom: SPACING.lg, background: 'rgba(255,107,107,0.1)', borderRadius: RADIUS.md, color: COLORS.red }}>
-            {error}
-          </div>
-        )}
-
-        {loading ? (
-          <div style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textSecondary }}>Loading students…</div>
-        ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: isDesktop ? SPACING.lg : SPACING.md,
-            }}
-          >
-            {students.length === 0 && !error ? (
-              <div style={{ gridColumn: '1 / -1', padding: SPACING.xl, ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
-                No students yet. Add accounts in Supabase Auth; they will appear here once they have a profile.
-              </div>
-            ) : (
-              students.map((student) => (
-                <Card key={student.id} padding={SPACING.lg}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
-                    <div
-                      style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: RADIUS.circle,
-                        backgroundColor: COLORS.lavender,
-                        color: COLORS.textPrimary,
-                        flexShrink: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {student.avatar ?? <IconUser size={24} />}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
-                        {student.name}
-                      </h3>
-                      <div style={{ display: 'flex', gap: SPACING.lg, marginTop: SPACING.sm }}>
-                        {student.lessonsCompleted != null && (
-                          <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
-                            {student.lessonsCompleted} lessons
-                          </span>
-                        )}
-                        {student.lastActive && (
-                          <span style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted }}>
-                            Last active: {student.lastActive}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
-        )}
-      </div>
+      )}
+      {loading ? (
+        <div style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textSecondary }}>Loading students…</div>
+      ) : (
+        <CoachStudentsPage
+          title="Student Progress"
+          students={students}
+          onSelectStudent={setSelectedStudent}
+          showMySessionsTab={false}
+        />
+      )}
     </div>
   );
 }
