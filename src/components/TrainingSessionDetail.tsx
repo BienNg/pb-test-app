@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import { IconCalendar, IconClock, IconVolume2, IconVolumeX } from './Icons';
-import { TRAINING_SESSIONS, type SessionComment } from './MyProgressPage';
+import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
 
 declare global {
   interface Window {
@@ -47,15 +47,19 @@ function getYoutubeVideoId(url: string): string | null {
 }
 
 export interface TrainingSessionDetailProps {
-  sessionId: number;
+  sessionId: string;
   onBack: () => void;
+  /** When provided (e.g. sessions from DB for a student), lookup session from this list. Otherwise uses TRAINING_SESSIONS. */
+  sessions?: TrainingSession[];
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   sessionId,
   onBack,
+  sessions: sessionsProp,
 }) => {
-  const session = TRAINING_SESSIONS.find((s) => s.id === sessionId);
+  const sessionList = sessionsProp ?? TRAINING_SESSIONS;
+  const session = sessionList.find((s) => s.id === sessionId);
   const youtubeVideoId = session ? getYoutubeVideoId(session.videoUrl) : null;
   const isYoutube = !!youtubeVideoId;
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -73,36 +77,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [videoDuration, setVideoDuration] = useState(0);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
-    if (session.id === 1) {
+    if (session.id === '1') {
       return [
-        {
-          id: 1,
-          author: 'Coach Riley',
-          role: 'Coach',
-          createdAt: '2h ago',
-          text: 'Great use of your split step on wide balls.',
-          timestampSeconds: 492,
-        },
-        {
-          id: 2,
-          author: 'You',
-          role: 'You',
-          createdAt: '1h ago',
-          text: 'I can feel how much smoother my transitions are. Next time I want to focus on staying lower.',
-          timestampSeconds: 145,
-        },
+        { id: 1, author: 'Coach Riley', role: 'Coach', createdAt: '2h ago', text: 'Great use of your split step on wide balls.', timestampSeconds: 492 },
+        { id: 2, author: 'You', role: 'You', createdAt: '1h ago', text: 'I can feel how much smoother my transitions are. Next time I want to focus on staying lower.', timestampSeconds: 145 },
       ];
     }
-    if (session.id === 2) {
+    if (session.id === '2') {
       return [
-        {
-          id: 3,
-          author: 'Coach Riley',
-          role: 'Coach',
-          createdAt: 'Yesterday',
-          text: "Your returns are landing much deeper. Let's keep targeting the backhand corner.",
-          timestampSeconds: 89,
-        },
+        { id: 3, author: 'Coach Riley', role: 'Coach', createdAt: 'Yesterday', text: "Your returns are landing much deeper. Let's keep targeting the backhand corner.", timestampSeconds: 89 },
       ];
     }
     return [];

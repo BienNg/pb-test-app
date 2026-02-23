@@ -5,9 +5,10 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../st
 import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
-import { MyProgressPage } from './MyProgressPage';
+import { MyProgressPage, type TrainingSession } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
+import { fetchSessionsForStudent } from '@/lib/studentSessions';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
 
@@ -351,7 +352,9 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -391,6 +394,18 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       });
   }, []);
 
+  // When a student is selected, fetch their sessions from DB (session_students -> sessions)
+  useEffect(() => {
+    if (!selectedStudent) {
+      setSessionsForStudent([]);
+      return;
+    }
+    setLoadingSessions(true);
+    fetchSessionsForStudent(createClient(), selectedStudent.id)
+      .then(setSessionsForStudent)
+      .finally(() => setLoadingSessions(false));
+  }, [selectedStudent?.id]);
+
   // When viewing a training session detail (from progress page), show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
@@ -398,12 +413,13 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
+          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
         />
       </div>
     );
   }
 
-  // When viewing a student's progress, show same view as coach (MyProgressPage with Your Sessions / DUPR Coach)
+  // When viewing a student's progress, show same view as coach (MyProgressPage with Your Sessions from DB)
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
@@ -411,6 +427,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          sessions={loadingSessions ? [] : sessionsForStudent}
         />
       </div>
     );

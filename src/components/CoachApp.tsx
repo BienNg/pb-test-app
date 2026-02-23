@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type ReactNode, useState } from 'react';
+import React, { type ReactNode, useState, useEffect } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
@@ -8,13 +8,29 @@ import { LessonsPage } from './LessonsPage';
 import { MyProgressPage } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
+import type { TrainingSession } from './MyProgressPage';
+import { createClient } from '@/lib/supabase/client';
+import { fetchSessionsForStudent } from '@/lib/studentSessions';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
 export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<number | null>(null);
+  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  useEffect(() => {
+    if (!selectedStudent) {
+      setSessionsForStudent([]);
+      return;
+    }
+    setLoadingSessions(true);
+    fetchSessionsForStudent(createClient(), selectedStudent.id)
+      .then(setSessionsForStudent)
+      .finally(() => setLoadingSessions(false));
+  }, [selectedStudent?.id]);
 
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {
@@ -23,19 +39,21 @@ export const CoachApp: React.FC = () => {
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
+          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
         />
       </div>
     );
   }
 
-  // When viewing a student's progress, show full-screen overlay
+  // When viewing a student's progress, show full-screen overlay (sessions from DB)
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
         <MyProgressPage
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}
-          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
+          sessions={loadingSessions ? [] : sessionsForStudent}
         />
       </div>
     );
@@ -49,7 +67,7 @@ export const CoachApp: React.FC = () => {
         return (
           <CoachStudentsPage
             onSelectStudent={setSelectedStudent}
-            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+            onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
           />
         );
       case 'library':

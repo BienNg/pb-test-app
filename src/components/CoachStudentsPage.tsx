@@ -138,7 +138,7 @@ interface CoachStudentsPageProps {
   /** Called when a student card is clicked. */
   onSelectStudent: (student: StudentInfo) => void;
   /** Optional: when provided, show "My Sessions" tab and use this to open a session. */
-  onOpenSession?: (sessionId: number) => void;
+  onOpenSession?: (sessionId: string) => void;
   /** When false, only show the students list (no Students | My Sessions tabs). Default true for coach, false for admin. */
   showMySessionsTab?: boolean;
 }

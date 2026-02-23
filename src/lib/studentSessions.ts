@@ -1,0 +1,51 @@
+import type { TrainingSession } from '@/components/MyProgressPage';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/** Map a DB session row to TrainingSession for MyProgressPage. */
+export function mapDbSessionToTrainingSession(row: {
+  id: string;
+  date: string;
+  youtube_url: string | null;
+}): TrainingSession {
+  const dateKey = typeof row.date === 'string' && row.date.length >= 10 ? row.date.slice(0, 10) : row.date;
+  const d = new Date(dateKey + 'T12:00:00');
+  const dateLabel = d.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return {
+    id: row.id,
+    dateKey,
+    dateLabel,
+    time: '—',
+    thumbnail: '🎾',
+    duration: '—',
+    title: 'Training Session',
+    focus: '',
+    videoUrl: row.youtube_url ?? '',
+  };
+}
+
+/** Fetch sessions for a student from DB (session_students -> sessions). Returns [] on error or no Supabase. */
+export async function fetchSessionsForStudent(
+  supabase: SupabaseClient | null,
+  studentId: string
+): Promise<TrainingSession[]> {
+  if (!supabase) return [];
+  const { data: linkData, error: linkErr } = await supabase
+    .from('session_students')
+    .select('session_id')
+    .eq('student_id', studentId);
+  if (linkErr || !linkData?.length) return [];
+  const sessionIds = (linkData as { session_id: string }[]).map((r) => r.session_id);
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('id, date, youtube_url')
+    .in('id', sessionIds)
+    .order('date', { ascending: false });
+  if (error || !data) return [];
+  const rows = data as { id: string; date: string; youtube_url: string | null }[];
+  return rows.map(mapDbSessionToTrainingSession);
+}
