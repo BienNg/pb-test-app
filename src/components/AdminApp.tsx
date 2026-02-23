@@ -1,10 +1,11 @@
 'use client';
 
-import React, { type ReactNode, useState, useEffect } from 'react';
+import React, { type ReactNode, useState, useEffect, useRef } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconUser } from './Icons';
 import type { StudentInfo } from './CoachStudentsPage';
+import { createClient } from '@/lib/supabase/client';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
 
@@ -344,6 +345,48 @@ function AdminOverviewPage({
 }
 
 function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
+  const [students, setStudents] = useState<StudentInfo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) {
+      setError('Supabase not configured');
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    supabase
+      .from('profiles')
+      .select('id, email, full_name, role')
+      .then(({ data, err }) => {
+        setLoading(false);
+        if (err) {
+          setError(err.message);
+          setStudents([]);
+          return;
+        }
+        const rows = (data ?? []) as { id: string; email: string | null; full_name: string | null; role: string | null }[];
+        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+        setStudents(
+          filtered.map((r) => ({
+            id: r.id,
+            name: r.full_name?.trim() || r.email || r.id,
+            email: r.email ?? '',
+            lessonsCompleted: 0,
+            lastActive: '—',
+          }))
+        );
+      })
+      .catch((err) => {
+        setLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to load students');
+        setStudents([]);
+      });
+  }, []);
+
   return (
     <div
       style={{
@@ -361,56 +404,72 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
             All Students
           </h1>
           <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            {MOCK_ALL_STUDENTS.length} students on the platform.
+            {loading ? 'Loading…' : error ? 'Could not load students.' : `${students.length} students on the platform.`}
           </p>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: isDesktop ? SPACING.lg : SPACING.md,
-          }}
-        >
-          {MOCK_ALL_STUDENTS.map((student) => (
-            <Card key={student.id} padding={SPACING.lg}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
-                <div
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: RADIUS.circle,
-                    backgroundColor: COLORS.lavender,
-                    color: COLORS.textPrimary,
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                {student.avatar ?? <IconUser size={24} />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
-                    {student.name}
-                  </h3>
-                  <div style={{ display: 'flex', gap: SPACING.lg, marginTop: SPACING.sm }}>
-                    {student.lessonsCompleted != null && (
-                      <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
-                        {student.lessonsCompleted} lessons
-                      </span>
-                    )}
-                    {student.lastActive && (
-                      <span style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted }}>
-                        Last active: {student.lastActive}
-                      </span>
-                    )}
-                  </div>
-                </div>
+        {error && (
+          <div style={{ padding: SPACING.lg, marginBottom: SPACING.lg, background: 'rgba(255,107,107,0.1)', borderRadius: RADIUS.md, color: COLORS.red }}>
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textSecondary }}>Loading students…</div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: isDesktop ? SPACING.lg : SPACING.md,
+            }}
+          >
+            {students.length === 0 && !error ? (
+              <div style={{ gridColumn: '1 / -1', padding: SPACING.xl, ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
+                No students yet. Add accounts in Supabase Auth; they will appear here once they have a profile.
               </div>
-            </Card>
-          ))}
-        </div>
+            ) : (
+              students.map((student) => (
+                <Card key={student.id} padding={SPACING.lg}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.lg }}>
+                    <div
+                      style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: RADIUS.circle,
+                        backgroundColor: COLORS.lavender,
+                        color: COLORS.textPrimary,
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {student.avatar ?? <IconUser size={24} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.xs }}>
+                        {student.name}
+                      </h3>
+                      <div style={{ display: 'flex', gap: SPACING.lg, marginTop: SPACING.sm }}>
+                        {student.lessonsCompleted != null && (
+                          <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
+                            {student.lessonsCompleted} lessons
+                          </span>
+                        )}
+                        {student.lastActive && (
+                          <span style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted }}>
+                            Last active: {student.lastActive}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1232,10 +1291,100 @@ function AdminRequestsPage({
   );
 }
 
+const SHEET_TRANSITION_MS = 300;
+
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
   const [requestedSessions, setRequestedSessions] = useState<RequestedSession[]>(() => [...MOCK_REQUESTED_SESSIONS_INITIAL]);
   const isDesktop = useIsDesktop();
+
+  // Add session bottom sheet
+  const [showAddSessionSheet, setShowAddSessionSheet] = useState(false);
+  const [addSessionSheetAnimatedIn, setAddSessionSheetAnimatedIn] = useState(false);
+  const addSessionSheetCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [newSessionDate, setNewSessionDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  });
+  const [newSessionYoutubeUrl, setNewSessionYoutubeUrl] = useState('');
+  const [newSessionStudentIds, setNewSessionStudentIds] = useState<string[]>([]);
+  const [newSessionCoachId, setNewSessionCoachId] = useState<string>('');
+
+  // Students from Supabase (profiles table; expected columns: id, email, full_name, role?)
+  const [supabaseStudents, setSupabaseStudents] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [supabaseStudentsLoading, setSupabaseStudentsLoading] = useState(false);
+  const [supabaseStudentsError, setSupabaseStudentsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (showAddSessionSheet) {
+      setAddSessionSheetAnimatedIn(false);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAddSessionSheetAnimatedIn(true));
+      });
+      return () => cancelAnimationFrame(id);
+    } else {
+      setAddSessionSheetAnimatedIn(false);
+    }
+  }, [showAddSessionSheet]);
+
+  useEffect(() => {
+    return () => {
+      if (addSessionSheetCloseTimeoutRef.current) clearTimeout(addSessionSheetCloseTimeoutRef.current);
+    };
+  }, []);
+
+  const closeAddSessionSheet = () => {
+    if (addSessionSheetCloseTimeoutRef.current) return;
+    setAddSessionSheetAnimatedIn(false);
+    addSessionSheetCloseTimeoutRef.current = setTimeout(() => {
+      addSessionSheetCloseTimeoutRef.current = null;
+      setShowAddSessionSheet(false);
+    }, SHEET_TRANSITION_MS);
+  };
+
+  const toggleStudentForNewSession = (id: string) => {
+    setNewSessionStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  // Fetch students from Supabase profiles when add-session sheet opens
+  useEffect(() => {
+    if (!showAddSessionSheet) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setSupabaseStudentsError('Supabase not configured');
+      setSupabaseStudents([]);
+      return;
+    }
+    setSupabaseStudentsLoading(true);
+    setSupabaseStudentsError(null);
+    supabase
+      .from('profiles')
+      .select('id, email, full_name, role')
+      .then(({ data, error }) => {
+        setSupabaseStudentsLoading(false);
+        if (error) {
+          setSupabaseStudentsError(error.message);
+          setSupabaseStudents([]);
+          return;
+        }
+        const rows = (data ?? []) as { id: string; email: string | null; full_name: string | null; role: string | null }[];
+        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+        setSupabaseStudents(
+          filtered.map((r) => ({
+            id: r.id,
+            name: r.full_name?.trim() || r.email || r.id,
+            email: r.email ?? '',
+          }))
+        );
+      })
+      .catch((err) => {
+        setSupabaseStudentsLoading(false);
+        setSupabaseStudentsError(err instanceof Error ? err.message : 'Failed to load students');
+        setSupabaseStudents([]);
+      });
+  }, [showAddSessionSheet]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1580,6 +1729,7 @@ export const AdminApp: React.FC = () => {
               <button
                 type="button"
                 aria-label="Add"
+                onClick={() => setShowAddSessionSheet(true)}
                 style={{
                   position: 'absolute',
                   left: '50%',
@@ -1594,7 +1744,7 @@ export const AdminApp: React.FC = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
-                  cursor: 'default',
+                  cursor: 'pointer',
                 }}
               >
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1678,6 +1828,259 @@ export const AdminApp: React.FC = () => {
             })}
           </div>
         </nav>
+      )}
+
+      {/* Add session bottom sheet */}
+      {showAddSessionSheet && (
+        <div
+          role="presentation"
+          onClick={closeAddSessionSheet}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            opacity: addSessionSheetAnimatedIn ? 1 : 0,
+            transition: `opacity ${SHEET_TRANSITION_MS}ms ease-out`,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Add new session"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              maxHeight: '85vh',
+              overflow: 'auto',
+              backgroundColor: COLORS.white,
+              borderTopLeftRadius: RADIUS.xl,
+              borderTopRightRadius: RADIUS.xl,
+              padding: SPACING.xxl,
+              paddingBottom: `calc(${SPACING.xxl}px + env(safe-area-inset-bottom, 0px))`,
+              boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
+              transform: addSessionSheetAnimatedIn ? 'translateY(0)' : 'translateY(100%)',
+              transition: `transform ${SHEET_TRANSITION_MS}ms ease-out`,
+            }}
+          >
+            <div
+              style={{
+                width: 36,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: COLORS.textMuted,
+                marginBottom: SPACING.xl,
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              }}
+            />
+            <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: `0 0 ${SPACING.xl}px` }}>
+              Add session
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.lg }}>
+              <div>
+                <label
+                  htmlFor="add-session-date"
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Date
+                </label>
+                <input
+                  id="add-session-date"
+                  type="date"
+                  value={newSessionDate}
+                  onChange={(e) => setNewSessionDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.textMuted}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="add-session-youtube"
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  YouTube URL
+                </label>
+                <input
+                  id="add-session-youtube"
+                  type="url"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  value={newSessionYoutubeUrl}
+                  onChange={(e) => setNewSessionYoutubeUrl(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.textMuted}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                  }}
+                />
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Coach
+                </span>
+                <select
+                  value={newSessionCoachId}
+                  onChange={(e) => setNewSessionCoachId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.textMuted}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                    backgroundColor: COLORS.white,
+                  }}
+                >
+                  <option value="">Select coach</option>
+                  {MOCK_COACHES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.sm,
+                  }}
+                >
+                  Students
+                </span>
+                <div
+                  style={{
+                    maxHeight: 160,
+                    overflow: 'auto',
+                    border: `1px solid ${COLORS.textMuted}`,
+                    borderRadius: RADIUS.md,
+                    padding: SPACING.xs,
+                  }}
+                >
+                  {supabaseStudentsLoading && (
+                    <div style={{ padding: SPACING.lg, ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
+                      Loading students…
+                    </div>
+                  )}
+                  {!supabaseStudentsLoading && supabaseStudentsError && (
+                    <div style={{ padding: SPACING.lg, ...TYPOGRAPHY.bodySmall, color: COLORS.red }}>
+                      {supabaseStudentsError}
+                    </div>
+                  )}
+                  {!supabaseStudentsLoading && !supabaseStudentsError && supabaseStudents.length === 0 && (
+                    <div style={{ padding: SPACING.lg, ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
+                      No students in database. Add accounts in Supabase Auth and a profiles row per user.
+                    </div>
+                  )}
+                  {!supabaseStudentsLoading && !supabaseStudentsError && supabaseStudents.map((s) => (
+                    <label
+                      key={s.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: SPACING.sm,
+                        padding: SPACING.sm,
+                        cursor: 'pointer',
+                        borderRadius: RADIUS.sm,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newSessionStudentIds.includes(s.id)}
+                        onChange={() => toggleStudentForNewSession(s.id)}
+                        style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                      />
+                      <span style={{ ...TYPOGRAPHY.body, color: COLORS.textPrimary }}>{s.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: SPACING.md,
+                marginTop: SPACING.xxl,
+              }}
+            >
+              <button
+                type="button"
+                onClick={closeAddSessionSheet}
+                style={{
+                  flex: 1,
+                  padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                  borderRadius: 9999,
+                  border: `1px solid ${COLORS.textMuted}`,
+                  backgroundColor: COLORS.white,
+                  color: COLORS.textSecondary,
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // View only – no backend logic yet
+                  closeAddSessionSheet();
+                }}
+                style={{
+                  flex: 1,
+                  padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                  borderRadius: 9999,
+                  border: 'none',
+                  backgroundColor: COLORS.primary,
+                  color: '#fff',
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
+                }}
+              >
+                Add session
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
