@@ -115,7 +115,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
         <div style={{ display: 'flex', gap: SPACING.lg, marginTop: 2, flexWrap: 'wrap' }}>
           {student.lessonsCompleted != null && (
             <span style={{ ...TYPOGRAPHY.label, color: COLORS.textMuted }}>
-              {student.lessonsCompleted} lessons
+              {student.lessonsCompleted} session{student.lessonsCompleted !== 1 ? 's' : ''}
             </span>
           )}
           {student.lastActive && (

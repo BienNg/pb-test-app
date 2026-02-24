@@ -8,6 +8,7 @@ import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { MyProgressPage, type TrainingSession } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
+import { fetchSessionCountsForStudentIds } from '@/lib/studentSessions';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'requests';
@@ -372,24 +373,27 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
     void supabase
       .from('profiles')
       .select('id, email, full_name, role')
-      .then(({ data, error }) => {
-        setLoading(false);
+      .then(async ({ data, error }) => {
         if (error) {
+          setLoading(false);
           setError(error.message);
           setStudents([]);
           return;
         }
         const rows = (data ?? []) as { id: string; email: string | null; full_name: string | null; role: string | null }[];
         const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+        const studentIds = filtered.map((r) => r.id);
+        const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
         setStudents(
           filtered.map((r) => ({
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
             email: r.email ?? '',
-            lessonsCompleted: 0,
+            lessonsCompleted: sessionCounts[r.id] ?? 0,
             lastActive: '—',
           }))
         );
+        setLoading(false);
       })
       .then(undefined, (err: unknown) => {
         setLoading(false);

@@ -28,6 +28,26 @@ export function mapDbSessionToTrainingSession(row: {
   };
 }
 
+/** Fetch session counts per student from DB (session_students). Returns a map of student_id -> count. */
+export async function fetchSessionCountsForStudentIds(
+  supabase: SupabaseClient | null,
+  studentIds: string[]
+): Promise<Record<string, number>> {
+  if (!supabase || studentIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('session_students')
+    .select('student_id')
+    .in('student_id', studentIds);
+  if (error || !data) return {};
+  const rows = data as { student_id: string }[];
+  const counts: Record<string, number> = {};
+  for (const id of studentIds) counts[id] = 0;
+  for (const r of rows) {
+    counts[r.student_id] = (counts[r.student_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** Fetch sessions for a student from DB (session_students -> sessions). Returns [] on error or no Supabase. */
 export async function fetchSessionsForStudent(
   supabase: SupabaseClient | null,
