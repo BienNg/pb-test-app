@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SessionComment } from '@/components/MyProgressPage';
+import { MOCK_COACHES } from '@/data/mockCoaches';
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export type SessionCommentRow = {
   id: string;
@@ -74,13 +77,30 @@ export async function fetchSessionComments(
   if (rows.length === 0) return [];
 
   const authorIds = [...new Set(rows.map((r) => r.author_id))];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, role')
-    .in('id', authorIds);
-  const profileMap = new Map(
-    (profiles as { id: string; full_name: string | null; role: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
-  );
+  const validAuthorIds = authorIds.filter(id => UUID_REGEX.test(id));
+  
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+  
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) {
+    for (const p of profiles) profileMap.set(p.id, p);
+  }
+  // Add mock coaches to profileMap
+  for (const id of authorIds) {
+    if (!profileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find(c => c.id === id);
+      if (mockCoach) {
+        profileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+      }
+    }
+  }
 
   const { data: mentions } = await supabase
     .from('session_comment_mentions')
@@ -88,13 +108,29 @@ export async function fetchSessionComments(
     .in('comment_id', rows.map((r) => r.id));
   const mentionCommentIds = (mentions as { comment_id: string; profile_id: string }[] | null) ?? [];
   const mentionedProfileIds = [...new Set(mentionCommentIds.map((m) => m.profile_id))];
-  const { data: mentionProfiles } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .in('id', mentionedProfileIds);
-  const mentionProfileMap = new Map(
-    (mentionProfiles as { id: string; full_name: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
-  );
+  const validMentionedProfileIds = mentionedProfileIds.filter(id => UUID_REGEX.test(id));
+  
+  let mentionProfiles: { id: string; full_name: string | null }[] | null = null;
+  if (validMentionedProfileIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', validMentionedProfileIds);
+    mentionProfiles = data as { id: string; full_name: string | null }[];
+  }
+  
+  const mentionProfileMap = new Map<string, { id: string; full_name: string | null }>();
+  if (mentionProfiles) {
+    for (const p of mentionProfiles) mentionProfileMap.set(p.id, p);
+  }
+  for (const id of mentionedProfileIds) {
+    if (!mentionProfileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find(c => c.id === id);
+      if (mockCoach) {
+        mentionProfileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name });
+      }
+    }
+  }
 
   const mentionsByComment = new Map<string, { profile_id: string; full_name: string | null }[]>();
   for (const m of mentionCommentIds) {
@@ -144,13 +180,30 @@ export async function insertSessionComment(
     );
   }
   const authorIds = [row.author_id, ...mentionedProfileIds];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name, role')
-    .in('id', authorIds);
-  const profileMap = new Map(
-    (profiles as { id: string; full_name: string | null; role: string | null }[] | null)?.map((p) => [p.id, p]) ?? []
-  );
+  const validAuthorIds = authorIds.filter(id => UUID_REGEX.test(id));
+  
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+  
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) {
+    for (const p of profiles) profileMap.set(p.id, p);
+  }
+  for (const id of authorIds) {
+    if (!profileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find(c => c.id === id);
+      if (mockCoach) {
+        profileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+      }
+    }
+  }
+
   const mentions = mentionedProfileIds
     .filter((id) => id !== row.author_id)
     .map((profile_id) => ({
@@ -184,14 +237,31 @@ export async function fetchSessionTaggableProfiles(
   const coachId = (sessionRow as { coach_id: string }).coach_id;
   const ids = [...new Set([coachId, ...studentIds])].filter(Boolean);
   if (ids.length === 0) return [];
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .in('id', ids);
-  return (
-    (profiles as { id: string; full_name: string | null }[] | null)?.map((p) => ({
-      id: p.id,
-      name: p.full_name?.trim() || 'Unknown',
-    })) ?? []
-  );
+  
+  const validIds = ids.filter(id => UUID_REGEX.test(id));
+  
+  let profiles: { id: string; full_name: string | null }[] | null = null;
+  if (validIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', validIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+  
+  const results = (profiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.full_name?.trim() || 'Unknown',
+  }));
+  
+  for (const id of ids) {
+    if (!validIds.includes(id)) {
+      const mockCoach = MOCK_COACHES.find(c => c.id === id);
+      if (mockCoach) {
+        results.push({ id: mockCoach.id, name: mockCoach.name });
+      }
+    }
+  }
+  
+  return results;
 }

@@ -735,7 +735,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const q = shotMenu.query.trim().toLowerCase();
     if (!q) return [...SHOT_LIST];
     return SHOT_LIST.filter((shot) => shot.toLowerCase().includes(q));
-  }, [shotMenu?.query]);
+  }, [shotMenu]);
 
   const filteredMentions = useMemo(() => {
     if (!mentionMenu) return [];
@@ -743,7 +743,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const base = taggableProfiles;
     if (!q) return base;
     return base.filter((p) => p.name.toLowerCase().includes(q));
-  }, [mentionMenu?.query, taggableProfiles]);
+  }, [mentionMenu, taggableProfiles]);
 
   const handleCommentInput = useCallback(() => {
     const container = commentInputRef.current;
@@ -909,7 +909,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         }
       }
     },
-    [shotMenu, mentionMenu, filteredShots, filteredMentions, commentDraft, isDbSession, taggableProfiles]
+    [shotMenu, mentionMenu, filteredShots, filteredMentions]
   );
 
   const selectShotFromMenu = useCallback(

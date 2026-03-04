@@ -1,17 +1,39 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { Dashboard } from './Dashboard';
 import { LessonsPage } from './LessonsPage';
-import { MyProgressPage } from './MyProgressPage';
+import { MyProgressPage, type TrainingSession } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
+import { createClient } from '@/lib/supabase/client';
+import { fetchSessionsForStudent } from '@/lib/studentSessions';
+import { useAuth } from './providers/AuthProvider';
 
 type TabId = 'home' | 'progress' | 'library';
 
 export function StudentShell() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+
+  // Load DB-backed sessions for the logged-in student so ids line up with Supabase.
+  useEffect(() => {
+    const load = async () => {
+      if (!user?.id) return;
+      const supabase = createClient();
+      setLoadingSessions(true);
+      try {
+        const sessions = await fetchSessionsForStudent(supabase, user.id);
+        setSessionsForStudent(sessions);
+      } finally {
+        setLoadingSessions(false);
+      }
+    };
+    load();
+  }, [user?.id]);
 
   const renderContent = () => {
     if (activeTrainingSessionId != null) {
@@ -19,6 +41,7 @@ export function StudentShell() {
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
+          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
         />
       );
     }
@@ -29,6 +52,7 @@ export function StudentShell() {
         return (
           <MyProgressPage
             onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+            sessions={loadingSessions ? [] : sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
           />
         );
       case 'library':
