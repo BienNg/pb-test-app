@@ -375,6 +375,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
   const [commentSort, setCommentSort] = useState<CommentSortMode>('timestamp-asc');
+  const [shotFilter, setShotFilter] = useState<string[]>([]);
+  const [studentFilter, setStudentFilter] = useState<string[]>([]);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
   const [activeCommentId, setActiveCommentId] = useState<string | number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
@@ -644,6 +647,33 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     seekTo(target);
   }, [sortedCommentTimestamps, getCurrentTime, seekTo]);
 
+  const shotsInComments = useMemo(() => {
+    const shotSet = new Set<string>();
+    comments.forEach((c) => {
+      parseCommentTextWithShots(c.text).forEach((seg) => {
+        if (seg.type === 'shot') {
+          shotSet.add(seg.name);
+        }
+      });
+    });
+    return Array.from(shotSet).sort((a, b) => a.localeCompare(b));
+  }, [comments]);
+
+  const studentsInComments = useMemo(
+    () =>
+      Array.from(
+        comments.reduce<Map<string, string>>((map, c) => {
+          (c.taggedUsers ?? []).forEach((u) => {
+            if (!map.has(u.id)) map.set(u.id, u.name);
+          });
+          return map;
+        }, new Map())
+      )
+        .map(([id, name]) => ({ id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [comments]
+  );
+
   const sortedComments = useMemo(() => {
     if (commentSort === 'date-asc' || commentSort === 'date-desc') {
       const desc = commentSort === 'date-desc';
@@ -668,6 +698,25 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       return 0;
     });
   }, [comments, commentSort]);
+
+  const visibleComments = useMemo(() => {
+    if (shotFilter.length === 0 && studentFilter.length === 0) return sortedComments;
+    return sortedComments.filter((comment) => {
+      const segments = parseCommentTextWithShots(comment.text);
+      const commentShots = new Set(
+        segments.filter((seg) => seg.type === 'shot').map((seg) => (seg as Extract<CommentSegment, { type: 'shot' }>).name)
+      );
+      const commentStudentIds = new Set((comment.taggedUsers ?? []).map((u) => u.id));
+
+      if (shotFilter.length > 0 && !shotFilter.some((shot) => commentShots.has(shot))) {
+        return false;
+      }
+      if (studentFilter.length > 0 && !studentFilter.some((id) => commentStudentIds.has(id))) {
+        return false;
+      }
+      return true;
+    });
+  }, [sortedComments, shotFilter, studentFilter]);
 
   // When video time reaches a comment's timestamp, set that comment as active (for scroll + highlight)
   useEffect(() => {
@@ -1702,48 +1751,102 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               >
                 Comments
               </h3>
-              <button
-                type="button"
-                onClick={() =>
-                  setCommentSort((s) =>
-                    s === 'date-desc'
-                      ? 'date-asc'
-                      : s === 'date-asc'
-                        ? 'timestamp-asc'
-                        : s === 'timestamp-asc'
-                          ? 'timestamp-desc'
-                          : 'date-desc'
-                  )
-                }
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  padding: '4px 8px',
-                  borderRadius: RADIUS.sm,
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: COLORS.textSecondary,
-                  ...TYPOGRAPHY.label,
-                  fontSize: 11,
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
+                  gap: 8,
                 }}
-                aria-label={`Sort: ${commentSort}`}
-                title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
               >
-                {commentSort.startsWith('date') ? (
-                  <>
-                    <IconCalendar size={12} />
-                    Date {commentSort === 'date-desc' ? '↓' : '↑'}
-                  </>
-                ) : (
-                  <>
-                    <IconClock size={12} />
-                    Time {commentSort === 'timestamp-desc' ? '↓' : '↑'}
-                  </>
-                )}
-              </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCommentSort((s) =>
+                      s === 'date-desc'
+                        ? 'date-asc'
+                        : s === 'date-asc'
+                          ? 'timestamp-asc'
+                          : s === 'timestamp-asc'
+                            ? 'timestamp-desc'
+                            : 'date-desc'
+                    )
+                  }
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 8px',
+                    borderRadius: RADIUS.sm,
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: COLORS.textSecondary,
+                    ...TYPOGRAPHY.label,
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                  aria-label={`Sort: ${commentSort}`}
+                  title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
+                >
+                  {commentSort.startsWith('date') ? (
+                    <>
+                      <IconCalendar size={12} />
+                      Date {commentSort === 'date-desc' ? '↓' : '↑'}
+                    </>
+                  ) : (
+                    <>
+                      <IconClock size={12} />
+                      Time {commentSort === 'timestamp-desc' ? '↓' : '↑'}
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFilterSheetOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 8px',
+                    borderRadius: RADIUS.sm,
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    backgroundColor:
+                      shotFilter.length || studentFilter.length
+                        ? 'rgba(49, 203, 0, 0.18)'
+                        : 'rgba(255, 255, 255, 0.04)',
+                    color:
+                      shotFilter.length || studentFilter.length
+                        ? COLORS.primary
+                        : COLORS.textSecondary,
+                    ...TYPOGRAPHY.label,
+                    fontSize: 11,
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                  }}
+                  aria-label="Filter comments"
+                  title="Filter comments by shots and students"
+                >
+                  Filter
+                  {(shotFilter.length || studentFilter.length) && (
+                    <span
+                      style={{
+                        minWidth: 16,
+                        height: 16,
+                        borderRadius: 999,
+                        backgroundColor: COLORS.primary,
+                        color: COLORS.textPrimary,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        padding: '0 4px',
+                      }}
+                    >
+                      {shotFilter.length + studentFilter.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
             <div
@@ -1769,8 +1872,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   No comments yet. Be the first to leave a note about this session.
                 </p>
+              ) : visibleComments.length === 0 ? (
+                <p
+                  style={{
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                  }}
+                >
+                  No comments match the current filters.
+                </p>
               ) : (
-                sortedComments.map((comment) => {
+                visibleComments.map((comment) => {
                   const isCoach = comment.role === 'Coach';
                   const isActive = activeCommentId !== null && comment.id === activeCommentId;
 
@@ -2199,6 +2312,268 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   {postingComment ? 'Posting…' : 'Post'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Comment filter bottom sheet */}
+      <div
+        aria-hidden={!isFilterSheetOpen}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 40,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          pointerEvents: isFilterSheetOpen ? 'auto' : 'none',
+          backgroundColor: isFilterSheetOpen ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0)',
+          transition: 'background-color 0.22s ease-out',
+        }}
+        onClick={() => setIsFilterSheetOpen(false)}
+      >
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Filter comments"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%',
+            maxWidth: 640,
+            borderTopLeftRadius: RADIUS.xl,
+            borderTopRightRadius: RADIUS.xl,
+            backgroundColor: COLORS.cardBg,
+            boxShadow: '0 -18px 40px rgba(0,0,0,0.45)',
+            borderTop: `1px solid ${COLORS.backgroundLight}`,
+            padding: SPACING.lg,
+            paddingBottom: SPACING.xl,
+            maxHeight: '52vh',
+            minHeight: '46vh',
+            transform: isFilterSheetOpen ? 'translateY(0%)' : 'translateY(100%)',
+            transition: 'transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1)',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              marginBottom: SPACING.md,
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 4,
+                borderRadius: 999,
+                backgroundColor: COLORS.backgroundLight,
+              }}
+            />
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: SPACING.sm,
+              gap: SPACING.sm,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  letterSpacing: 0.3,
+                  textTransform: 'uppercase',
+                  color: COLORS.textSecondary,
+                }}
+              >
+                Filter comments
+              </div>
+            </div>
+            {(shotFilter.length > 0 || studentFilter.length > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShotFilter([]);
+                  setStudentFilter([]);
+                }}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 999,
+                  border: 'none',
+                  backgroundColor: COLORS.backgroundLight,
+                  color: COLORS.textSecondary,
+                  ...TYPOGRAPHY.label,
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SPACING.md,
+              overflowY: 'auto',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  ...TYPOGRAPHY.label,
+                  textTransform: 'uppercase',
+                  color: COLORS.textSecondary,
+                  marginBottom: SPACING.xs,
+                }}
+              >
+                Shots in this thread
+              </div>
+              {shotsInComments.length === 0 ? (
+                <p
+                  style={{
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textMuted,
+                    margin: 0,
+                  }}
+                >
+                  No shot tags have been used in the comments yet.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
+                  {shotsInComments.map((shot) => {
+                    const isActive = shotFilter.includes(shot);
+                    return (
+                      <button
+                        key={shot}
+                        type="button"
+                        onClick={() =>
+                          setShotFilter((prev) =>
+                            prev.includes(shot)
+                              ? prev.filter((s) => s !== shot)
+                              : [...prev, shot]
+                          )
+                        }
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 999,
+                          border: isActive
+                            ? `1px solid ${COLORS.primary}`
+                            : `1px solid ${COLORS.backgroundLight}`,
+                          backgroundColor: isActive
+                            ? 'rgba(49, 203, 0, 0.12)'
+                            : COLORS.backgroundLight,
+                          color: isActive ? COLORS.primary : COLORS.textPrimary,
+                          ...TYPOGRAPHY.bodySmall,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {shot}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div>
+              <div
+                style={{
+                  ...TYPOGRAPHY.label,
+                  textTransform: 'uppercase',
+                  color: COLORS.textSecondary,
+                  marginBottom: SPACING.xs,
+                }}
+              >
+                Students in this thread
+              </div>
+              {studentsInComments.length === 0 ? (
+                <p
+                  style={{
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textMuted,
+                    margin: 0,
+                  }}
+                >
+                  No students have been tagged in comments yet.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
+                  {studentsInComments.map((s) => {
+                    const isActive = studentFilter.includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() =>
+                          setStudentFilter((prev) =>
+                            prev.includes(s.id)
+                              ? prev.filter((id) => id !== s.id)
+                              : [...prev, s.id]
+                          )
+                        }
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 999,
+                          border: isActive
+                            ? `1px solid ${COLORS.primary}`
+                            : `1px solid ${COLORS.backgroundLight}`,
+                          backgroundColor: isActive
+                            ? 'rgba(49, 203, 0, 0.12)'
+                            : COLORS.backgroundLight,
+                          color: isActive ? COLORS.primary : COLORS.textPrimary,
+                          ...TYPOGRAPHY.bodySmall,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        @{s.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginTop: SPACING.xs,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsFilterSheetOpen(false)}
+                style={{
+                  padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
+                  borderRadius: 999,
+                  border: 'none',
+                  cursor: 'pointer',
+                  ...TYPOGRAPHY.labelMed,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.4,
+                  backgroundColor: COLORS.primary,
+                  color: COLORS.textPrimary,
+                }}
+              >
+                Apply filters
+              </button>
             </div>
           </div>
         </div>
