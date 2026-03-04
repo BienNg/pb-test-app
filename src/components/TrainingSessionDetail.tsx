@@ -122,6 +122,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
   const [commentSort, setCommentSort] = useState<CommentSortMode>('date-desc');
+  /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
+  const [activeCommentId, setActiveCommentId] = useState<string | number | null>(null);
+  const commentsScrollRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
     if (sessionsProp != null) return [];
@@ -409,6 +412,28 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       return 0;
     });
   }, [comments, commentSort]);
+
+  // When video time reaches a comment's timestamp, set that comment as active (for scroll + highlight)
+  useEffect(() => {
+    const activeTimestamp =
+      sortedCommentTimestamps.filter((t) => t <= currentVideoTime + 0.5).pop() ?? null;
+    const activeComment =
+      activeTimestamp != null
+        ? sortedComments.find((c) => c.timestampSeconds === activeTimestamp)
+        : null;
+    setActiveCommentId(activeComment?.id ?? null);
+  }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
+
+  // Scroll comments list to the active comment and keep it in view
+  useEffect(() => {
+    if (activeCommentId == null || !commentsScrollRef.current) return;
+    const el = commentsScrollRef.current.querySelector(
+      `[data-comment-id="${CSS.escape(String(activeCommentId))}"]`
+    ) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
+  }, [activeCommentId]);
 
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -942,6 +967,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 seekTo(c.timestampSeconds!);
+                                setActiveCommentId(c.id);
                               }}
                               style={{
                                 position: 'absolute',
@@ -1243,6 +1269,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             </div>
 
             <div
+              ref={commentsScrollRef}
               style={{
                 flex: 1,
                 overflowY: 'auto',
@@ -1267,10 +1294,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               ) : (
                 sortedComments.map((comment) => {
                   const isCoach = comment.role === 'Coach';
+                  const isActive = activeCommentId !== null && comment.id === activeCommentId;
 
                   return (
                     <div
                       key={comment.id}
+                      data-comment-id={comment.id}
                       style={{
                         display: 'flex',
                         alignItems: 'flex-start',
@@ -1278,11 +1307,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         padding: `${SPACING.sm}px ${SPACING.sm}px`,
                         margin: `0 -${SPACING.xs}px`,
                         borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                        backgroundColor: isCoach ? COLORS.backgroundLight : 'transparent',
+                        backgroundColor: isActive
+                          ? 'rgba(49, 203, 0, 0.12)'
+                          : isCoach
+                            ? COLORS.backgroundLight
+                            : 'transparent',
                         borderLeft: isCoach
                           ? `3px solid ${COLORS.primaryLight}`
                           : `3px solid transparent`,
                         borderRadius: RADIUS.sm,
+                        transition: 'background-color 0.2s ease',
                       }}
                     >
                       <div
@@ -1360,7 +1394,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       {comment.timestampSeconds != null && (
                         <button
                           type="button"
-                          onClick={() => seekTo(comment.timestampSeconds!)}
+                          onClick={() => {
+                            seekTo(comment.timestampSeconds!);
+                            setActiveCommentId(comment.id);
+                          }}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
