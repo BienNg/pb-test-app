@@ -574,13 +574,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (isYoutube && playerRef.current) {
         const p = playerRef.current;
         if (typeof p.seekTo === 'function') p.seekTo(seconds, true);
-        if (typeof p.playVideo === 'function') p.playVideo();
         return;
       }
       const video = videoRef.current;
       if (!video) return;
       video.currentTime = seconds;
-      video.play().catch(() => {});
     },
     [isYoutube]
   );
@@ -1578,6 +1576,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                   <button
                     type="button"
+                    onClick={() => skipBy(-1/30)}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255, 255, 255, 0.35)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 9,
+                    }}
+                    aria-label="Skip back 1 frame"
+                    title="−1f"
+                  >
+                    −1f
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => skipBy(-10)}
                     style={{
                       width: 26,
@@ -1693,6 +1714,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     title="+10s"
                   >
                     +10s
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skipBy(1/30)}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255, 255, 255, 0.35)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 9,
+                    }}
+                    aria-label="Skip forward 1 frame"
+                    title="+1f"
+                  >
+                    +1f
                   </button>
                   <button
                     type="button"
