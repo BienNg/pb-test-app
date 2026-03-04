@@ -197,11 +197,23 @@ function setContentEditableCursor(container: Node, offset: number): void {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
       const dataShot = el.getAttribute?.('data-shot');
-      if (dataShot != null) {
-        const markerLen = `[[shot:${dataShot}]]`.length;
+      const mentionId = el.getAttribute?.('data-mention-id');
+      const mentionName = el.getAttribute?.('data-mention-name');
+      if (dataShot != null || mentionId != null) {
+        const marker =
+          dataShot != null
+            ? `[[shot:${dataShot}]]`
+            : `[[mention:${mentionId}|${mentionName ?? ''}]]`;
+        const markerLen = marker.length;
         if (current + markerLen >= offset) {
           const range = document.createRange();
-          range.setStart(node, offset - current <= 0 ? 0 : 1);
+          // Place caret just before or just after the non-editable pill span
+          const within = offset - current;
+          if (within <= Math.floor(markerLen / 2)) {
+            range.setStartBefore(node);
+          } else {
+            range.setStartAfter(node);
+          }
           range.collapse(true);
           selection.removeAllRanges();
           selection.addRange(range);
@@ -355,7 +367,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
-  const [showTagDropdown, setShowTagDropdown] = useState(false);
   /** "/" command menu for shots: when set, show dropdown; query filters SHOT_LIST; highlightIndex for keyboard nav. */
   const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
   /** "@" command menu for mentions: when set, show dropdown of taggableProfiles. */
@@ -758,7 +769,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
     let anyMenu = false;
     if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
-      setShowTagDropdown(false);
       setShotMenu({
         query: text.slice(lastSlash + 1, cursorOffset),
         slashStart: lastSlash,
@@ -813,7 +823,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         const newText = text.slice(0, cursorOffset) + char + text.slice(cursorOffset);
         setCommentDraft(newText);
         pendingCursorRef.current = cursorOffset + 1;
-        setShowTagDropdown(false);
         if (char === '/') {
           setShotMenu({
             query: '',
@@ -2005,119 +2014,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                 </div>
               </div>
-              {isDbSession && taggableProfiles.length > 0 && (
-                <div style={{ marginBottom: SPACING.sm, position: 'relative' }}>
-                  <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, marginRight: SPACING.sm }}>
-                    Tag:
-                  </span>
-                  {selectedMentionIds.length > 0 && (
-                    <span style={{ marginRight: SPACING.sm }}>
-                      {selectedMentionIds.map((id) => {
-                        const p = taggableProfiles.find((x) => x.id === id);
-                        return p ? (
-                          <span
-                            key={id}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              marginRight: 4,
-                              padding: '2px 8px',
-                              borderRadius: RADIUS.sm,
-                              backgroundColor: COLORS.primaryLight,
-                              color: COLORS.primary,
-                              ...TYPOGRAPHY.label,
-                              fontSize: 12,
-                            }}
-                          >
-                            {p.name}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedMentionIds((prev) => prev.filter((x) => x !== id))}
-                              style={{
-                                marginLeft: 4,
-                                padding: 0,
-                                border: 'none',
-                                background: 'none',
-                                cursor: 'pointer',
-                                color: 'inherit',
-                                fontSize: 14,
-                                lineHeight: 1,
-                              }}
-                              aria-label={`Remove ${p.name}`}
-                            >
-                              ×
-                            </button>
-                          </span>
-                        ) : null;
-                      })}
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setShowTagDropdown((b) => !b)}
-                    style={{
-                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                      borderRadius: RADIUS.sm,
-                      border: `1px solid ${COLORS.backgroundLight}`,
-                      backgroundColor: COLORS.cardBg,
-                      color: COLORS.textSecondary,
-                      ...TYPOGRAPHY.label,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    + Add person
-                  </button>
-                  {showTagDropdown && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: '100%',
-                        marginTop: 4,
-                        minWidth: 180,
-                        maxHeight: 200,
-                        overflowY: 'auto',
-                        backgroundColor: COLORS.cardBg,
-                        border: `1px solid ${COLORS.backgroundLight}`,
-                        borderRadius: RADIUS.sm,
-                        boxShadow: SHADOWS.light,
-                        zIndex: 10,
-                      }}
-                    >
-                      {taggableProfiles
-                        .filter((p) => !selectedMentionIds.includes(p.id))
-                        .map((p) => (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedMentionIds((prev) => [...prev, p.id]);
-                              setShowTagDropdown(false);
-                            }}
-                            style={{
-                              display: 'block',
-                              width: '100%',
-                              padding: `${SPACING.sm}px ${SPACING.md}px`,
-                              border: 'none',
-                              background: 'none',
-                              textAlign: 'left',
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textPrimary,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {p.name}
-                          </button>
-                        ))}
-                      {taggableProfiles.filter((p) => !selectedMentionIds.includes(p.id)).length === 0 && (
-                        <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
-                          All selected
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Tag line with manual "+ Add person" dropdown removed; mentions are handled via @ in the comment box */}
               <div style={{ position: 'relative', marginBottom: SPACING.sm }}>
                 <div
                   ref={commentInputRef}
