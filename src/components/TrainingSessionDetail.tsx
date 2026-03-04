@@ -121,7 +121,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
-  const [commentSort, setCommentSort] = useState<CommentSortMode>('date-desc');
+  const [commentSort, setCommentSort] = useState<CommentSortMode>('timestamp-asc');
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
   const [activeCommentId, setActiveCommentId] = useState<string | number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
