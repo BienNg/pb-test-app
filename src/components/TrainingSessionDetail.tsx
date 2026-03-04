@@ -102,6 +102,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  /** Intrinsic aspect ratio of the video (e.g. '16/9') so container height matches video and no letterboxing. */
+  const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -159,6 +161,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   useEffect(() => {
     const t = setTimeout(() => setVideoError(null), 0);
     return () => clearTimeout(t);
+  }, [sessionId]);
+
+  // Reset aspect ratio when session changes so we don't reuse a previous video's ratio
+  useEffect(() => {
+    setVideoAspectRatio(null);
   }, [sessionId]);
 
   // Load YouTube API and create player when YouTube video
@@ -658,13 +665,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               ) : isYoutube && youtubeVideoId ? (
                 <>
                   <div
+                    style={{
+                      position: 'relative',
+                      width: '100%',
+                      aspectRatio: '16 / 9',
+                      overflow: 'hidden',
+                    }}
+                  >
+                  <div
                     ref={playerContainerRef}
                     key={`yt-${session.id}`}
                     style={{
+                      position: 'absolute',
+                      inset: 0,
                       width: '100%',
-                      aspectRatio: '16 / 9',
+                      height: '100%',
                       display: 'block',
-                      minHeight: 200,
                     }}
                   />
                   <div
@@ -677,7 +693,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       zIndex: 1,
                       pointerEvents: !isVideoPlaying ? 'auto' : 'none',
-                      backgroundColor: !isVideoPlaying ? 'rgba(0, 0, 0, 0.85)' : 'transparent',
                     }}
                     onClick={handlePlayPause}
                     onKeyDown={(e) => {
@@ -717,9 +732,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       </div>
                     )}
                   </div>
+                  </div>
                 </>
               ) : (
                 <>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  aspectRatio: videoAspectRatio ?? '16 / 9',
+                }}
+              >
               <div
                 style={{
                   position: 'absolute',
@@ -729,6 +752,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   justifyContent: 'center',
                   cursor: 'pointer',
                   zIndex: 1,
+                  pointerEvents: !isVideoPlaying ? 'auto' : 'none',
                 }}
                 onClick={handlePlayPause}
                 onKeyDown={(e) => {
@@ -789,9 +813,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 preload="metadata"
                 style={{
                   width: '100%',
+                  height: '100%',
                   display: 'block',
-                  aspectRatio: '16 / 9',
-                  objectFit: 'cover',
+                  objectFit: 'contain',
                 }}
                 onPlay={() => setIsVideoPlaying(true)}
                 onPause={() => setIsVideoPlaying(false)}
@@ -800,8 +824,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   setCurrentVideoTime((e.target as HTMLVideoElement).currentTime)
                 }
                 onLoadedMetadata={(e) => {
-                  setVideoDuration((e.target as HTMLVideoElement).duration);
+                  const v = e.target as HTMLVideoElement;
+                  setVideoDuration(v.duration);
                   setVideoError(null);
+                  const w = v.videoWidth;
+                  const h = v.videoHeight;
+                  if (w && h) setVideoAspectRatio(`${w} / ${h}`);
                 }}
                 onError={() => {
                   setVideoError('Video failed to load. The source may be unavailable or blocked.');
@@ -809,6 +837,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               >
                 <source src={session.videoUrl} type="video/mp4" />
               </video>
+              </div>
               </>
               )}
               </div>
