@@ -12,6 +12,7 @@ import {
   CalendarDays,
   MapPin,
   Play,
+  Pause,
   ChevronRight,
   ChevronLeft,
   GraduationCap,
@@ -88,6 +89,12 @@ export const IconMapPin: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconPlay: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Play size={size} strokeWidth={stroke} fill="currentColor" />
+  </IconWrapper>
+);
+
+export const IconPause: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Pause size={size} strokeWidth={stroke} fill="currentColor" />
   </IconWrapper>
 );
 

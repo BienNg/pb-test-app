@@ -3,6 +3,8 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconCalendar,
   IconClock,
+  IconPlay,
+  IconPause,
   IconVolume2,
   IconVolumeX,
   IconChevronLeft,
@@ -430,8 +432,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           style={{
             marginBottom: SPACING.lg,
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
             gap: SPACING.sm,
+            flexWrap: 'wrap',
           }}
         >
           <button
@@ -452,33 +457,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           >
             ← Back to My Progress
           </button>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                gap: SPACING.xs,
-              }}
-            >
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: SPACING.md,
-                marginTop: SPACING.xs,
-                color: COLORS.textSecondary,
-                ...TYPOGRAPHY.bodySmall,
-              }}
-            >
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <span role="img" aria-label="calendar">
-                  <IconCalendar size={16} />
-                </span>
-                <span>{session.dateLabel}</span>
-              </span>
-            </div>
-          </div>
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              color: COLORS.textSecondary,
+              ...TYPOGRAPHY.bodySmall,
+            }}
+          >
+            <span role="img" aria-label="calendar">
+              <IconCalendar size={16} />
+            </span>
+            <span>{session.dateLabel}</span>
+          </span>
         </div>
 
         {/* Main content */}
@@ -846,84 +838,62 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               {videoDuration > 0 && (
                 <div
                   style={{
-                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                    backgroundColor: 'transparent',
+                    borderTop: 'none',
                   }}
                 >
                 <div
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: SPACING.xs,
+                    gap: SPACING.sm,
                   }}
                 >
                   <button
                     type="button"
                     onClick={handlePlayPause}
                     style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: RADIUS.sm,
+                      width: 36,
+                      height: 36,
                       border: 'none',
-                      backgroundColor: COLORS.primary,
-                      color: COLORS.textPrimary,
+                      background: 'none',
+                      color: '#FFFFFF',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
                       padding: 0,
+                      flexShrink: 0,
                     }}
                     aria-label={isVideoPlaying ? 'Pause' : 'Play'}
                   >
                     {isVideoPlaying ? (
-                      <span style={{ fontSize: 11 }}>⏸</span>
+                      <IconPause size={24} />
                     ) : (
-                      <span style={{ marginLeft: 1, fontSize: 10 }}>▶</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleMuteToggle}
-                    style={{
-                      width: 22,
-                      height: 22,
-                      borderRadius: RADIUS.sm,
-                      border: 'none',
-                      backgroundColor: 'transparent',
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                    aria-label={isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {isMuted ? (
-                      <IconVolumeX size={14} />
-                    ) : (
-                      <IconVolume2 size={14} />
+                      <IconPlay size={28} />
                     )}
                   </button>
                   <span
                     style={{
-                      ...TYPOGRAPHY.label,
-                      fontSize: 11,
-                      color: 'rgba(255, 255, 255, 0.9)',
-                      minWidth: 32,
+                      fontFamily: 'inherit',
+                      fontSize: 12,
+                      color: '#FFFFFF',
+                      minWidth: 56,
+                      flexShrink: 0,
                     }}
                   >
-                    {formatTimestamp(currentVideoTime)}
+                    {formatTimestamp(currentVideoTime)} / {formatTimestamp(videoDuration)}
                   </span>
                     <div
                       style={{
                         flex: 1,
                         position: 'relative',
-                        height: 16,
+                        height: 20,
                         cursor: 'pointer',
-                        borderRadius: RADIUS.sm,
-                        overflow: 'visible',
+                        display: 'flex',
+                        alignItems: 'center',
+                        minWidth: 0,
                       }}
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
@@ -936,21 +906,25 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       <div
                         style={{
                           position: 'absolute',
-                          inset: 0,
-                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                          borderRadius: RADIUS.sm,
+                          left: 0,
+                          right: 0,
+                          height: 4,
+                          backgroundColor: '#6B7280',
+                          borderRadius: 2,
                         }}
                       />
                       <div
                         style={{
                           position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: `${(currentVideoTime / videoDuration) * 100}%`,
-                          backgroundColor: COLORS.primary,
-                          borderRadius: RADIUS.sm,
-                          transition: 'width 0.1s linear',
+                          left: `calc(${(currentVideoTime / videoDuration) * 100}% - 6px)`,
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: 12,
+                          height: 12,
+                          borderRadius: '50%',
+                          backgroundColor: '#FFFFFF',
+                          boxShadow: '0 0 0 1px rgba(0,0,0,0.2)',
+                          pointerEvents: 'none',
                         }}
                       />
                       {comments
@@ -974,9 +948,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 width: 8,
                                 height: 8,
                                 borderRadius: '50%',
-                                backgroundColor: COLORS.primary,
-                                border: '2px solid white',
-                                boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                border: 'none',
                                 cursor: 'pointer',
                                 padding: 0,
                               }}
@@ -985,16 +958,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           );
                         })}
                     </div>
-                    <span
-                      style={{
-                        ...TYPOGRAPHY.label,
-                        fontSize: 11,
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        minWidth: 32,
-                      }}
-                    >
-                      {formatTimestamp(videoDuration)}
-                    </span>
+                  <button
+                    type="button"
+                    onClick={handleMuteToggle}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      flexShrink: 0,
+                    }}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
+                  >
+                    {isMuted ? (
+                      <IconVolumeX size={16} />
+                    ) : (
+                      <IconVolume2 size={16} />
+                    )}
+                  </button>
                   </div>
                 {/* Skip buttons below the player */}
                 <div
