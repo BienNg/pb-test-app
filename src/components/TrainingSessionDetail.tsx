@@ -697,32 +697,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     tabIndex={0}
                     aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
                   >
-                    {!isVideoPlaying && (
-                      <div
-                        style={{
-                          width: 72,
-                          height: 72,
-                          borderRadius: '50%',
-                          backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          border: '1px solid rgba(255, 255, 255, 0.4)',
-                          backdropFilter: 'blur(6px)',
-                        }}
-                      >
-                        <div
-                          style={{
-                            marginLeft: 4,
-                            width: 0,
-                            height: 0,
-                            borderTop: '12px solid transparent',
-                            borderBottom: '12px solid transparent',
-                            borderLeft: '20px solid #FFFFFF',
-                          }}
-                        />
-                      </div>
-                    )}
                   </div>
                   </div>
                 </>
@@ -769,32 +743,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   {videoError}
                 </div>
-              )}
-              {!isVideoPlaying && !videoError && (
-                  <div
-                    style={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: '50%',
-                      backgroundColor: 'rgba(0, 0, 0, 0.55)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: '1px solid rgba(255, 255, 255, 0.4)',
-                      backdropFilter: 'blur(6px)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        marginLeft: 4,
-                        width: 0,
-                        height: 0,
-                        borderTop: '12px solid transparent',
-                        borderBottom: '12px solid transparent',
-                        borderLeft: '20px solid #FFFFFF',
-                      }}
-                    />
-                  </div>
               )}
               </div>
               <video
