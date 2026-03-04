@@ -95,8 +95,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
+  const videoStickySentinelRef = useRef<HTMLDivElement>(null);
+  const videoStickySpacerRef = useRef<HTMLDivElement>(null);
 
   const [isNarrow, setIsNarrow] = useState(false);
+  /** When set, video is "stuck" (position: fixed) and spacer holds layout. Only used when isNarrow. */
+  const [videoStickyBox, setVideoStickyBox] = useState<{
+    left: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -143,6 +152,52 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       window.removeEventListener('resize', updateLayout);
     };
   }, []);
+
+  // Scroll-driven sticky video on narrow: stick when video top hits viewport top, unstick when scrolling back up
+  useEffect(() => {
+    if (!isNarrow) {
+      setVideoStickyBox(null);
+      return;
+    }
+    const sentinel = videoStickySentinelRef.current;
+    const wrapper = videoPlayerWrapperRef.current;
+    if (!sentinel || !wrapper) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (!e || !wrapper) return;
+        // Sentinel scrolled past the top of the viewport → stick video
+        if (e.boundingClientRect.top < 0) {
+          const rect = wrapper.getBoundingClientRect();
+          setVideoStickyBox({
+            left: rect.left,
+            width: rect.width,
+            height: rect.height,
+          });
+        }
+      },
+      { threshold: 0, rootMargin: '0px', root: null }
+    );
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [isNarrow]);
+
+  // Unstick when user scrolls back up and the spacer (video slot) is at or above viewport top
+  useEffect(() => {
+    if (!isNarrow || !videoStickyBox) return;
+    const spacer = videoStickySpacerRef.current;
+    if (!spacer) return;
+
+    const checkUnstick = () => {
+      if (spacer.getBoundingClientRect().top >= 0) setVideoStickyBox(null);
+    };
+
+    checkUnstick(); // in case spacer is already in view
+    window.addEventListener('scroll', checkUnstick, { passive: true });
+    return () => window.removeEventListener('scroll', checkUnstick);
+  }, [isNarrow, videoStickyBox]);
 
   // Load comments and taggable profiles when viewing a DB session
   useEffect(() => {
@@ -485,10 +540,34 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           {/* Video + session info */}
           <div style={{ minWidth: 0 }}>
+            {/* Sentinel: when this scrolls past viewport top (narrow only), we stick the video with position:fixed */}
+            {isNarrow && (
+              <div
+                ref={videoStickySentinelRef}
+                style={{ height: 1, width: '100%', pointerEvents: 'none' }}
+                aria-hidden
+              />
+            )}
+            {isNarrow && videoStickyBox && (
+              <div
+                ref={videoStickySpacerRef}
+                style={{
+                  height: videoStickyBox.height,
+                  width: '100%',
+                  flexShrink: 0,
+                  marginBottom: SPACING.md,
+                }}
+                aria-hidden
+              />
+            )}
             <div
+              ref={videoPlayerWrapperRef}
               style={{
-                position: 'relative',
-                width: '100%',
+                position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
+                top: 0,
+                zIndex: 2,
+                width: isNarrow && videoStickyBox ? videoStickyBox.width : '100%',
+                left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
                 borderRadius: RADIUS.lg,
                 overflow: 'hidden',
                 background:
