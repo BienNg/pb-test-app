@@ -27,6 +27,8 @@ import {
   VolumeX,
   Search,
   ChevronDown,
+  Filter,
+  ArrowDownUp,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -179,5 +181,17 @@ export const IconSearch: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconChevronDown: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <ChevronDown size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconFilter: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Filter size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconArrowDownUp: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <ArrowDownUp size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

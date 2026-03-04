@@ -9,6 +9,7 @@ import {
   IconVolumeX,
   IconChevronLeft,
   IconChevronRight,
+  IconFilter,
 } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
@@ -1753,11 +1754,66 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               </h3>
               <div
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 8,
+                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 999,
+                  padding: 3,
                 }}
               >
+                <button
+                  type="button"
+                  onClick={() => setIsFilterSheetOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    border: 'none',
+                    backgroundColor:
+                      shotFilter.length || studentFilter.length
+                        ? COLORS.primary
+                        : 'transparent',
+                    color:
+                      shotFilter.length || studentFilter.length
+                        ? COLORS.textPrimary
+                        : COLORS.textSecondary,
+                    ...TYPOGRAPHY.labelMed,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  aria-label="Filter comments"
+                  title="Filter comments by shots and students"
+                >
+                  <IconFilter size={14} />
+                  Filter
+                  {(shotFilter.length || studentFilter.length) > 0 && (
+                    <span
+                      style={{
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 999,
+                        backgroundColor: 'rgba(0, 0, 0, 0.25)',
+                        color: COLORS.textPrimary,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        padding: '0 6px',
+                        marginLeft: 2,
+                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
+                      }}
+                    >
+                      {shotFilter.length + studentFilter.length}
+                    </span>
+                  )}
+                </button>
+
+                <div style={{ width: 1, height: 16, backgroundColor: 'rgba(255, 255, 255, 0.15)', margin: '0 4px' }} />
+
                 <button
                   type="button"
                   onClick={() =>
@@ -1775,75 +1831,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '4px 8px',
-                    borderRadius: RADIUS.sm,
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    border: 'none',
+                    backgroundColor: 'transparent',
                     color: COLORS.textSecondary,
-                    ...TYPOGRAPHY.label,
-                    fontSize: 11,
-                    textTransform: 'uppercase',
+                    ...TYPOGRAPHY.labelMed,
+                    fontWeight: 600,
                     cursor: 'pointer',
+                    transition: 'all 0.2s ease',
                   }}
                   aria-label={`Sort: ${commentSort}`}
                   title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
                 >
                   {commentSort.startsWith('date') ? (
                     <>
-                      <IconCalendar size={12} />
+                      <IconCalendar size={14} />
                       Date {commentSort === 'date-desc' ? '↓' : '↑'}
                     </>
                   ) : (
                     <>
-                      <IconClock size={12} />
+                      <IconClock size={14} />
                       Time {commentSort === 'timestamp-desc' ? '↓' : '↑'}
                     </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterSheetOpen(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '4px 8px',
-                    borderRadius: RADIUS.sm,
-                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                    backgroundColor:
-                      shotFilter.length || studentFilter.length
-                        ? 'rgba(49, 203, 0, 0.18)'
-                        : 'rgba(255, 255, 255, 0.04)',
-                    color:
-                      shotFilter.length || studentFilter.length
-                        ? COLORS.primary
-                        : COLORS.textSecondary,
-                    ...TYPOGRAPHY.label,
-                    fontSize: 11,
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                  }}
-                  aria-label="Filter comments"
-                  title="Filter comments by shots and students"
-                >
-                  Filter
-                  {(shotFilter.length || studentFilter.length) && (
-                    <span
-                      style={{
-                        minWidth: 16,
-                        height: 16,
-                        borderRadius: 999,
-                        backgroundColor: COLORS.primary,
-                        color: COLORS.textPrimary,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 10,
-                        padding: '0 4px',
-                      }}
-                    >
-                      {shotFilter.length + studentFilter.length}
-                    </span>
                   )}
                 </button>
               </div>
@@ -1970,15 +1980,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             flexShrink: 0,
                           }}
                         >
-                          <span
-                            style={{
-                              ...TYPOGRAPHY.label,
-                              color: COLORS.textMuted,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {comment.createdAt}
-                          </span>
                           {comment.timestampSeconds != null && (
                             <button
                               type="button"
