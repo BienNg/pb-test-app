@@ -25,19 +25,32 @@ export const SHOT_LIST = [
   'Chicken Wing', 'Pancake Shot',
 ] as const;
 
-const SHOT_MARKER_REGEX = /\[\[shot:([^\]]+)\]\]/g;
+// [[shot:Serve]] or [[mention:userId|Full Name]]
+const INLINE_MARKER_REGEX = /\[\[(shot|mention):([^\]]+)\]\]/g;
 
-/** Split comment text into segments: plain text or { type: 'shot', name: string }. */
-export function parseCommentTextWithShots(text: string): Array<{ type: 'text'; value: string } | { type: 'shot'; name: string }> {
-  const segments: Array<{ type: 'text'; value: string } | { type: 'shot'; name: string }> = [];
+type CommentSegment =
+  | { type: 'text'; value: string }
+  | { type: 'shot'; name: string }
+  | { type: 'mention'; id: string; name: string };
+
+/** Split comment text into segments: plain text, shot chips, or mention chips. */
+export function parseCommentTextWithShots(text: string): CommentSegment[] {
+  const segments: CommentSegment[] = [];
   let lastIndex = 0;
   let m: RegExpExecArray | null;
-  SHOT_MARKER_REGEX.lastIndex = 0;
-  while ((m = SHOT_MARKER_REGEX.exec(text)) !== null) {
+  INLINE_MARKER_REGEX.lastIndex = 0;
+  while ((m = INLINE_MARKER_REGEX.exec(text)) !== null) {
     if (m.index > lastIndex) {
       segments.push({ type: 'text', value: text.slice(lastIndex, m.index) });
     }
-    segments.push({ type: 'shot', name: m[1] });
+    const kind = m[1];
+    const payload = m[2];
+    if (kind === 'shot') {
+      segments.push({ type: 'shot', name: payload });
+    } else if (kind === 'mention') {
+      const [id, name] = payload.split('|');
+      segments.push({ type: 'mention', id, name: name ?? id });
+    }
     lastIndex = m.index + m[0].length;
   }
   if (lastIndex < text.length) {
@@ -59,7 +72,20 @@ const SHOT_PILL_STYLE: React.CSSProperties = {
   fontWeight: 600,
 };
 
-/** Serialize contenteditable DOM to [[shot:...]] string and get selection offset. */
+const MENTION_PILL_STYLE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  margin: '0 2px',
+  padding: '2px 8px',
+  borderRadius: RADIUS.sm,
+  border: '1px solid rgba(80, 140, 255, 0.6)',
+  backgroundColor: 'rgba(80, 140, 255, 0.12)',
+  color: '#1D4ED8',
+  ...TYPOGRAPHY.label,
+  fontWeight: 600,
+};
+
+/** Serialize contenteditable DOM to [[shot:...]] / [[mention:...]] string and get selection offset. */
 function serializeContentEditable(container: Node, selection: Selection): { text: string; cursorOffset: number } {
   let text = '';
   let cursorOffset = 0;
@@ -75,8 +101,13 @@ function serializeContentEditable(container: Node, selection: Selection): { text
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as HTMLElement;
       const dataShot = el.getAttribute?.('data-shot');
-      if (dataShot != null) {
-        const marker = `[[shot:${dataShot}]]`;
+      const mentionId = el.getAttribute?.('data-mention-id');
+      const mentionName = el.getAttribute?.('data-mention-name');
+      if (dataShot != null || mentionId != null) {
+        const marker =
+          dataShot != null
+            ? `[[shot:${dataShot}]]`
+            : `[[mention:${mentionId}|${mentionName ?? ''}]]`;
         if (node === selection.anchorNode) {
           cursorOffset = currentOffset + (selection.anchorOffset > 0 ? marker.length : 0);
         }
@@ -111,7 +142,12 @@ function syncContentEditableFromDraft(container: HTMLElement, draft: string): vo
       fragment.appendChild(document.createTextNode(seg.value));
     } else {
       const span = document.createElement('span');
-      span.setAttribute('data-shot', seg.name);
+      if (seg.type === 'shot') {
+        span.setAttribute('data-shot', seg.name);
+      } else if (seg.type === 'mention') {
+        span.setAttribute('data-mention-id', seg.id);
+        span.setAttribute('data-mention-name', seg.name);
+      }
       span.contentEditable = 'false';
       const s = span.style;
       s.display = 'inline-flex';
@@ -119,13 +155,19 @@ function syncContentEditableFromDraft(container: HTMLElement, draft: string): vo
       s.margin = '0 2px';
       s.padding = '2px 8px';
       s.borderRadius = `${RADIUS.sm}px`;
-      s.border = '1px solid rgba(212, 168, 75, 0.6)';
-      s.backgroundColor = 'rgba(212, 168, 75, 0.14)';
-      s.color = '#8B6914';
+      if (seg.type === 'shot') {
+        s.border = '1px solid rgba(212, 168, 75, 0.6)';
+        s.backgroundColor = 'rgba(212, 168, 75, 0.14)';
+        s.color = '#8B6914';
+      } else {
+        s.border = '1px solid rgba(80, 140, 255, 0.6)';
+        s.backgroundColor = 'rgba(80, 140, 255, 0.12)';
+        s.color = '#1D4ED8';
+      }
       s.fontSize = TYPOGRAPHY.label.fontSize;
       s.fontWeight = String(TYPOGRAPHY.label.fontWeight ?? 500);
       s.lineHeight = TYPOGRAPHY.label.lineHeight;
-      span.textContent = seg.name;
+      span.textContent = seg.type === 'shot' ? seg.name : seg.name;
       fragment.appendChild(span);
     }
   }
@@ -188,6 +230,21 @@ function setContentEditableCursor(container: Node, offset: number): void {
     return false;
   }
   walk(container);
+}
+
+/** Get the pixel offset (from top of container) just below the current caret line. */
+function getCaretTopOffset(container: HTMLElement): number {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return 0;
+  const range = sel.getRangeAt(0).cloneRange();
+  if (!container.contains(range.startContainer)) return 0;
+  range.collapse(true);
+  const rects = range.getClientRects();
+  if (!rects.length) return 0;
+  const caretRect = rects[0];
+  const containerRect = container.getBoundingClientRect();
+  const offset = caretRect.bottom - containerRect.top;
+  return Math.max(0, offset);
 }
 
 import {
@@ -301,6 +358,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   /** "/" command menu for shots: when set, show dropdown; query filters SHOT_LIST; highlightIndex for keyboard nav. */
   const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
+  /** "@" command menu for mentions: when set, show dropdown of taggableProfiles. */
+  const [mentionMenu, setMentionMenu] = useState<{ query: string; atStart: number; highlightIndex: number } | null>(null);
+  /** Vertical position (px from top of comment input) where inline dropdowns should appear. */
+  const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
   const [commentSort, setCommentSort] = useState<CommentSortMode>('timestamp-asc');
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
@@ -385,15 +446,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   // Load comments and taggable profiles when viewing a DB session
   useEffect(() => {
-    if (!isDbSession || !sessionId) return;
+    if (!sessionId) return;
     const supabase = createClient();
     setCommentsLoading(true);
     Promise.all([
-      fetchSessionComments(supabase, sessionId),
+      isDbSession ? fetchSessionComments(supabase, sessionId) : Promise.resolve([]),
       fetchSessionTaggableProfiles(supabase, sessionId),
     ])
       .then(([rows, taggable]) => {
-        setComments(rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null)));
+        if (Array.isArray(rows) && rows.length > 0) {
+          setComments(rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null)));
+        }
         setTaggableProfiles(taggable);
       })
       .finally(() => setCommentsLoading(false));
@@ -674,6 +737,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return SHOT_LIST.filter((shot) => shot.toLowerCase().includes(q));
   }, [shotMenu?.query]);
 
+  const filteredMentions = useMemo(() => {
+    if (!mentionMenu) return [];
+    const q = mentionMenu.query.trim().toLowerCase();
+    const base = taggableProfiles;
+    if (!q) return base;
+    return base.filter((p) => p.name.toLowerCase().includes(q));
+  }, [mentionMenu?.query, taggableProfiles]);
+
   const handleCommentInput = useCallback(() => {
     const container = commentInputRef.current;
     const sel = window.getSelection();
@@ -683,6 +754,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     pendingCursorRef.current = cursorOffset;
     const beforeCursor = text.slice(0, cursorOffset);
     const lastSlash = beforeCursor.lastIndexOf('/');
+    const lastAt = beforeCursor.lastIndexOf('@');
+
+    let anyMenu = false;
     if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
       setShowTagDropdown(false);
       setShotMenu({
@@ -690,8 +764,28 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         slashStart: lastSlash,
         highlightIndex: 0,
       });
+      anyMenu = true;
     } else {
       setShotMenu(null);
+    }
+
+    if (lastAt !== -1 && !beforeCursor.slice(lastAt).includes('\n')) {
+      const query = text.slice(lastAt + 1, cursorOffset);
+      setMentionMenu({
+        query,
+        atStart: lastAt,
+        highlightIndex: 0,
+      });
+      anyMenu = true;
+    } else if (lastAt === -1) {
+      setMentionMenu(null);
+    }
+
+    if (anyMenu) {
+      // Add extra offset so dropdown appears just below the typing line
+      setInlineMenuTop(getCaretTopOffset(container) + 20);
+    } else {
+      setInlineMenuTop(null);
     }
   }, []);
 
@@ -709,76 +803,155 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const handleCommentKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === '/') {
+      if (e.key === '/' || e.key === '@') {
         e.preventDefault();
         const container = commentInputRef.current;
         const sel = window.getSelection();
         if (!container || !sel || !container.contains(sel.anchorNode)) return;
         const { text, cursorOffset } = serializeContentEditable(container, sel);
-        const newText = text.slice(0, cursorOffset) + '/' + text.slice(cursorOffset);
+        const char = e.key;
+        const newText = text.slice(0, cursorOffset) + char + text.slice(cursorOffset);
         setCommentDraft(newText);
         pendingCursorRef.current = cursorOffset + 1;
         setShowTagDropdown(false);
-        setShotMenu({
-          query: '',
-          slashStart: cursorOffset,
-          highlightIndex: 0,
-        });
+        if (char === '/') {
+          setShotMenu({
+            query: '',
+            slashStart: cursorOffset,
+            highlightIndex: 0,
+          });
+        } else if (char === '@') {
+          setMentionMenu({
+            query: '',
+            atStart: cursorOffset,
+            highlightIndex: 0,
+          });
+        }
+        // Add extra offset so dropdown appears just below the typing line
+        setInlineMenuTop(getCaretTopOffset(container) + 20);
         commentInputRef.current?.focus();
         return;
       }
-      if (shotMenu == null) return;
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setShotMenu((m) =>
-          m
-            ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredShots.length - 1) }
-            : null
-        );
-        return;
-      }
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
-        return;
-      }
-      if (e.key === 'Enter' && filteredShots.length > 0) {
-        e.preventDefault();
-        const shot = filteredShots[shotMenu.highlightIndex];
-        const container = commentInputRef.current;
-        const sel = window.getSelection();
-        if (shot && container && sel && container.contains(sel.anchorNode)) {
-          const { text, cursorOffset } = serializeContentEditable(container, sel);
-          const start = shotMenu.slashStart;
-          const replacement = `[[shot:${shot}]] `;
-          const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
-          setCommentDraft(nextDraft);
-          setShotMenu(null);
-          pendingCursorRef.current = start + replacement.length;
-          commentInputRef.current?.focus();
+
+      // Handle open menus
+      if (shotMenu || mentionMenu) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (shotMenu) {
+            setShotMenu((m) =>
+              m
+                ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredShots.length - 1) }
+                : null
+            );
+          } else if (mentionMenu) {
+            setMentionMenu((m) =>
+              m
+                ? {
+                    ...m,
+                    highlightIndex: Math.min(m.highlightIndex + 1, filteredMentions.length - 1),
+                  }
+                : null
+            );
+          }
+          return;
         }
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setShotMenu(null);
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (shotMenu) {
+            setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
+          } else if (mentionMenu) {
+            setMentionMenu((m) =>
+              m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null
+            );
+          }
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const container = commentInputRef.current;
+          const sel = window.getSelection();
+          if (!container || !sel || !container.contains(sel.anchorNode)) return;
+          const { text, cursorOffset } = serializeContentEditable(container, sel);
+          if (shotMenu && filteredShots.length > 0) {
+            const shot = filteredShots[shotMenu.highlightIndex];
+            if (shot) {
+              const start = shotMenu.slashStart;
+              const replacement = `[[shot:${shot}]] `;
+              const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
+              setCommentDraft(nextDraft);
+              setShotMenu(null);
+              pendingCursorRef.current = start + replacement.length;
+              commentInputRef.current?.focus();
+            }
+          } else if (mentionMenu && filteredMentions.length > 0) {
+            const mention = filteredMentions[mentionMenu.highlightIndex];
+            if (mention) {
+              const start = mentionMenu.atStart;
+              const marker = `[[mention:${mention.id}|${mention.name}]] `;
+              const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+              setCommentDraft(nextDraft);
+              setMentionMenu(null);
+              pendingCursorRef.current = start + marker.length;
+              commentInputRef.current?.focus();
+              setSelectedMentionIds((prev) =>
+                prev.includes(mention.id) ? prev : [...prev, mention.id]
+              );
+            }
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShotMenu(null);
+          setMentionMenu(null);
+          setInlineMenuTop(null);
+          return;
+        }
       }
     },
-    [shotMenu, filteredShots, commentDraft]
+    [shotMenu, mentionMenu, filteredShots, filteredMentions, commentDraft, isDbSession, taggableProfiles]
   );
 
   const selectShotFromMenu = useCallback(
     (shot: string) => {
       if (!shotMenu) return;
-      const end = commentDraft.length;
+      const container = commentInputRef.current;
+      const sel = window.getSelection();
+      if (!container || !sel || !container.contains(sel.anchorNode)) return;
+      const { text, cursorOffset } = serializeContentEditable(container, sel);
+      const start = shotMenu.slashStart;
       const replacement = `[[shot:${shot}]] `;
-      const nextDraft = commentDraft.slice(0, shotMenu.slashStart) + replacement + commentDraft.slice(end);
+      const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
       setCommentDraft(nextDraft);
       setShotMenu(null);
-      pendingCursorRef.current = shotMenu.slashStart + replacement.length;
+      pendingCursorRef.current = start + replacement.length;
       commentInputRef.current?.focus();
+      if (!mentionMenu) setInlineMenuTop(null);
     },
-    [shotMenu, commentDraft]
+    [shotMenu, mentionMenu]
+  );
+
+  const selectMentionFromMenu = useCallback(
+    (mentionId: string) => {
+      if (!mentionMenu) return;
+      const mention = taggableProfiles.find((p) => p.id === mentionId);
+      if (!mention) return;
+      const container = commentInputRef.current;
+      const sel = window.getSelection();
+      if (!container || !sel || !container.contains(sel.anchorNode)) return;
+      const { text, cursorOffset } = serializeContentEditable(container, sel);
+      const start = mentionMenu.atStart;
+      const marker = `[[mention:${mention.id}|${mention.name}]] `;
+      const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+      setCommentDraft(nextDraft);
+      setMentionMenu(null);
+      pendingCursorRef.current = start + marker.length;
+      commentInputRef.current?.focus();
+      setSelectedMentionIds((prev) =>
+        prev.includes(mention.id) ? prev : [...prev, mention.id]
+      );
+    },
+    [mentionMenu, taggableProfiles]
   );
 
   if (!session) {
@@ -1654,26 +1827,62 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           >
                             {comment.author}
                           </span>
+                          {isCoach && (
+                            <span
+                              style={{
+                                ...TYPOGRAPHY.label,
+                                textTransform: 'uppercase',
+                                color: COLORS.textPrimary,
+                                opacity: 0.9,
+                              }}
+                            >
+                              {comment.role}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: SPACING.xs,
+                            flexShrink: 0,
+                          }}
+                        >
                           <span
                             style={{
                               ...TYPOGRAPHY.label,
-                              textTransform: 'uppercase',
-                              color: isCoach ? COLORS.textPrimary : COLORS.textSecondary,
-                              opacity: isCoach ? 0.9 : 0.8,
+                              color: COLORS.textMuted,
+                              whiteSpace: 'nowrap',
                             }}
                           >
-                            {comment.role}
+                            {comment.createdAt}
                           </span>
+                          {comment.timestampSeconds != null && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                seekTo(comment.timestampSeconds!);
+                                setActiveCommentId(comment.id);
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                borderRadius: RADIUS.sm,
+                                border: `1px solid ${COLORS.primaryLight}`,
+                                backgroundColor: 'rgba(49, 203, 0, 0.12)',
+                                color: COLORS.primary,
+                                ...TYPOGRAPHY.label,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              <span style={{ opacity: 0.9 }}>▶</span>
+                              {formatTimestamp(comment.timestampSeconds)}
+                            </button>
+                          )}
                         </div>
-                        <span
-                          style={{
-                            ...TYPOGRAPHY.label,
-                            color: COLORS.textMuted,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {comment.createdAt}
-                        </span>
                       </div>
                       {comment.taggedUsers && comment.taggedUsers.length > 0 && (
                         <div
@@ -1687,48 +1896,28 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           Tagged: {comment.taggedUsers.map((u) => u.name).join(', ')}
                         </div>
                       )}
-                      {comment.timestampSeconds != null && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            seekTo(comment.timestampSeconds!);
-                            setActiveCommentId(comment.id);
-                          }}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            marginTop: SPACING.xs,
-                            padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                            borderRadius: RADIUS.sm,
-                            border: `1px solid ${COLORS.primaryLight}`,
-                            backgroundColor: 'rgba(49, 203, 0, 0.12)',
-                            color: COLORS.primary,
-                            ...TYPOGRAPHY.label,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <span style={{ opacity: 0.9 }}>▶</span>
-                          {formatTimestamp(comment.timestampSeconds)}
-                        </button>
-                      )}
-                      <p
+              <p
                         style={{
                           ...TYPOGRAPHY.bodySmall,
                           margin: `${SPACING.xs}px 0 0`,
                           color: COLORS.textPrimary,
                         }}
                       >
-                        {parseCommentTextWithShots(comment.text).map((seg, i) =>
-                          seg.type === 'text' ? (
-                            <span key={i}>{seg.value}</span>
-                          ) : (
-                            <span key={i} style={SHOT_PILL_STYLE}>
-                              {seg.name}
-                            </span>
-                          )
-                        )}
+                {parseCommentTextWithShots(comment.text).map((seg, i) => {
+                  if (seg.type === 'text') return <span key={i}>{seg.value}</span>;
+                  if (seg.type === 'shot') {
+                    return (
+                      <span key={i} style={SHOT_PILL_STYLE}>
+                        {seg.name}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={i} style={MENTION_PILL_STYLE}>
+                      @{seg.name}
+                    </span>
+                  );
+                })}
                       </p>
                     </div>
                   </div>
@@ -1937,7 +2126,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   suppressContentEditableWarning
                   role="textbox"
                   aria-multiline="true"
-                  aria-label="Add a note. Type / for shot commands."
+                  aria-label="Add a note. Type / for shot commands or @ to tag people."
                   onInput={handleCommentInput}
                   onKeyDown={handleCommentKeyDown}
                   onPaste={(e) => {
@@ -1945,7 +2134,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
                   }}
-                  data-placeholder="Add a note... Type / for shot commands"
+                  data-placeholder="Add a note... Type / for shot commands or @ to tag"
                   style={{
                     minHeight: 56,
                     width: '100%',
@@ -1971,7 +2160,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       pointerEvents: 'none',
                     }}
                   >
-                    Add a note... Type / for shot commands
+                    Add a note... Type / for shot commands or @ to tag
                   </span>
                 )}
                 {shotMenu != null && (
@@ -1982,8 +2171,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       position: 'absolute',
                       left: 0,
                       right: 0,
-                      top: '100%',
-                      marginTop: 4,
+                      top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                      marginTop: inlineMenuTop != null ? 0 : 4,
                       maxHeight: 220,
                       overflowY: 'auto',
                       backgroundColor: COLORS.cardBg,
@@ -2021,6 +2210,65 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           }}
                         >
                           {shot}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {mentionMenu != null && (
+                  <div
+                    role="listbox"
+                    aria-label="Mention person"
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                      marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                      backgroundColor: COLORS.cardBg,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      borderRadius: RADIUS.sm,
+                      boxShadow: SHADOWS.light,
+                      zIndex: 21,
+                    }}
+                  >
+                    {filteredMentions.length === 0 ? (
+                      <div
+                        style={{
+                          padding: SPACING.sm,
+                          ...TYPOGRAPHY.bodySmall,
+                          color: COLORS.textMuted,
+                        }}
+                      >
+                        No students/coaches assigned to this session
+                      </div>
+                    ) : (
+                      filteredMentions.map((p, i) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          role="option"
+                          aria-selected={mentionMenu.highlightIndex === i}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            selectMentionFromMenu(p.id);
+                          }}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: `${SPACING.sm}px ${SPACING.md}px`,
+                            border: 'none',
+                            background:
+                              mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+                            textAlign: 'left',
+                            ...TYPOGRAPHY.bodySmall,
+                            color: COLORS.textPrimary,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          @{p.name}
                         </button>
                       ))
                     )}
