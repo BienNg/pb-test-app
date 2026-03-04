@@ -445,27 +445,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           >
             ← Back to My Progress
           </button>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: SPACING.xs,
-            }}
-          >
             <div
               style={{
-                padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                borderRadius: 999,
-                backgroundColor: COLORS.backgroundLight,
-                ...TYPOGRAPHY.label,
-                textTransform: 'uppercase',
-                color: COLORS.textSecondary,
-                opacity: 0.9,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                gap: SPACING.xs,
               }}
             >
-              Training session
-            </div>
             <div
               style={{
                 display: 'flex',
