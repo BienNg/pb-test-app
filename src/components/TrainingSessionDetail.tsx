@@ -12,6 +12,184 @@ import {
 } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
+
+/** Pickleball shot types available via "/" command in comments. */
+export const SHOT_LIST = [
+  'Serve', 'Return', 'Drive', 'Forehand Drive', 'Backhand Drive',
+  'Volley', 'Forehand Volley', 'Backhand Volley', 'Punch Volley', 'Block Volley', 'Roll Volley',
+  'Dink', 'Forehand Dink', 'Backhand Dink', 'Cross-Court Dink', 'Straight Dink', 'Dead Dink',
+  'Slice Dink', 'Topspin Dink', 'Attack Dink', 'Drop', 'Third Shot Drop', 'Transition',
+  'Third Shot Drive', 'Hybrid Drop', 'Reset', 'Smash', 'Put-Away', 'Backhand Overhead',
+  'Jump Smash', 'Lob', 'Offensive Lob', 'Defensive Lob', 'Topspin Lob', 'Backspin Lob',
+  'Block', 'Counter', 'Erne', 'Bert', 'ATP', 'Tweener', 'Flick', 'Speed-Up', 'Fake Speed-Up',
+  'Chicken Wing', 'Pancake Shot',
+] as const;
+
+const SHOT_MARKER_REGEX = /\[\[shot:([^\]]+)\]\]/g;
+
+/** Split comment text into segments: plain text or { type: 'shot', name: string }. */
+export function parseCommentTextWithShots(text: string): Array<{ type: 'text'; value: string } | { type: 'shot'; name: string }> {
+  const segments: Array<{ type: 'text'; value: string } | { type: 'shot'; name: string }> = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  SHOT_MARKER_REGEX.lastIndex = 0;
+  while ((m = SHOT_MARKER_REGEX.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push({ type: 'text', value: text.slice(lastIndex, m.index) });
+    }
+    segments.push({ type: 'shot', name: m[1] });
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+  return segments.length ? segments : [{ type: 'text', value: text }];
+}
+
+const SHOT_PILL_STYLE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  margin: '0 2px',
+  padding: '2px 8px',
+  borderRadius: RADIUS.sm,
+  border: '1px solid rgba(212, 168, 75, 0.6)',
+  backgroundColor: 'rgba(212, 168, 75, 0.14)',
+  color: '#8B6914',
+  ...TYPOGRAPHY.label,
+  fontWeight: 600,
+};
+
+/** Serialize contenteditable DOM to [[shot:...]] string and get selection offset. */
+function serializeContentEditable(container: Node, selection: Selection): { text: string; cursorOffset: number } {
+  let text = '';
+  let cursorOffset = 0;
+  function walk(node: Node, currentOffset: number): number {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const content = node.textContent || '';
+      if (node === selection.anchorNode) {
+        cursorOffset = currentOffset + Math.min(selection.anchorOffset, content.length);
+      }
+      text += content;
+      return currentOffset + content.length;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      const dataShot = el.getAttribute?.('data-shot');
+      if (dataShot != null) {
+        const marker = `[[shot:${dataShot}]]`;
+        if (node === selection.anchorNode) {
+          cursorOffset = currentOffset + (selection.anchorOffset > 0 ? marker.length : 0);
+        }
+        text += marker;
+        return currentOffset + marker.length;
+      }
+      if (el.tagName === 'BR') {
+        if (node === selection.anchorNode) {
+          cursorOffset = currentOffset + (selection.anchorOffset > 0 ? 1 : 0);
+        }
+        text += '\n';
+        return currentOffset + 1;
+      }
+      let off = currentOffset;
+      for (let i = 0; i < node.childNodes.length; i++) {
+        off = walk(node.childNodes[i], off);
+      }
+      return off;
+    }
+    return currentOffset;
+  }
+  walk(container, 0);
+  return { text, cursorOffset };
+}
+
+/** Build and set contenteditable DOM from draft string (no React children = no removeChild conflicts). */
+function syncContentEditableFromDraft(container: HTMLElement, draft: string): void {
+  const segments = parseCommentTextWithShots(draft);
+  const fragment = document.createDocumentFragment();
+  for (const seg of segments) {
+    if (seg.type === 'text') {
+      fragment.appendChild(document.createTextNode(seg.value));
+    } else {
+      const span = document.createElement('span');
+      span.setAttribute('data-shot', seg.name);
+      span.contentEditable = 'false';
+      const s = span.style;
+      s.display = 'inline-flex';
+      s.alignItems = 'center';
+      s.margin = '0 2px';
+      s.padding = '2px 8px';
+      s.borderRadius = `${RADIUS.sm}px`;
+      s.border = '1px solid rgba(212, 168, 75, 0.6)';
+      s.backgroundColor = 'rgba(212, 168, 75, 0.14)';
+      s.color = '#8B6914';
+      s.fontSize = TYPOGRAPHY.label.fontSize;
+      s.fontWeight = String(TYPOGRAPHY.label.fontWeight ?? 500);
+      s.lineHeight = TYPOGRAPHY.label.lineHeight;
+      span.textContent = seg.name;
+      fragment.appendChild(span);
+    }
+  }
+  container.replaceChildren(fragment);
+}
+
+/** Set selection in contenteditable at given offset in serialized string. */
+function setContentEditableCursor(container: Node, offset: number): void {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const selection = sel;
+  let current = 0;
+  function walk(node: Node): boolean {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const len = (node.textContent || '').length;
+      if (current + len >= offset) {
+        const range = document.createRange();
+        range.setStart(node, Math.min(offset - current, len));
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        return true;
+      }
+      current += len;
+      return false;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as HTMLElement;
+      const dataShot = el.getAttribute?.('data-shot');
+      if (dataShot != null) {
+        const markerLen = `[[shot:${dataShot}]]`.length;
+        if (current + markerLen >= offset) {
+          const range = document.createRange();
+          range.setStart(node, offset - current <= 0 ? 0 : 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          return true;
+        }
+        current += markerLen;
+        return false;
+      }
+      if (el.tagName === 'BR') {
+        if (current + 1 >= offset) {
+          const range = document.createRange();
+          range.setStart(node, offset - current <= 0 ? 0 : 1);
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          return true;
+        }
+        current += 1;
+        return false;
+      }
+      for (let i = 0; i < node.childNodes.length; i++) {
+        if (walk(node.childNodes[i])) return true;
+      }
+      return false;
+    }
+    return false;
+  }
+  walk(container);
+}
+
 import {
   fetchSessionComments,
   insertSessionComment,
@@ -92,7 +270,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [addUrlSaving, setAddUrlSaving] = useState(false);
   const [addUrlError, setAddUrlError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const commentInputRef = useRef<HTMLDivElement>(null);
+  const pendingCursorRef = useRef<number | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
@@ -120,6 +299,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
   const [showTagDropdown, setShowTagDropdown] = useState(false);
+  /** "/" command menu for shots: when set, show dropdown; query filters SHOT_LIST; highlightIndex for keyboard nav. */
+  const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
   const [commentSort, setCommentSort] = useState<CommentSortMode>('timestamp-asc');
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
@@ -485,6 +666,120 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setComments((prev) => [...prev, newComment]);
     setCommentDraft('');
   };
+
+  const filteredShots = useMemo(() => {
+    if (!shotMenu) return [];
+    const q = shotMenu.query.trim().toLowerCase();
+    if (!q) return [...SHOT_LIST];
+    return SHOT_LIST.filter((shot) => shot.toLowerCase().includes(q));
+  }, [shotMenu?.query]);
+
+  const handleCommentInput = useCallback(() => {
+    const container = commentInputRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || !container.contains(sel.anchorNode)) return;
+    const { text, cursorOffset } = serializeContentEditable(container, sel);
+    setCommentDraft(text);
+    pendingCursorRef.current = cursorOffset;
+    const beforeCursor = text.slice(0, cursorOffset);
+    const lastSlash = beforeCursor.lastIndexOf('/');
+    if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
+      setShowTagDropdown(false);
+      setShotMenu({
+        query: text.slice(lastSlash + 1, cursorOffset),
+        slashStart: lastSlash,
+        highlightIndex: 0,
+      });
+    } else {
+      setShotMenu(null);
+    }
+  }, []);
+
+  // Sync contenteditable from draft imperatively so React never reconciles its children (avoids removeChild errors when user deletes nodes).
+  useEffect(() => {
+    const container = commentInputRef.current;
+    if (!container) return;
+    syncContentEditableFromDraft(container, commentDraft);
+    if (pendingCursorRef.current != null) {
+      const offset = pendingCursorRef.current;
+      pendingCursorRef.current = null;
+      setContentEditableCursor(container, offset);
+    }
+  }, [commentDraft]);
+
+  const handleCommentKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === '/') {
+        e.preventDefault();
+        const container = commentInputRef.current;
+        const sel = window.getSelection();
+        if (!container || !sel || !container.contains(sel.anchorNode)) return;
+        const { text, cursorOffset } = serializeContentEditable(container, sel);
+        const newText = text.slice(0, cursorOffset) + '/' + text.slice(cursorOffset);
+        setCommentDraft(newText);
+        pendingCursorRef.current = cursorOffset + 1;
+        setShowTagDropdown(false);
+        setShotMenu({
+          query: '',
+          slashStart: cursorOffset,
+          highlightIndex: 0,
+        });
+        commentInputRef.current?.focus();
+        return;
+      }
+      if (shotMenu == null) return;
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setShotMenu((m) =>
+          m
+            ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredShots.length - 1) }
+            : null
+        );
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
+        return;
+      }
+      if (e.key === 'Enter' && filteredShots.length > 0) {
+        e.preventDefault();
+        const shot = filteredShots[shotMenu.highlightIndex];
+        const container = commentInputRef.current;
+        const sel = window.getSelection();
+        if (shot && container && sel && container.contains(sel.anchorNode)) {
+          const { text, cursorOffset } = serializeContentEditable(container, sel);
+          const start = shotMenu.slashStart;
+          const replacement = `[[shot:${shot}]] `;
+          const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
+          setCommentDraft(nextDraft);
+          setShotMenu(null);
+          pendingCursorRef.current = start + replacement.length;
+          commentInputRef.current?.focus();
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShotMenu(null);
+      }
+    },
+    [shotMenu, filteredShots, commentDraft]
+  );
+
+  const selectShotFromMenu = useCallback(
+    (shot: string) => {
+      if (!shotMenu) return;
+      const end = commentDraft.length;
+      const replacement = `[[shot:${shot}]] `;
+      const nextDraft = commentDraft.slice(0, shotMenu.slashStart) + replacement + commentDraft.slice(end);
+      setCommentDraft(nextDraft);
+      setShotMenu(null);
+      pendingCursorRef.current = shotMenu.slashStart + replacement.length;
+      commentInputRef.current?.focus();
+    },
+    [shotMenu, commentDraft]
+  );
 
   if (!session) {
     return null;
@@ -1425,7 +1720,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           color: COLORS.textPrimary,
                         }}
                       >
-                        {comment.text}
+                        {parseCommentTextWithShots(comment.text).map((seg, i) =>
+                          seg.type === 'text' ? (
+                            <span key={i}>{seg.value}</span>
+                          ) : (
+                            <span key={i} style={SHOT_PILL_STYLE}>
+                              {seg.name}
+                            </span>
+                          )
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1626,24 +1929,104 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   )}
                 </div>
               )}
-              <textarea
-                ref={textareaRef}
-                id="session-comment-input"
-                rows={3}
-                value={commentDraft}
-                onChange={(e) => setCommentDraft(e.target.value)}
-                placeholder="Add a note..."
-                style={{
-                  width: '100%',
-                  resize: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  ...TYPOGRAPHY.bodySmall,
-                  color: COLORS.textPrimary,
-                  background: 'transparent',
-                  marginBottom: SPACING.sm,
-                }}
-              />
+              <div style={{ position: 'relative', marginBottom: SPACING.sm }}>
+                <div
+                  ref={commentInputRef}
+                  id="session-comment-input"
+                  contentEditable
+                  suppressContentEditableWarning
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Add a note. Type / for shot commands."
+                  onInput={handleCommentInput}
+                  onKeyDown={handleCommentKeyDown}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const text = e.clipboardData.getData('text/plain');
+                    document.execCommand('insertText', false, text);
+                  }}
+                  data-placeholder="Add a note... Type / for shot commands"
+                  style={{
+                    minHeight: 56,
+                    width: '100%',
+                    outline: 'none',
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textPrimary,
+                    background: 'transparent',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {/* Content is synced imperatively in useEffect to avoid React removeChild errors when user deletes nodes */}
+                </div>
+                {commentDraft === '' && (
+                  <span
+                    aria-hidden
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textMuted,
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    Add a note... Type / for shot commands
+                  </span>
+                )}
+                {shotMenu != null && (
+                  <div
+                    role="listbox"
+                    aria-label="Shot type"
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: '100%',
+                      marginTop: 4,
+                      maxHeight: 220,
+                      overflowY: 'auto',
+                      backgroundColor: COLORS.cardBg,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      borderRadius: RADIUS.sm,
+                      boxShadow: SHADOWS.light,
+                      zIndex: 20,
+                    }}
+                  >
+                    {filteredShots.length === 0 ? (
+                      <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                        No matching shot
+                      </div>
+                    ) : (
+                      filteredShots.map((shot, i) => (
+                        <button
+                          key={shot}
+                          type="button"
+                          role="option"
+                          aria-selected={i === shotMenu.highlightIndex}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            selectShotFromMenu(shot);
+                          }}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            padding: `${SPACING.sm}px ${SPACING.md}px`,
+                            border: 'none',
+                            background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
+                            textAlign: 'left',
+                            ...TYPOGRAPHY.bodySmall,
+                            color: COLORS.textPrimary,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {shot}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="button"
