@@ -977,8 +977,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     onClick={goToPrevTimestamp}
                     disabled={sortedCommentTimestamps.length === 0}
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 26,
+                      height: 26,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -993,14 +993,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     aria-label="Previous comment timestamp"
                     title="Previous timestamp"
                   >
-                    <IconChevronLeft size={14} />
+                    <IconChevronLeft size={12} />
                   </button>
                   <button
                     type="button"
                     onClick={() => skipBy(-10)}
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 26,
+                      height: 26,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1011,7 +1011,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 10,
+                      fontSize: 9,
                     }}
                     aria-label="Skip back 10 seconds"
                     title="−10s"
@@ -1022,8 +1022,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(-5)}
                     style={{
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1034,7 +1034,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 12,
+                      fontSize: 11,
                     }}
                     aria-label="Skip back 5 seconds"
                     title="−5s"
@@ -1045,8 +1045,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={handlePlayPause}
                     style={{
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.4)',
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -1062,17 +1062,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     title={isVideoPlaying ? 'Pause' : 'Play'}
                   >
                     {isVideoPlaying ? (
-                      <IconPause size={22} />
+                      <IconPause size={18} />
                     ) : (
-                      <IconPlay size={22} />
+                      <IconPlay size={18} />
                     )}
                   </button>
                   <button
                     type="button"
                     onClick={() => skipBy(5)}
                     style={{
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1083,7 +1083,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 12,
+                      fontSize: 11,
                     }}
                     aria-label="Skip forward 5 seconds"
                     title="+5s"
@@ -1094,8 +1094,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(10)}
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 26,
+                      height: 26,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1106,7 +1106,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 10,
+                      fontSize: 9,
                     }}
                     aria-label="Skip forward 10 seconds"
                     title="+10s"
@@ -1118,8 +1118,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     onClick={goToNextTimestamp}
                     disabled={sortedCommentTimestamps.length === 0}
                     style={{
-                      width: 32,
-                      height: 32,
+                      width: 26,
+                      height: 26,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -1134,7 +1134,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     aria-label="Next comment timestamp"
                     title="Next timestamp"
                   >
-                    <IconChevronRight size={14} />
+                    <IconChevronRight size={12} />
                   </button>
                 </div>
               </div>
