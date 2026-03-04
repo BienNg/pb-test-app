@@ -854,8 +854,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={handlePlayPause}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 24,
+                      height: 24,
                       border: 'none',
                       background: 'none',
                       color: '#FFFFFF',
@@ -869,9 +869,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     aria-label={isVideoPlaying ? 'Pause' : 'Play'}
                   >
                     {isVideoPlaying ? (
-                      <IconPause size={24} />
+                      <IconPause size={14} />
                     ) : (
-                      <IconPlay size={28} />
+                      <IconPlay size={14} />
                     )}
                   </button>
                   <span
