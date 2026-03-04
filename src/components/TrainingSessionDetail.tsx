@@ -2181,7 +2181,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   suppressContentEditableWarning
                   role="textbox"
                   aria-multiline="true"
-                  aria-label="Add a note. Type / for shot commands or @ to tag people."
+                  aria-label="Type / for shot commands or @ to tag people."
                   onInput={handleCommentInput}
                   onKeyDown={handleCommentKeyDown}
                   onPaste={(e) => {
@@ -2189,7 +2189,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
                   }}
-                  data-placeholder="Add a note... Type / for shot commands or @ to tag"
+                  data-placeholder="Type / for shot commands or @ to tag"
                   style={{
                     minHeight: 56,
                     width: '100%',
@@ -2215,7 +2215,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       pointerEvents: 'none',
                     }}
                   >
-                    Add a note... Type / for shot commands or @ to tag
+                    Type / for shot commands or @ to tag
                   </span>
                 )}
                 {shotMenu != null && (
