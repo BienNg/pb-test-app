@@ -1113,23 +1113,23 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 aria-hidden
               />
             )}
-            <div
-              ref={videoPlayerWrapperRef}
-              style={{
-                position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
-                top: 0,
-                zIndex: 2,
-                width: isNarrow && videoStickyBox ? videoStickyBox.width : '100%',
-                left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
-                borderRadius: RADIUS.lg,
-                overflow: 'hidden',
-                background:
-                  'radial-gradient(circle at 10% 20%, #31cb00 0%, #1C1C1E 45%, #000000 100%)',
-                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.28)',
-                marginBottom: SPACING.md,
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-              }}
-            >
+              <div
+                ref={videoPlayerWrapperRef}
+                style={{
+                  position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
+                  top: 0,
+                  zIndex: 2,
+                  width: isNarrow && videoStickyBox ? videoStickyBox.width : '100%',
+                  left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
+                  borderRadius: RADIUS.lg,
+                  overflow: 'hidden',
+                  background:
+                    'radial-gradient(circle at 10% 20%, #31cb00 0%, #1C1C1E 45%, #000000 100%)',
+                  boxShadow: 'none',
+                  marginBottom: SPACING.md,
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                }}
+              >
               <div style={{ position: 'relative', width: '100%' }}>
               {!hasVideoUrl ? (
                 canAddVideoUrl ? (
