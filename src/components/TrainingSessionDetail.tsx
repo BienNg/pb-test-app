@@ -403,7 +403,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return [...comments].sort((a, b) => {
       const hasA = a.timestampSeconds != null ? 1 : 0;
       const hasB = b.timestampSeconds != null ? 1 : 0;
-      if (hasA !== hasB) return hasB - hasA;
+      // Comments without a timestamp always on top when sorted by time
+      if (hasA !== hasB) return hasA - hasB;
       if (hasA && hasB) {
         const ta = a.timestampSeconds ?? 0;
         const tb = b.timestampSeconds ?? 0;
