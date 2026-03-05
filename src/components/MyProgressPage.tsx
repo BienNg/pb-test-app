@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '../styles/theme';
 import { LessonCard } from './Cards';
 import { Card } from './BaseComponents';
+import { createClient } from '@/lib/supabase/client';
+import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
+import { parseCommentTextWithShots } from './TrainingSessionDetail';
 
 export interface MyProgressPageProps {
   /** Override page title (e.g. "Alex's Progress" when coach views a student) */
@@ -54,6 +57,37 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
 export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, onOpenSession, sessions: sessionsProp }) => {
   const sessions = sessionsProp ?? TRAINING_SESSIONS;
   const [selectedSegment, setSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
+  const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
+
+  // For DB-backed sessions, load comments and derive unique shots from their texts
+  useEffect(() => {
+    if (!sessionsProp || sessionsProp.length === 0) return;
+    const supabase = createClient();
+    if (!supabase) return;
+
+    const load = async () => {
+      const result: Record<string, string[]> = {};
+      for (const s of sessionsProp) {
+        const rows = await fetchSessionComments(supabase, s.id);
+        if (!rows || rows.length === 0) continue;
+        const comments = rows.map((r) => mapDbCommentToSessionComment(r, null));
+        const shotSet = new Set<string>();
+        comments.forEach((c) => {
+          parseCommentTextWithShots(c.text).forEach((seg) => {
+            if (seg.type === 'shot') {
+              shotSet.add(seg.name);
+            }
+          });
+        });
+        if (shotSet.size > 0) {
+          result[s.id] = Array.from(shotSet).sort((a, b) => a.localeCompare(b));
+        }
+      }
+      setShotsBySession(result);
+    };
+
+    void load();
+  }, [sessionsProp]);
 
   return (
     <div
@@ -226,6 +260,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
                     duration={session.duration}
                     thumbnail={session.thumbnail}
                     videoUrl={session.videoUrl}
+                    shots={shotsBySession[session.id]}
                     isVOD
                     onClick={() =>
                       onOpenSession

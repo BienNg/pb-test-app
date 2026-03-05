@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
+import { SHOT_PILL_STYLE } from './TrainingSessionDetail';
 
 interface TrainerCardProps {
   name: string;
@@ -112,6 +113,8 @@ interface LessonCardProps {
   isVOD?: boolean;
   isCompleted?: boolean;
   onClick?: () => void;
+  /** Unique shot names from comments for this session (displayed as pills). */
+  shots?: string[];
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
@@ -123,6 +126,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   progress = 0,
   isCompleted = false,
   onClick,
+  shots,
 }) => {
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
   const displayDuration = useMemo(() => {
@@ -265,14 +269,34 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         </div>
       )}
 
+      {/* Shots pills from comments */}
+      {shots && shots.length > 0 && (
+        <div
+          style={{
+            marginTop: SPACING.sm,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 4,
+          }}
+        >
+          {shots.map((name) => (
+            <span key={name} style={SHOT_PILL_STYLE}>
+              {name}
+            </span>
+          ))}
+        </div>
+      )}
       {/* Duration */}
-      <div style={{
-        ...TYPOGRAPHY.label,
-        color: COLORS.textSecondary,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-      }}>
+      <div
+        style={{
+          ...TYPOGRAPHY.label,
+          color: COLORS.textSecondary,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginTop: shots && shots.length > 0 ? SPACING.sm : 0,
+        }}
+      >
         <IconClock size={16} /> {displayDuration}
       </div>
     </div>

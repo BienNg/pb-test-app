@@ -61,7 +61,7 @@ export function parseCommentTextWithShots(text: string): CommentSegment[] {
   return segments.length ? segments : [{ type: 'text', value: text }];
 }
 
-const SHOT_PILL_STYLE: React.CSSProperties = {
+export const SHOT_PILL_STYLE: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   margin: '0 2px',
