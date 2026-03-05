@@ -1,101 +1,275 @@
 import React, { useState } from 'react';
-import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { Card, Button } from './BaseComponents';
 import { LessonCard } from './Cards';
+import { getYoutubeVideoId } from '../lib/youtube';
 
 interface FilterOption {
   id: string;
   label: string;
 }
 
-export const LessonsPage: React.FC = () => {
+export interface Lesson {
+  id: number;
+  title: string;
+  category: string;
+  duration: string;
+  thumbnail?: string;
+  videoUrl?: string;
+  progress: number;
+  isVOD?: boolean;
+  isCompleted?: boolean;
+}
+
+const INITIAL_LESSONS: Lesson[] = [
+  { id: 1, title: 'Complete Serve Guide', category: 'Technique', duration: '24:30', thumbnail: '🎾', progress: 75, isVOD: true },
+  { id: 2, title: 'Dinking Masterclass', category: 'Technique', duration: '18:45', thumbnail: '🏓', progress: 100, isVOD: true, isCompleted: true },
+  { id: 3, title: 'Kitchen Line Strategy', category: 'Strategy', duration: '32:15', thumbnail: '📍', progress: 45, isVOD: true },
+  { id: 4, title: 'Tournament Preparation', category: 'Tournaments', duration: '28:00', thumbnail: '🏆', progress: 0, isVOD: true },
+  { id: 5, title: 'Footwork Drills', category: 'Fitness', duration: '16:20', thumbnail: '🦶', progress: 60, isVOD: true },
+  { id: 6, title: 'Mental Game in Pickleball', category: 'Mindset', duration: '12:15', thumbnail: '🧠', progress: 100, isVOD: true, isCompleted: true },
+  { id: 7, title: 'Advanced Positioning', category: 'Strategy', duration: '22:45', thumbnail: '📊', progress: 30, isVOD: true },
+  { id: 8, title: 'Doubles Team Dynamics', category: 'Strategy', duration: '35:00', thumbnail: '👥', progress: 0, isVOD: true },
+];
+
+const CATEGORIES: FilterOption[] = [
+  { id: 'all', label: 'All Lessons' },
+  { id: 'technique', label: 'Technique' },
+  { id: 'strategy', label: 'Strategy' },
+  { id: 'fitness', label: 'Fitness' },
+  { id: 'mindset', label: 'Mindset' },
+  { id: 'tournaments', label: 'Tournaments' },
+];
+
+interface AddVideoModalProps {
+  onClose: () => void;
+  onAdd: (video: { title: string; category: string; duration: string; videoUrl: string }) => void;
+}
+
+function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('Technique');
+  const [duration, setDuration] = useState('0:00');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    const trimmed = youtubeUrl.trim();
+    if (!trimmed) {
+      setError('Please enter a YouTube URL');
+      return;
+    }
+    const vid = getYoutubeVideoId(trimmed);
+    if (!vid) {
+      setError('Only YouTube URLs are allowed (e.g. youtube.com/watch?v=... or youtu.be/...)');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      onAdd({ title: title.trim() || 'New Video', category, duration: duration.trim() || '0:00', videoUrl: trimmed });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      role="presentation"
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: SPACING.lg,
+      }}
+    >
+      <div
+        role="dialog"
+        aria-label="Add new video"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: COLORS.white,
+          borderRadius: RADIUS.xl,
+          padding: SPACING.xxl,
+          maxWidth: 440,
+          width: '100%',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+        }}
+      >
+        <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: `0 0 ${SPACING.xl}px` }}>
+          Add Video
+        </h3>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.lg }}>
+          <div>
+            <label
+              htmlFor="add-video-youtube"
+              style={{
+                display: 'block',
+                ...TYPOGRAPHY.label,
+                color: COLORS.textSecondary,
+                marginBottom: SPACING.xs,
+              }}
+            >
+              YouTube URL
+            </label>
+            <input
+              id="add-video-youtube"
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={youtubeUrl}
+              onChange={(e) => {
+                setYoutubeUrl(e.target.value);
+                setError(null);
+              }}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: SPACING.sm,
+                borderRadius: RADIUS.md,
+                border: `1px solid ${COLORS.textMuted}`,
+                ...TYPOGRAPHY.body,
+                color: COLORS.textPrimary,
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="add-video-title"
+              style={{
+                display: 'block',
+                ...TYPOGRAPHY.label,
+                color: COLORS.textSecondary,
+                marginBottom: SPACING.xs,
+              }}
+            >
+              Title
+            </label>
+            <input
+              id="add-video-title"
+              type="text"
+              placeholder="Video title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: SPACING.sm,
+                borderRadius: RADIUS.md,
+                border: `1px solid ${COLORS.textMuted}`,
+                ...TYPOGRAPHY.body,
+                color: COLORS.textPrimary,
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="add-video-category"
+              style={{
+                display: 'block',
+                ...TYPOGRAPHY.label,
+                color: COLORS.textSecondary,
+                marginBottom: SPACING.xs,
+              }}
+            >
+              Category
+            </label>
+            <select
+              id="add-video-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                width: '100%',
+                padding: SPACING.sm,
+                borderRadius: RADIUS.md,
+                border: `1px solid ${COLORS.textMuted}`,
+                ...TYPOGRAPHY.body,
+                color: COLORS.textPrimary,
+                backgroundColor: COLORS.white,
+              }}
+            >
+              {CATEGORIES.filter((c) => c.id !== 'all').map((c) => (
+                <option key={c.id} value={c.label}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="add-video-duration"
+              style={{
+                display: 'block',
+                ...TYPOGRAPHY.label,
+                color: COLORS.textSecondary,
+                marginBottom: SPACING.xs,
+              }}
+            >
+              Duration (optional)
+            </label>
+            <input
+              id="add-video-duration"
+              type="text"
+              placeholder="MM:SS"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                padding: SPACING.sm,
+                borderRadius: RADIUS.md,
+                border: `1px solid ${COLORS.textMuted}`,
+                ...TYPOGRAPHY.body,
+                color: COLORS.textPrimary,
+              }}
+            />
+          </div>
+
+          {error && (
+            <p style={{ margin: 0, ...TYPOGRAPHY.bodySmall, color: COLORS.red }}>
+              {error}
+            </p>
+          )}
+
+          <div style={{ display: 'flex', gap: SPACING.sm, justifyContent: 'flex-end', marginTop: SPACING.sm }}>
+            <Button variant="secondary" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={saving || !youtubeUrl.trim()}
+            >
+              {saving ? 'Adding…' : 'Add Video'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export interface LessonsPageProps {
+  isAdmin?: boolean;
+}
+
+export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [lessons, setLessons] = useState<Lesson[]>(INITIAL_LESSONS);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  const categories: FilterOption[] = [
-    { id: 'all', label: 'All Lessons' },
-    { id: 'technique', label: 'Technique' },
-    { id: 'strategy', label: 'Strategy' },
-    { id: 'fitness', label: 'Fitness' },
-    { id: 'mindset', label: 'Mindset' },
-    { id: 'tournaments', label: 'Tournaments' },
-  ];
-
-  const lessons = [
-    {
-      id: 1,
-      title: 'Complete Serve Guide',
-      category: 'Technique',
-      duration: '24:30',
-      thumbnail: '🎾',
-      progress: 75,
-      isVOD: true,
-    },
-    {
-      id: 2,
-      title: 'Dinking Masterclass',
-      category: 'Technique',
-      duration: '18:45',
-      thumbnail: '🏓',
-      progress: 100,
-      isVOD: true,
-      isCompleted: true,
-    },
-    {
-      id: 3,
-      title: 'Kitchen Line Strategy',
-      category: 'Strategy',
-      duration: '32:15',
-      thumbnail: '📍',
-      progress: 45,
-      isVOD: true,
-    },
-    {
-      id: 4,
-      title: 'Tournament Preparation',
-      category: 'Tournaments',
-      duration: '28:00',
-      thumbnail: '🏆',
-      progress: 0,
-      isVOD: true,
-    },
-    {
-      id: 5,
-      title: 'Footwork Drills',
-      category: 'Fitness',
-      duration: '16:20',
-      thumbnail: '🦶',
-      progress: 60,
-      isVOD: true,
-    },
-    {
-      id: 6,
-      title: 'Mental Game in Pickleball',
-      category: 'Mindset',
-      duration: '12:15',
-      thumbnail: '🧠',
-      progress: 100,
-      isVOD: true,
-      isCompleted: true,
-    },
-    {
-      id: 7,
-      title: 'Advanced Positioning',
-      category: 'Strategy',
-      duration: '22:45',
-      thumbnail: '📊',
-      progress: 30,
-      isVOD: true,
-    },
-    {
-      id: 8,
-      title: 'Doubles Team Dynamics',
-      category: 'Strategy',
-      duration: '35:00',
-      thumbnail: '👥',
-      progress: 0,
-      isVOD: true,
-    },
-  ];
+  const categories = CATEGORIES;
 
   const filteredLessons =
     selectedCategory === 'all'
@@ -151,28 +325,57 @@ export const LessonsPage: React.FC = () => {
         }}
       >
         {/* Header - on top */}
-        <div style={{ marginBottom: SPACING.xxl }}>
-          <h1
-            style={{
-              ...TYPOGRAPHY.h1,
-              color: COLORS.textPrimary,
-              margin: 0,
-              marginBottom: SPACING.md,
-            }}
-          >
-            Pickleball Training Library
-          </h1>
-          <p
-            style={{
-              ...TYPOGRAPHY.body,
-              color: COLORS.textSecondary,
-              margin: 0,
-              marginBottom: SPACING.lg,
-            }}
-          >
-            Learn from expert instructors. Master your technique, strategy, and game.
-          </p>
+        <div style={{ marginBottom: SPACING.xxl, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACING.lg }}>
+          <div>
+            <h1
+              style={{
+                ...TYPOGRAPHY.h1,
+                color: COLORS.textPrimary,
+                margin: 0,
+                marginBottom: SPACING.md,
+              }}
+            >
+              Pickleball Training Library
+            </h1>
+            <p
+              style={{
+                ...TYPOGRAPHY.body,
+                color: COLORS.textSecondary,
+                margin: 0,
+                marginBottom: SPACING.lg,
+              }}
+            >
+              Learn from expert instructors. Master your technique, strategy, and game.
+            </p>
+          </div>
+          {isAdmin && (
+            <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
+              Add Video
+            </Button>
+          )}
         </div>
+
+        {showAddModal && (
+          <AddVideoModal
+            onClose={() => setShowAddModal(false)}
+            onAdd={(video) => {
+              const maxId = Math.max(0, ...lessons.map((l) => l.id));
+              setLessons((prev) => [
+                ...prev,
+                {
+                  id: maxId + 1,
+                  title: video.title,
+                  category: video.category,
+                  duration: video.duration,
+                  videoUrl: video.videoUrl,
+                  progress: 0,
+                  isVOD: true,
+                },
+              ]);
+              setShowAddModal(false);
+            }}
+          />
+        )}
 
         {/* Lesson Progress overview card */}
         <div style={{ marginBottom: SPACING.xxl }}>
@@ -406,6 +609,7 @@ export const LessonsPage: React.FC = () => {
               category={lesson.category}
               duration={lesson.duration}
               thumbnail={lesson.thumbnail}
+              videoUrl={lesson.videoUrl}
               progress={lesson.progress}
               isVOD={lesson.isVOD}
               isCompleted={lesson.isCompleted}

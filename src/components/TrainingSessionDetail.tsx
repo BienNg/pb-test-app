@@ -567,7 +567,7 @@ const EditCommentInput: React.FC<{
             overflowY: 'auto',
             backgroundColor: COLORS.cardBg,
             borderRadius: RADIUS.md,
-            boxShadow: SHADOWS.medium,
+            boxShadow: SHADOWS.md,
             border: `1px solid ${COLORS.backgroundLight}`,
             padding: `${SPACING.xs}px 0`,
           }}
@@ -1258,7 +1258,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = () => {
       if (activeCommentMenu !== null) {
         setActiveCommentMenu(null);
       }
@@ -2584,7 +2584,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 marginTop: 4,
                                 backgroundColor: COLORS.cardBg,
                                 borderRadius: RADIUS.md,
-                                boxShadow: SHADOWS.medium,
+                                boxShadow: SHADOWS.md,
                                 border: `1px solid ${COLORS.backgroundLight}`,
                                 zIndex: 10,
                                 minWidth: 120,

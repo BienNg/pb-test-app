@@ -1473,7 +1473,7 @@ export const AdminApp: React.FC = () => {
           />
         );
       case 'library':
-        return <LessonsPage />;
+        return <LessonsPage isAdmin />;
       default:
         return (
           <AdminOverviewPage

@@ -214,6 +214,7 @@ interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'minimal';
   size?: 'sm' | 'md' | 'lg';
   style?: React.CSSProperties;
+  disabled?: boolean;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -222,6 +223,7 @@ export const Button: React.FC<ButtonProps> = ({
   variant = 'primary',
   size = 'md',
   style,
+  disabled = false,
 }) => {
   const sizes = {
     sm: { padding: `${SPACING.sm}px ${SPACING.md}px`, fontSize: '12px' },
@@ -249,11 +251,14 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       style={{
         borderRadius: RADIUS.md,
         fontWeight: 600,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.6 : 1,
         transition: 'all 0.2s',
         ...sizes[size],
         ...variants[variant],
