@@ -1919,8 +1919,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           left: 0,
                           right: 0,
                           height: 4,
-                          backgroundColor: '#6B7280',
                           borderRadius: 2,
+                          background: `linear-gradient(to right, #FFFFFF ${videoDuration > 0 ? (currentVideoTime / videoDuration) * 100 : 0}%, rgba(255, 255, 255, 0.25) ${videoDuration > 0 ? (currentVideoTime / videoDuration) * 100 : 0}%)`,
                         }}
                       />
                       <div
