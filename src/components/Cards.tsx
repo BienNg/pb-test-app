@@ -74,11 +74,31 @@ export const TrainerCard: React.FC<TrainerCardProps> = ({
   </Card>
 );
 
+/** Extract YouTube video ID from watch or share link. Returns null if not YouTube. */
+function getYoutubeVideoId(url: string): string | null {
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
+/** Get thumbnail URL: use thumbnail if it's a URL, else derive from YouTube videoUrl. */
+function getThumbnailUrl(thumbnail?: string, videoUrl?: string): string | null {
+  if (thumbnail?.startsWith('http://') || thumbnail?.startsWith('https://')) return thumbnail;
+  if (videoUrl) {
+    const id = getYoutubeVideoId(videoUrl);
+    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  }
+  return null;
+}
+
 interface LessonCardProps {
   title: string;
   category: string;
   duration: string;
   thumbnail?: string;
+  videoUrl?: string;
   progress?: number;
   isVOD?: boolean;
   isCompleted?: boolean;
@@ -89,10 +109,15 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   title,
   category,
   duration,
+  thumbnail,
+  videoUrl,
   progress = 0,
   isCompleted = false,
   onClick,
-}) => (
+}) => {
+  const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
+
+  return (
   <Card
     onClick={onClick}
     style={{
@@ -106,7 +131,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
       style={{
         width: '100%',
         aspectRatio: '16/9',
-      backgroundColor: '#000000',
+        backgroundColor: '#000000',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -114,6 +139,19 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         overflow: 'hidden',
       }}
     >
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt=""
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      ) : null}
       {/* Play icon overlay */}
       <div
         style={{
@@ -224,7 +262,8 @@ export const LessonCard: React.FC<LessonCardProps> = ({
       </div>
     </div>
   </Card>
-);
+  );
+};
 
 interface UpcomingLessonCardProps {
   coachName: string;

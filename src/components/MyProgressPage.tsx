@@ -225,6 +225,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, o
                     category="Training Session"
                     duration={session.duration}
                     thumbnail={session.thumbnail}
+                    videoUrl={session.videoUrl}
                     isVOD
                     onClick={() =>
                       onOpenSession

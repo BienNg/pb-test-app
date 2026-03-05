@@ -1,6 +1,14 @@
 import type { TrainingSession } from '@/components/MyProgressPage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+function getYoutubeVideoId(url: string): string | null {
+  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
 /** Map a DB session row to TrainingSession for MyProgressPage. */
 export function mapDbSessionToTrainingSession(row: {
   id: string;
@@ -15,16 +23,19 @@ export function mapDbSessionToTrainingSession(row: {
     day: 'numeric',
     year: 'numeric',
   });
+  const videoUrl = row.youtube_url ?? '';
+  const ytId = videoUrl ? getYoutubeVideoId(videoUrl) : null;
+  const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '🎾';
   return {
     id: row.id,
     dateKey,
     dateLabel,
     time: '—',
-    thumbnail: '🎾',
+    thumbnail,
     duration: '—',
     title: 'Training Session',
     focus: '',
-    videoUrl: row.youtube_url ?? '',
+    videoUrl,
   };
 }
 
