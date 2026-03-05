@@ -15,9 +15,15 @@ type TabId = 'home' | 'progress' | 'library';
 export function StudentShell() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [progressSelectedSegment, setProgressSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const handleTabClick = (tabId: TabId) => {
+    setActiveTrainingSessionId(null);
+    setActiveTab(tabId);
+  };
 
   // Load DB-backed sessions for the logged-in student so ids line up with Supabase.
   useEffect(() => {
@@ -51,6 +57,8 @@ export function StudentShell() {
       case 'progress':
         return (
           <MyProgressPage
+            selectedSegment={progressSelectedSegment}
+            onSelectedSegmentChange={setProgressSelectedSegment}
             onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
             sessions={loadingSessions ? [] : sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
           />
@@ -145,7 +153,7 @@ export function StudentShell() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 type="button"
                 style={{
                   flex: 1,

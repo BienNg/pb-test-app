@@ -11,6 +11,10 @@ export interface MyProgressPageProps {
   title?: string;
   /** When set, show a back button (e.g. in coach view) */
   onBack?: () => void;
+  /** Optional controlled value for which segment is selected. When omitted, component manages its own state. */
+  selectedSegment?: 'videos' | 'duprCoach';
+  /** Called when the selected segment changes (used with controlled selectedSegment). */
+  onSelectedSegmentChange?: (segment: 'videos' | 'duprCoach') => void;
   /** When set, open a full-screen training session view instead of inline modal */
   onOpenSession?: (sessionId: string) => void;
   /** Sessions to display (e.g. from DB for a student). When omitted, uses built-in mock sessions. */
@@ -54,9 +58,18 @@ export const TRAINING_SESSIONS: TrainingSession[] = [
   { id: '8', dateKey: '2026-01-20', dateLabel: 'Tue, Jan 20, 2026', time: '5:30 PM', thumbnail: '📹', duration: '25:50', title: 'Shot Selection Review', focus: 'Choosing the highest-percentage option.', videoUrl: 'https://www.youtube.com/watch?v=MD1cu0f1oHo' },
 ];
 
-export const MyProgressPage: React.FC<MyProgressPageProps> = ({ title, onBack, onOpenSession, sessions: sessionsProp }) => {
+export const MyProgressPage: React.FC<MyProgressPageProps> = ({
+  title,
+  onBack,
+  selectedSegment: selectedSegmentProp,
+  onSelectedSegmentChange,
+  onOpenSession,
+  sessions: sessionsProp,
+}) => {
   const sessions = sessionsProp ?? TRAINING_SESSIONS;
-  const [selectedSegment, setSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
+  const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
+  const selectedSegment = selectedSegmentProp ?? internalSelectedSegment;
+  const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
