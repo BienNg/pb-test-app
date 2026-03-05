@@ -167,6 +167,9 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               border: `1px solid rgba(0, 0, 0, 0.04)`,
               position: 'relative',
               overflow: 'hidden',
+              maxWidth: 480,
+              width: '100%',
+              margin: '0 auto',
             }}
           >
             {/* Subtle shimmer overlay */}
