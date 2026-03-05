@@ -2,7 +2,6 @@
 
 import { type ReactNode, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
-import { Dashboard } from './Dashboard';
 import { LessonsPage } from './LessonsPage';
 import { MyProgressPage, type TrainingSession } from './MyProgressPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
@@ -10,11 +9,11 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { useAuth } from './providers/AuthProvider';
 
-type TabId = 'home' | 'progress' | 'library';
+type TabId = 'progress' | 'library';
 
 export function StudentShell() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [activeTab, setActiveTab] = useState<TabId>('progress');
   const [progressSelectedSegment, setProgressSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -52,8 +51,6 @@ export function StudentShell() {
       );
     }
     switch (activeTab) {
-      case 'home':
-        return <Dashboard onNavigateToTab={setActiveTab} />;
       case 'progress':
         return (
           <MyProgressPage
@@ -66,21 +63,18 @@ export function StudentShell() {
       case 'library':
         return <LessonsPage />;
       default:
-        return <Dashboard />;
+        return (
+          <MyProgressPage
+            selectedSegment={progressSelectedSegment}
+            onSelectedSegmentChange={setProgressSelectedSegment}
+            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+            sessions={loadingSessions ? [] : sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+          />
+        );
     }
   };
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
-    {
-      id: 'home',
-      label: 'Home',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </svg>
-      ),
-    },
     {
       id: 'progress',
       label: 'My Progress',
