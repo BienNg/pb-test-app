@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { Card, Button } from './BaseComponents';
 import { LessonCard } from './Cards';
 import { getYoutubeVideoId } from '../lib/youtube';
+import { createClient } from '@/lib/supabase/client';
 
 interface FilterOption {
   id: string;
@@ -10,7 +11,7 @@ interface FilterOption {
 }
 
 export interface Lesson {
-  id: number;
+  id: string;
   title: string;
   category: string;
   duration: string;
@@ -21,15 +22,24 @@ export interface Lesson {
   isCompleted?: boolean;
 }
 
+interface VideoLessonRow {
+  id: string;
+  title: string | null;
+  category: string | null;
+  duration: string | null;
+  youtube_url: string | null;
+  created_at: string;
+}
+
 const INITIAL_LESSONS: Lesson[] = [
-  { id: 1, title: 'Complete Serve Guide', category: 'Technique', duration: '24:30', thumbnail: '🎾', progress: 75, isVOD: true },
-  { id: 2, title: 'Dinking Masterclass', category: 'Technique', duration: '18:45', thumbnail: '🏓', progress: 100, isVOD: true, isCompleted: true },
-  { id: 3, title: 'Kitchen Line Strategy', category: 'Strategy', duration: '32:15', thumbnail: '📍', progress: 45, isVOD: true },
-  { id: 4, title: 'Tournament Preparation', category: 'Tournaments', duration: '28:00', thumbnail: '🏆', progress: 0, isVOD: true },
-  { id: 5, title: 'Footwork Drills', category: 'Fitness', duration: '16:20', thumbnail: '🦶', progress: 60, isVOD: true },
-  { id: 6, title: 'Mental Game in Pickleball', category: 'Mindset', duration: '12:15', thumbnail: '🧠', progress: 100, isVOD: true, isCompleted: true },
-  { id: 7, title: 'Advanced Positioning', category: 'Strategy', duration: '22:45', thumbnail: '📊', progress: 30, isVOD: true },
-  { id: 8, title: 'Doubles Team Dynamics', category: 'Strategy', duration: '35:00', thumbnail: '👥', progress: 0, isVOD: true },
+  { id: '1', title: 'Complete Serve Guide', category: 'Technique', duration: '24:30', thumbnail: '🎾', progress: 75, isVOD: true },
+  { id: '2', title: 'Dinking Masterclass', category: 'Technique', duration: '18:45', thumbnail: '🏓', progress: 100, isVOD: true, isCompleted: true },
+  { id: '3', title: 'Kitchen Line Strategy', category: 'Strategy', duration: '32:15', thumbnail: '📍', progress: 45, isVOD: true },
+  { id: '4', title: 'Tournament Preparation', category: 'Tournaments', duration: '28:00', thumbnail: '🏆', progress: 0, isVOD: true },
+  { id: '5', title: 'Footwork Drills', category: 'Fitness', duration: '16:20', thumbnail: '🦶', progress: 60, isVOD: true },
+  { id: '6', title: 'Mental Game in Pickleball', category: 'Mindset', duration: '12:15', thumbnail: '🧠', progress: 100, isVOD: true, isCompleted: true },
+  { id: '7', title: 'Advanced Positioning', category: 'Strategy', duration: '22:45', thumbnail: '📊', progress: 30, isVOD: true },
+  { id: '8', title: 'Doubles Team Dynamics', category: 'Strategy', duration: '35:00', thumbnail: '👥', progress: 0, isVOD: true },
 ];
 
 const CATEGORIES: FilterOption[] = [
@@ -43,7 +53,7 @@ const CATEGORIES: FilterOption[] = [
 
 interface AddVideoModalProps {
   onClose: () => void;
-  onAdd: (video: { title: string; category: string; duration: string; videoUrl: string }) => void;
+  onAdd: (video: { title: string; category: string; duration: string; videoUrl: string }) => Promise<void>;
 }
 
 function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
@@ -68,8 +78,10 @@ function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
     setError(null);
     setSaving(true);
     try {
-      onAdd({ title: title.trim() || 'New Video', category, duration: duration.trim() || '0:00', videoUrl: trimmed });
+      await onAdd({ title: title.trim() || 'New Video', category, duration: duration.trim() || '0:00', videoUrl: trimmed });
       onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to add video');
     } finally {
       setSaving(false);
     }
@@ -268,8 +280,101 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [lessons, setLessons] = useState<Lesson[]>(INITIAL_LESSONS);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const categories = CATEGORIES;
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase) return;
+
+    queueMicrotask(() => setLoadError(null));
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('video_lessons')
+          .select('id, title, category, duration, youtube_url, created_at')
+          .order('created_at', { ascending: false });
+
+        if (error || !data) {
+          if (error) {
+            console.error('Failed to load video lessons', error);
+            setLoadError('Failed to load video lessons');
+          }
+          return;
+        }
+
+        const rows = data as VideoLessonRow[];
+        const mapped: Lesson[] = rows.map((row) => ({
+          id: row.id,
+          title: row.title ?? 'New Video',
+          category: row.category ?? 'Technique',
+          duration: row.duration ?? '0:00',
+          videoUrl: row.youtube_url ?? undefined,
+          progress: 0,
+          isVOD: true,
+        }));
+
+        if (mapped.length > 0) {
+          setLessons(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load video lessons', err);
+        setLoadError('Failed to load video lessons');
+      }
+    })();
+  }, []);
+
+  const handleAddVideo = async (video: { title: string; category: string; duration: string; videoUrl: string }) => {
+    const supabase = createClient();
+
+    // Fallback: if Supabase is not configured, just update local state.
+    if (!supabase) {
+      const newLesson: Lesson = {
+        id:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? (crypto as Crypto).randomUUID()
+            : String(Date.now()),
+        title: video.title,
+        category: video.category,
+        duration: video.duration,
+        videoUrl: video.videoUrl,
+        progress: 0,
+        isVOD: true,
+      };
+      setLessons((prev) => [newLesson, ...prev]);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('video_lessons')
+      .insert({
+        title: video.title,
+        category: video.category,
+        duration: video.duration,
+        youtube_url: video.videoUrl,
+      })
+      .select('id, title, category, duration, youtube_url, created_at')
+      .single();
+
+    if (error || !data) {
+      throw new Error(error?.message ?? 'Failed to save video');
+    }
+
+    const row = data as VideoLessonRow;
+    const newLesson: Lesson = {
+      id: row.id,
+      title: row.title ?? video.title,
+      category: row.category ?? video.category,
+      duration: row.duration ?? video.duration,
+      videoUrl: row.youtube_url ?? video.videoUrl,
+      progress: 0,
+      isVOD: true,
+    };
+
+    setLessons((prev) => [newLesson, ...prev]);
+  };
 
   const filteredLessons =
     selectedCategory === 'all'
@@ -355,25 +460,23 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
           )}
         </div>
 
+        {loadError && (
+          <p
+            style={{
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.red,
+              marginTop: 0,
+              marginBottom: SPACING.lg,
+            }}
+          >
+            {loadError}
+          </p>
+        )}
+
         {showAddModal && (
           <AddVideoModal
             onClose={() => setShowAddModal(false)}
-            onAdd={(video) => {
-              const maxId = Math.max(0, ...lessons.map((l) => l.id));
-              setLessons((prev) => [
-                ...prev,
-                {
-                  id: maxId + 1,
-                  title: video.title,
-                  category: video.category,
-                  duration: video.duration,
-                  videoUrl: video.videoUrl,
-                  progress: 0,
-                  isVOD: true,
-                },
-              ]);
-              setShowAddModal(false);
-            }}
+            onAdd={handleAddVideo}
           />
         )}
 
