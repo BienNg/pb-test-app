@@ -339,6 +339,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [addUrlDraft, setAddUrlDraft] = useState('');
   const [addUrlSaving, setAddUrlSaving] = useState(false);
   const [addUrlError, setAddUrlError] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const commentInputRef = useRef<HTMLDivElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
@@ -403,6 +404,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const updateLayout = () => {
       if (typeof window === 'undefined') return;
       setIsNarrow(window.innerWidth < 768);
+      setIsDesktop(window.innerWidth >= 1024);
     };
 
     updateLayout();
@@ -1019,7 +1021,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     <div
       style={{
         backgroundColor: 'transparent',
-        minHeight: '100vh',
+        minHeight: isDesktop ? 'auto' : '100vh',
         padding: `${SPACING.md}px`,
         width: '100%',
         boxSizing: 'border-box',
@@ -1117,15 +1119,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
                   top: 0,
                   zIndex: 2,
-                  width: isNarrow && videoStickyBox ? videoStickyBox.width : '100%',
+                  width: isNarrow && videoStickyBox ? videoStickyBox.width : (isNarrow ? `calc(100% + ${SPACING.md * 2}px)` : '100%'),
+                  marginLeft: isNarrow && !videoStickyBox ? -SPACING.md : undefined,
+                  marginRight: isNarrow && !videoStickyBox ? -SPACING.md : undefined,
                   left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
-                  borderRadius: RADIUS.lg,
+                  borderRadius: isNarrow ? 0 : RADIUS.lg,
                   overflow: 'hidden',
                   background:
                     'radial-gradient(circle at 10% 20%, #31cb00 0%, #1C1C1E 45%, #000000 100%)',
                   boxShadow: 'none',
                   marginBottom: SPACING.md,
-                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  border: isNarrow ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
+                  borderTop: isNarrow ? '1px solid rgba(255, 255, 255, 0.06)' : undefined,
+                  borderBottom: isNarrow ? '1px solid rgba(255, 255, 255, 0.06)' : undefined,
                 }}
               >
               <div style={{ position: 'relative', width: '100%' }}>
@@ -1773,7 +1779,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              maxHeight: isNarrow ? 'none' : 520,
+              maxHeight: 'none',
             }}
           >
             <div
