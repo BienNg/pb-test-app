@@ -217,6 +217,33 @@ export async function insertSessionComment(
   };
 }
 
+/** Update a comment text. Returns true on success. */
+export async function updateSessionComment(
+  supabase: SupabaseClient | null,
+  commentId: string,
+  text: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comments')
+    .update({ text })
+    .eq('id', commentId);
+  return !error;
+}
+
+/** Delete a comment. Returns true on success. */
+export async function deleteSessionComment(
+  supabase: SupabaseClient | null,
+  commentId: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comments')
+    .delete()
+    .eq('id', commentId);
+  return !error;
+}
+
 /** Fetch profiles that can be tagged in a session (students in session + coach). */
 export async function fetchSessionTaggableProfiles(
   supabase: SupabaseClient | null,

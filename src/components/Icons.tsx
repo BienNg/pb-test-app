@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Filter,
   ArrowDownUp,
+  MoreVertical,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -193,5 +194,11 @@ export const IconFilter: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconArrowDownUp: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <ArrowDownUp size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconMoreVertical: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <MoreVertical size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

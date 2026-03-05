@@ -10,6 +10,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconFilter,
+  IconMoreVertical,
 } from './Icons';
 import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
@@ -263,6 +264,8 @@ function getCaretTopOffset(container: HTMLElement): number {
 import {
   fetchSessionComments,
   insertSessionComment,
+  updateSessionComment,
+  deleteSessionComment,
   mapDbCommentToSessionComment,
   fetchSessionTaggableProfiles,
 } from '@/lib/sessionComments';
@@ -310,6 +313,409 @@ function getYoutubeVideoId(url: string): string | null {
   if (embedMatch) return embedMatch[1];
   return null;
 }
+
+const EditCommentInput: React.FC<{
+  initialDraft: string;
+  taggableProfiles: { id: string; name: string }[];
+  onSave: (draft: string) => void;
+  onCancel: () => void;
+}> = ({ initialDraft, taggableProfiles, onSave, onCancel }) => {
+  const [draft, setDraft] = useState(initialDraft);
+  const inputRef = useRef<HTMLDivElement>(null);
+  const cursorRef = useRef<number | null>(null);
+
+  const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
+  const [mentionMenu, setMentionMenu] = useState<{ query: string; atStart: number; highlightIndex: number } | null>(null);
+  const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
+
+  const filteredShots = useMemo(() => {
+    if (!shotMenu) return [];
+    const q = shotMenu.query.trim().toLowerCase();
+    if (!q) return [...SHOT_LIST];
+    return SHOT_LIST.filter((shot) => shot.toLowerCase().includes(q));
+  }, [shotMenu]);
+
+  const filteredMentions = useMemo(() => {
+    if (!mentionMenu) return [];
+    const q = mentionMenu.query.trim().toLowerCase();
+    const base = taggableProfiles;
+    if (!q) return base;
+    return base.filter((p) => p.name.toLowerCase().includes(q));
+  }, [mentionMenu, taggableProfiles]);
+
+  const handleInput = useCallback(() => {
+    const container = inputRef.current;
+    const sel = window.getSelection();
+    if (!container || !sel || !container.contains(sel.anchorNode)) return;
+    const { text, cursorOffset } = serializeContentEditable(container, sel);
+    setDraft(text);
+    cursorRef.current = cursorOffset;
+
+    const beforeCursor = text.slice(0, cursorOffset);
+    const lastSlash = beforeCursor.lastIndexOf('/');
+    const lastAt = beforeCursor.lastIndexOf('@');
+
+    let anyMenu = false;
+    if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
+      setShotMenu({
+        query: text.slice(lastSlash + 1, cursorOffset),
+        slashStart: lastSlash,
+        highlightIndex: 0,
+      });
+      anyMenu = true;
+    } else {
+      setShotMenu(null);
+    }
+
+    if (lastAt !== -1 && !beforeCursor.slice(lastAt).includes('\n')) {
+      const query = text.slice(lastAt + 1, cursorOffset);
+      setMentionMenu({
+        query,
+        atStart: lastAt,
+        highlightIndex: 0,
+      });
+      anyMenu = true;
+    } else if (lastAt === -1) {
+      setMentionMenu(null);
+    }
+
+    if (anyMenu) {
+      setInlineMenuTop(getCaretTopOffset(container) + 20);
+    } else {
+      setInlineMenuTop(null);
+    }
+  }, []);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === '/' || e.key === '@') {
+        e.preventDefault();
+        const container = inputRef.current;
+        const sel = window.getSelection();
+        if (!container || !sel || !container.contains(sel.anchorNode)) return;
+        const { text, cursorOffset } = serializeContentEditable(container, sel);
+        const char = e.key;
+        const newText = text.slice(0, cursorOffset) + char + text.slice(cursorOffset);
+        setDraft(newText);
+        cursorRef.current = cursorOffset + 1;
+        if (char === '/') {
+          setShotMenu({
+            query: '',
+            slashStart: cursorOffset,
+            highlightIndex: 0,
+          });
+        } else if (char === '@') {
+          setMentionMenu({
+            query: '',
+            atStart: cursorOffset,
+            highlightIndex: 0,
+          });
+        }
+        setInlineMenuTop(getCaretTopOffset(container) + 20);
+        inputRef.current?.focus();
+        return;
+      }
+
+      if (shotMenu || mentionMenu) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (shotMenu) {
+            setShotMenu((m) =>
+              m ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredShots.length - 1) } : null
+            );
+          } else if (mentionMenu) {
+            setMentionMenu((m) =>
+              m ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredMentions.length - 1) } : null
+            );
+          }
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (shotMenu) {
+            setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
+          } else if (mentionMenu) {
+            setMentionMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
+          }
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const container = inputRef.current;
+          const sel = window.getSelection();
+          if (!container || !sel || !container.contains(sel.anchorNode)) return;
+          const { text, cursorOffset } = serializeContentEditable(container, sel);
+          if (shotMenu && filteredShots.length > 0) {
+            const shot = filteredShots[shotMenu.highlightIndex];
+            if (shot) {
+              const start = shotMenu.slashStart;
+              const replacement = `[[shot:${shot}]] `;
+              const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
+              setDraft(nextDraft);
+              setShotMenu(null);
+              cursorRef.current = start + replacement.length;
+              inputRef.current?.focus();
+            }
+          } else if (mentionMenu && filteredMentions.length > 0) {
+            const mention = filteredMentions[mentionMenu.highlightIndex];
+            if (mention) {
+              const start = mentionMenu.atStart;
+              const marker = `[[mention:${mention.id}|${mention.name}]] `;
+              const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+              setDraft(nextDraft);
+              setMentionMenu(null);
+              cursorRef.current = start + marker.length;
+              inputRef.current?.focus();
+            }
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setShotMenu(null);
+          setMentionMenu(null);
+          setInlineMenuTop(null);
+          return;
+        }
+      }
+    },
+    [shotMenu, mentionMenu, filteredShots, filteredMentions]
+  );
+
+  const selectShotFromMenu = useCallback(
+    (shot: string) => {
+      if (!shotMenu) return;
+      const container = inputRef.current;
+      const sel = window.getSelection();
+      if (!container || !sel || !container.contains(sel.anchorNode)) return;
+      const { text, cursorOffset } = serializeContentEditable(container, sel);
+      const start = shotMenu.slashStart;
+      const replacement = `[[shot:${shot}]] `;
+      const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
+      setDraft(nextDraft);
+      setShotMenu(null);
+      cursorRef.current = start + replacement.length;
+      inputRef.current?.focus();
+    },
+    [shotMenu]
+  );
+
+  const selectMentionFromMenu = useCallback(
+    (mentionId: string) => {
+      if (!mentionMenu) return;
+      const mention = taggableProfiles.find((p) => p.id === mentionId);
+      if (!mention) return;
+      const container = inputRef.current;
+      const sel = window.getSelection();
+      if (!container || !sel || !container.contains(sel.anchorNode)) return;
+      const { text, cursorOffset } = serializeContentEditable(container, sel);
+      const start = mentionMenu.atStart;
+      const marker = `[[mention:${mention.id}|${mention.name}]] `;
+      const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+      setDraft(nextDraft);
+      setMentionMenu(null);
+      cursorRef.current = start + marker.length;
+      inputRef.current?.focus();
+    },
+    [mentionMenu, taggableProfiles]
+  );
+
+  useEffect(() => {
+    const container = inputRef.current;
+    if (!container) return;
+    syncContentEditableFromDraft(container, draft);
+    if (cursorRef.current != null) {
+      const offset = cursorRef.current;
+      cursorRef.current = null;
+      setContentEditableCursor(container, offset);
+    }
+  }, [draft]);
+
+  return (
+    <div style={{ marginTop: SPACING.xs, position: 'relative' }}>
+      <div
+        ref={inputRef}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        style={{
+          width: '100%',
+          minHeight: 60,
+          padding: SPACING.sm,
+          borderRadius: RADIUS.sm,
+          border: `1px solid ${COLORS.backgroundLight}`,
+          backgroundColor: 'transparent',
+          color: COLORS.textPrimary,
+          ...TYPOGRAPHY.bodySmall,
+          fontFamily: 'inherit',
+          boxSizing: 'border-box',
+          outline: 'none',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+        }}
+      />
+      {(shotMenu || mentionMenu) && inlineMenuTop != null && (
+        <div
+          style={{
+            position: 'absolute',
+            top: inlineMenuTop,
+            left: 0,
+            zIndex: 50,
+            width: 240,
+            maxHeight: 200,
+            overflowY: 'auto',
+            backgroundColor: COLORS.cardBg,
+            borderRadius: RADIUS.md,
+            boxShadow: SHADOWS.medium,
+            border: `1px solid ${COLORS.backgroundLight}`,
+            padding: `${SPACING.xs}px 0`,
+          }}
+        >
+          {shotMenu && (
+            <>
+              <div
+                style={{
+                  padding: `${SPACING.xs}px ${SPACING.md}px`,
+                  ...TYPOGRAPHY.label,
+                  color: COLORS.textSecondary,
+                  textTransform: 'uppercase',
+                  borderBottom: `1px solid ${COLORS.backgroundLight}`,
+                  marginBottom: SPACING.xs,
+                }}
+              >
+                Shots
+              </div>
+              {filteredShots.length === 0 ? (
+                <div
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  No shots found.
+                </div>
+              ) : (
+                filteredShots.map((shot, i) => (
+                  <button
+                    key={shot}
+                    type="button"
+                    role="option"
+                    aria-selected={shotMenu.highlightIndex === i}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      selectShotFromMenu(shot);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: `${SPACING.sm}px ${SPACING.md}px`,
+                      border: 'none',
+                      background: shotMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+                      textAlign: 'left',
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textPrimary,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {shot}
+                  </button>
+                ))
+              )}
+            </>
+          )}
+          {mentionMenu && (
+            <>
+              <div
+                style={{
+                  padding: `${SPACING.xs}px ${SPACING.md}px`,
+                  ...TYPOGRAPHY.label,
+                  color: COLORS.textSecondary,
+                  textTransform: 'uppercase',
+                  borderBottom: `1px solid ${COLORS.backgroundLight}`,
+                  marginBottom: SPACING.xs,
+                }}
+              >
+                Mention
+              </div>
+              {filteredMentions.length === 0 ? (
+                <div
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  No profiles found.
+                </div>
+              ) : (
+                filteredMentions.map((p, i) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="option"
+                    aria-selected={mentionMenu.highlightIndex === i}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      selectMentionFromMenu(p.id);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: `${SPACING.sm}px ${SPACING.md}px`,
+                      border: 'none',
+                      background: mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+                      textAlign: 'left',
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textPrimary,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    @{p.name}
+                  </button>
+                ))
+              )}
+            </>
+          )}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: SPACING.xs, marginTop: SPACING.xs, justifyContent: 'flex-end' }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          style={{
+            padding: `${SPACING.xs}px ${SPACING.sm}px`,
+            borderRadius: RADIUS.sm,
+            border: `1px solid ${COLORS.backgroundLight}`,
+            background: 'none',
+            ...TYPOGRAPHY.label,
+            cursor: 'pointer',
+            color: COLORS.textSecondary,
+          }}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => onSave(draft)}
+          style={{
+            padding: `${SPACING.xs}px ${SPACING.sm}px`,
+            borderRadius: RADIUS.sm,
+            border: 'none',
+            backgroundColor: COLORS.primary,
+            color: '#fff',
+            ...TYPOGRAPHY.label,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+};
 
 export interface TrainingSessionDetailProps {
   sessionId: string;
@@ -382,6 +788,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
   const [activeCommentId, setActiveCommentId] = useState<string | number | null>(null);
+  const [activeCommentMenu, setActiveCommentMenu] = useState<string | number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
@@ -849,6 +1257,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (activeCommentMenu !== null) {
+        setActiveCommentMenu(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeCommentMenu]);
+
   // Sync contenteditable from draft imperatively so React never reconciles its children (avoids removeChild errors when user deletes nodes).
   useEffect(() => {
     const container = commentInputRef.current;
@@ -1012,6 +1430,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     },
     [mentionMenu, taggableProfiles]
   );
+
+  const handleDeleteComment = async (commentId: string | number) => {
+    if (!isDbSession || typeof commentId !== 'string') {
+      // Local state fallback
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      return;
+    }
+    const supabase = createClient();
+    const success = await deleteSessionComment(supabase, commentId);
+    if (success) {
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+    }
+  };
+
+  const handleEditComment = async (commentId: string | number, newText: string) => {
+    if (!isDbSession || typeof commentId !== 'string') {
+      // Local state fallback
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+      );
+      setEditingCommentId(null);
+      return;
+    }
+    const supabase = createClient();
+    const success = await updateSessionComment(supabase, commentId, newText);
+    if (success) {
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+      );
+      setEditingCommentId(null);
+    }
+  };
 
   if (!session) {
     return null;
@@ -2028,6 +2478,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             alignItems: 'center',
                             gap: SPACING.xs,
                             flexShrink: 0,
+                            position: 'relative',
                           }}
                         >
                           {comment.timestampSeconds != null && (
@@ -2055,6 +2506,87 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               {formatTimestamp(comment.timestampSeconds)}
                             </button>
                           )}
+                          {comment.role === 'You' && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveCommentMenu((prev) => (prev === comment.id ? null : comment.id));
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: 4,
+                                cursor: 'pointer',
+                                color: COLORS.textSecondary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                borderRadius: '50%',
+                              }}
+                            >
+                              <IconMoreVertical size={16} />
+                            </button>
+                          )}
+                          {activeCommentMenu === comment.id && (
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                right: 0,
+                                marginTop: 4,
+                                backgroundColor: COLORS.cardBg,
+                                borderRadius: RADIUS.md,
+                                boxShadow: SHADOWS.medium,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                zIndex: 10,
+                                minWidth: 120,
+                                overflow: 'hidden',
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCommentId(comment.id);
+                                  setActiveCommentMenu(null);
+                                }}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                  background: 'none',
+                                  border: 'none',
+                                  ...TYPOGRAPHY.bodySmall,
+                                  color: COLORS.textPrimary,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleDeleteComment(comment.id);
+                                  setActiveCommentMenu(null);
+                                }}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  textAlign: 'left',
+                                  padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                  background: 'none',
+                                  border: 'none',
+                                  ...TYPOGRAPHY.bodySmall,
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {comment.taggedUsers && comment.taggedUsers.length > 0 && (
@@ -2069,29 +2601,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           Tagged: {comment.taggedUsers.map((u) => u.name).join(', ')}
                         </div>
                       )}
-              <p
-                        style={{
-                          ...TYPOGRAPHY.bodySmall,
-                          margin: `${SPACING.xs}px 0 0`,
-                          color: COLORS.textPrimary,
-                        }}
-                      >
-                {parseCommentTextWithShots(comment.text).map((seg, i) => {
-                  if (seg.type === 'text') return <span key={i}>{seg.value}</span>;
-                  if (seg.type === 'shot') {
-                    return (
-                      <span key={i} style={SHOT_PILL_STYLE}>
-                        {seg.name}
-                      </span>
-                    );
-                  }
-                  return (
-                    <span key={i} style={MENTION_PILL_STYLE}>
-                      @{seg.name}
-                    </span>
-                  );
-                })}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <EditCommentInput
+                          initialDraft={comment.text}
+                          taggableProfiles={taggableProfiles}
+                          onSave={(newDraft) => handleEditComment(comment.id, newDraft)}
+                          onCancel={() => setEditingCommentId(null)}
+                        />
+                      ) : (
+                        <p
+                          style={{
+                            ...TYPOGRAPHY.bodySmall,
+                            margin: `${SPACING.xs}px 0 0`,
+                            color: COLORS.textPrimary,
+                          }}
+                        >
+                          {parseCommentTextWithShots(comment.text).map((seg, i) => {
+                            if (seg.type === 'text') return <span key={i}>{seg.value}</span>;
+                            if (seg.type === 'shot') {
+                              return (
+                                <span key={i} style={SHOT_PILL_STYLE}>
+                                  {seg.name}
+                                </span>
+                              );
+                            }
+                            return (
+                              <span key={i} style={MENTION_PILL_STYLE}>
+                                @{seg.name}
+                              </span>
+                            );
+                          })}
+                        </p>
+                      )}
                     </div>
                   </div>
                   );
