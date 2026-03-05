@@ -1027,7 +1027,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     >
       <div
         style={{
-          maxWidth: 1200,
+          maxWidth: '100%',
           margin: '0 auto',
           width: '100%',
           boxSizing: 'border-box',
@@ -1085,7 +1085,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             display: 'grid',
             gridTemplateColumns: isNarrow
               ? 'minmax(0, 1fr)'
-              : 'minmax(0, 7fr) minmax(0, 5fr)',
+              : 'minmax(0, 1fr) 400px',
             gap: SPACING.lg,
           }}
         >
@@ -2598,7 +2598,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'flex-end',
+                justifyContent: 'flex-start',
                 marginTop: SPACING.xs,
               }}
             >
