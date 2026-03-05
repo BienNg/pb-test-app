@@ -2101,6 +2101,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                   <button
                     type="button"
+                    onClick={() => skipBy(-1)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255, 255, 255, 0.35)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip back 1 second"
+                    title="−1s"
+                  >
+                    −1s
+                  </button>
+                  <button
+                    type="button"
                     onClick={handlePlayPause}
                     style={{
                       width: 40,
@@ -2124,6 +2147,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     ) : (
                       <IconPlay size={18} />
                     )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skipBy(1)}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      border: '1px solid rgba(255, 255, 255, 0.35)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      color: 'rgba(255, 255, 255, 0.95)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                    }}
+                    aria-label="Skip forward 1 second"
+                    title="+1s"
+                  >
+                    +1s
                   </button>
                   <button
                     type="button"
