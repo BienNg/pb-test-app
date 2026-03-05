@@ -586,7 +586,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                     id={`session-${session.id}`}
                   >
                     <LessonCard
-                      title={`${session.dateLabel} • ${session.time}`}
+                      title={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
                       category="Training Session"
                       duration={session.duration}
                       thumbnail={session.thumbnail}

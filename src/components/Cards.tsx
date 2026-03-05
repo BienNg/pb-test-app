@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
@@ -93,6 +93,15 @@ function getThumbnailUrl(thumbnail?: string, videoUrl?: string): string | null {
   return null;
 }
 
+/** Generate a random duration label between 7 and 25 minutes (mm:ss). */
+function getRandomDurationLabel(minMinutes = 7, maxMinutes = 25): string {
+  const minutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
+  const seconds = Math.floor(Math.random() * 60);
+  const mm = String(minutes);
+  const ss = String(seconds).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
 interface LessonCardProps {
   title: string;
   category: string;
@@ -116,6 +125,12 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   onClick,
 }) => {
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
+  const displayDuration = useMemo(() => {
+    if (!duration || duration === '—' || duration === '0:00') {
+      return getRandomDurationLabel();
+    }
+    return duration;
+  }, [duration]);
 
   return (
   <Card
@@ -258,7 +273,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         alignItems: 'center',
         gap: 6,
       }}>
-        <IconClock size={16} /> {duration}
+        <IconClock size={16} /> {displayDuration}
       </div>
     </div>
   </Card>
