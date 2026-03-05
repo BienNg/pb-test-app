@@ -31,17 +31,6 @@ interface VideoLessonRow {
   created_at: string;
 }
 
-const INITIAL_LESSONS: Lesson[] = [
-  { id: '1', title: 'Complete Serve Guide', category: 'Technique', duration: '24:30', thumbnail: '🎾', progress: 75, isVOD: true },
-  { id: '2', title: 'Dinking Masterclass', category: 'Technique', duration: '18:45', thumbnail: '🏓', progress: 100, isVOD: true, isCompleted: true },
-  { id: '3', title: 'Kitchen Line Strategy', category: 'Strategy', duration: '32:15', thumbnail: '📍', progress: 45, isVOD: true },
-  { id: '4', title: 'Tournament Preparation', category: 'Tournaments', duration: '28:00', thumbnail: '🏆', progress: 0, isVOD: true },
-  { id: '5', title: 'Footwork Drills', category: 'Fitness', duration: '16:20', thumbnail: '🦶', progress: 60, isVOD: true },
-  { id: '6', title: 'Mental Game in Pickleball', category: 'Mindset', duration: '12:15', thumbnail: '🧠', progress: 100, isVOD: true, isCompleted: true },
-  { id: '7', title: 'Advanced Positioning', category: 'Strategy', duration: '22:45', thumbnail: '📊', progress: 30, isVOD: true },
-  { id: '8', title: 'Doubles Team Dynamics', category: 'Strategy', duration: '35:00', thumbnail: '👥', progress: 0, isVOD: true },
-];
-
 const CATEGORIES: FilterOption[] = [
   { id: 'all', label: 'All Lessons' },
   { id: 'technique', label: 'Technique' },
@@ -278,7 +267,7 @@ export interface LessonsPageProps {
 
 export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [lessons, setLessons] = useState<Lesson[]>(INITIAL_LESSONS);
+  const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -316,9 +305,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
           isVOD: true,
         }));
 
-        if (mapped.length > 0) {
-          setLessons(mapped);
-        }
+        setLessons(mapped);
       } catch (err) {
         console.error('Failed to load video lessons', err);
         setLoadError('Failed to load video lessons');
