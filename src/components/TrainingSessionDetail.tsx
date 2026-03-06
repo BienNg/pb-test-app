@@ -3,10 +3,6 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconCalendar,
   IconClock,
-  IconPlay,
-  IconPause,
-  IconVolume2,
-  IconVolumeX,
   IconChevronLeft,
   IconChevronRight,
   IconFilter,
@@ -270,49 +266,7 @@ import {
   fetchSessionTaggableProfiles,
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
-
-declare global {
-  interface Window {
-    YT?: { Player: new (el: string | HTMLElement, opts: object) => YTPlayer; PlayerState: { PLAYING: number; PAUSED: number; ENDED: number } };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
-
-interface YTPlayer {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-  getCurrentTime: () => number;
-  getDuration: () => number;
-  getPlayerState: () => number;
-  mute: () => void;
-  unMute: () => void;
-  isMuted: () => boolean;
-}
-
-/** Load YouTube IFrame API. Resolves when ready. */
-function loadYoutubeAPI(): Promise<void> {
-  if (typeof window === 'undefined') return Promise.resolve();
-  if (window.YT?.Player) return Promise.resolve();
-  return new Promise((resolve) => {
-    window.onYouTubeIframeAPIReady = () => resolve();
-    if (!document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) {
-      const tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      const first = document.getElementsByTagName('script')[0];
-      first.parentNode?.insertBefore(tag, first);
-    }
-  });
-}
-
-/** Extract YouTube video ID from watch or share link. Returns null if not YouTube. */
-function getYoutubeVideoId(url: string): string | null {
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (watchMatch) return watchMatch[1];
-  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-  if (embedMatch) return embedMatch[1];
-  return null;
-}
+import { VideoPlayer, type VideoPlayerMarker } from './VideoPlayer';
 
 const EditCommentInput: React.FC<{
   initialDraft: string;
@@ -736,8 +690,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const sessionList = sessionsProp ?? TRAINING_SESSIONS;
   const session = sessionList.find((s) => s.id === sessionId);
   const hasVideoUrl = !!(session?.videoUrl?.trim());
-  const youtubeVideoId = session ? getYoutubeVideoId(session.videoUrl) : null;
-  const isYoutube = !!youtubeVideoId;
   const canAddVideoUrl = !!onSaveVideoUrl;
   const isDbSession = sessionsProp != null && session != null;
 
@@ -746,11 +698,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [addUrlSaving, setAddUrlSaving] = useState(false);
   const [addUrlError, setAddUrlError] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const commentInputRef = useRef<HTMLDivElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
-  const playerRef = useRef<YTPlayer | null>(null);
-  const playerContainerRef = useRef<HTMLDivElement>(null);
   const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
   const videoStickySentinelRef = useRef<HTMLDivElement>(null);
   const videoStickySpacerRef = useRef<HTMLDivElement>(null);
@@ -775,6 +724,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
+  const [pendingSeekSeconds, setPendingSeekSeconds] = useState<number | null>(null);
   /** "/" command menu for shots: when set, show dropdown; query filters SHOT_LIST; highlightIndex for keyboard nav. */
   const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
   /** "@" command menu for mentions: when set, show dropdown of taggableProfiles. */
@@ -887,144 +837,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       .finally(() => setCommentsLoading(false));
   }, [isDbSession, sessionId, user?.id]);
 
-  useEffect(() => {
-    const t = setTimeout(() => setVideoError(null), 0);
-    return () => clearTimeout(t);
-  }, [sessionId]);
-
-  // Reset aspect ratio when session changes so we don't reuse a previous video's ratio
-  useEffect(() => {
-    setVideoAspectRatio(null);
-  }, [sessionId]);
-
-  // Load YouTube API and create player when YouTube video
-  useEffect(() => {
-    if (!isYoutube || !youtubeVideoId || !playerContainerRef.current) return;
-
-    let pollId: ReturnType<typeof setInterval> | null = null;
-
-    const createPlayer = (yt: NonNullable<typeof window.YT>) => {
-      playerRef.current = new yt.Player(playerContainerRef.current!, {
-        videoId: youtubeVideoId,
-        playerVars: {
-          controls: 0,
-          disablekb: 0,
-          playsinline: 1,
-          rel: 0,
-        },
-        events: {
-          onReady: (e: { target: YTPlayer }) => {
-            const p = e.target;
-            const dur = p.getDuration();
-            if (dur && isFinite(dur)) setVideoDuration(dur);
-            setIsMuted(p.isMuted());
-            pollId = setInterval(() => {
-              if (!playerRef.current) return;
-              try {
-                const t = playerRef.current.getCurrentTime();
-                if (isFinite(t)) setCurrentVideoTime(t);
-                const d = playerRef.current.getDuration();
-                if (isFinite(d) && d > 0) setVideoDuration(d);
-              } catch { /* ignore getCurrentTime/getDuration errors */ }
-            }, 250);
-          },
-          onStateChange: (e: { data: number }) => {
-            const YT = window.YT!;
-            if (e.data === YT.PlayerState.PLAYING) setIsVideoPlaying(true);
-            else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED)
-              setIsVideoPlaying(false);
-          },
-        },
-      });
-    };
-
-    if (window.YT?.Player) {
-      createPlayer(window.YT);
-    } else {
-      loadYoutubeAPI().then(() => {
-        if (window.YT?.Player && playerContainerRef.current) createPlayer(window.YT);
-      });
-    }
-
-    return () => {
-      if (pollId) clearInterval(pollId);
-      if (playerRef.current?.pauseVideo) playerRef.current.pauseVideo();
-      playerRef.current = null;
-    };
-  }, [isYoutube, youtubeVideoId, sessionId]);
-
-  const handlePlayPause = useCallback(async () => {
-    setVideoError(null);
-    if (isYoutube && playerRef.current) {
-      const p = playerRef.current;
-      if (typeof p.getPlayerState !== 'function') return; // player not ready yet
-      const state = p.getPlayerState();
-      const YT = window.YT!;
-      if (state === YT.PlayerState.PLAYING) p.pauseVideo();
-      else p.playVideo();
-      return;
-    }
-    const v = videoRef.current;
-    if (!v) return;
-    try {
-      if (v.paused) {
-        await v.play();
-      } else {
-        v.pause();
-      }
-    } catch {
-      v.muted = true;
-      setIsMuted(true);
-      await v.play().catch(() => {});
-    }
-  }, [isYoutube]);
-
-  const seekTo = useCallback(
-    (seconds: number) => {
-      if (isYoutube && playerRef.current) {
-        const p = playerRef.current;
-        if (typeof p.seekTo === 'function') p.seekTo(seconds, true);
-        return;
-      }
-      const video = videoRef.current;
-      if (!video) return;
-      video.currentTime = seconds;
-    },
-    [isYoutube]
-  );
-
-  const handleMuteToggle = useCallback(() => {
-    if (isYoutube && playerRef.current) {
-      const p = playerRef.current;
-      if (typeof p.isMuted !== 'function') return;
-      if (p.isMuted()) {
-        p.unMute();
-        setIsMuted(false);
-      } else {
-        p.mute();
-        setIsMuted(true);
-      }
-      return;
-    }
-    setIsMuted((m) => !m);
-  }, [isYoutube]);
-
-  const skipBy = useCallback(
-    (deltaSeconds: number) => {
-      const getNow = () => {
-        if (isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-          return playerRef.current.getCurrentTime();
-        }
-        return videoRef.current?.currentTime ?? 0;
-      };
-      const dur = videoDuration || (videoRef.current?.duration ?? 0);
-      const now = getNow();
-      const next = Math.max(0, Math.min(dur, now + deltaSeconds));
-      seekTo(next);
-    },
-    [isYoutube, videoDuration, seekTo]
-  );
-
   const sortedCommentTimestamps = useMemo(
     () =>
       [...new Set(comments.filter((c) => c.timestampSeconds != null).map((c) => c.timestampSeconds!))].sort(
@@ -1033,28 +845,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
-  const getCurrentTime = useCallback(() => {
-    if (isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-      return playerRef.current.getCurrentTime();
-    }
-    return videoRef.current?.currentTime ?? 0;
-  }, [isYoutube]);
-
   const goToPrevTimestamp = useCallback(() => {
     if (sortedCommentTimestamps.length === 0) return;
-    const now = getCurrentTime();
+    const now = currentVideoTime;
     const prev = sortedCommentTimestamps.filter((t) => t < now - 0.5).pop();
     const target = prev ?? sortedCommentTimestamps[sortedCommentTimestamps.length - 1];
-    seekTo(target);
-  }, [sortedCommentTimestamps, getCurrentTime, seekTo]);
+    setPendingSeekSeconds(target);
+  }, [sortedCommentTimestamps, currentVideoTime]);
 
   const goToNextTimestamp = useCallback(() => {
     if (sortedCommentTimestamps.length === 0) return;
-    const now = getCurrentTime();
+    const now = currentVideoTime;
     const next = sortedCommentTimestamps.find((t) => t > now + 0.5);
     const target = next ?? sortedCommentTimestamps[0];
-    seekTo(target);
-  }, [sortedCommentTimestamps, getCurrentTime, seekTo]);
+    setPendingSeekSeconds(target);
+  }, [sortedCommentTimestamps, currentVideoTime]);
 
   const shotsInComments = useMemo(() => {
     const shotSet = new Set<string>();
@@ -1138,6 +943,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setActiveCommentId(activeComment?.id ?? null);
   }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
 
+  const formatTimestamp = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
   // Scroll comments list to the active comment and keep it in view
   useEffect(() => {
     if (activeCommentId == null || !commentsScrollRef.current) return;
@@ -1148,12 +959,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
   }, [activeCommentId]);
-
-  const formatTimestamp = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   const handleAddComment = async () => {
     if (!commentDraft.trim()) return;
@@ -1585,720 +1390,44 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 }}
               >
               <div style={{ position: 'relative', width: '100%' }}>
-              {!hasVideoUrl ? (
-                canAddVideoUrl ? (
-                  <div
-                    style={{
-                      width: '100%',
-                      aspectRatio: '16 / 9',
-                      minHeight: 200,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: SPACING.lg,
-                      gap: SPACING.md,
-                    }}
-                  >
-                    {!showAddUrlForm ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowAddUrlForm(true);
-                          setAddUrlError(null);
-                          setAddUrlDraft('');
-                        }}
-                        style={{
-                          padding: `${SPACING.sm}px ${SPACING.lg}px`,
-                          borderRadius: RADIUS.md,
-                          border: `2px solid ${COLORS.primary}`,
-                          backgroundColor: 'rgba(49, 203, 0, 0.15)',
-                          color: COLORS.primary,
-                          ...TYPOGRAPHY.labelMed,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Add Video URL
-                      </button>
-                    ) : (
-                      <>
-                        <p
-                          style={{
-                            margin: 0,
-                            ...TYPOGRAPHY.bodySmall,
-                            color: 'rgba(255,255,255,0.9)',
-                          }}
-                        >
-                          Enter a YouTube URL only
-                        </p>
-                        <input
-                          type="url"
-                          value={addUrlDraft}
-                          onChange={(e) => {
-                            setAddUrlDraft(e.target.value);
-                            setAddUrlError(null);
-                          }}
-                          placeholder="https://www.youtube.com/watch?v=..."
-                          style={{
-                            width: '100%',
-                            maxWidth: 400,
-                            padding: `${SPACING.sm}px ${SPACING.md}px`,
-                            borderRadius: RADIUS.sm,
-                            border: `1px solid rgba(255,255,255,0.3)`,
-                            backgroundColor: 'rgba(0,0,0,0.3)',
-                            color: COLORS.textPrimary,
-                            ...TYPOGRAPHY.bodySmall,
-                          }}
-                        />
-                        {addUrlError && (
-                          <p style={{ margin: 0, ...TYPOGRAPHY.bodySmall, color: '#ff6b6b' }}>
-                            {addUrlError}
-                          </p>
-                        )}
-                        <div style={{ display: 'flex', gap: SPACING.sm }}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAddUrlForm(false);
-                              setAddUrlDraft('');
-                              setAddUrlError(null);
-                            }}
-                            style={{
-                              padding: `${SPACING.xs}px ${SPACING.md}px`,
-                              borderRadius: RADIUS.sm,
-                              border: 'none',
-                              backgroundColor: 'rgba(255,255,255,0.2)',
-                              color: 'rgba(255,255,255,0.95)',
-                              ...TYPOGRAPHY.label,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            disabled={addUrlSaving || !addUrlDraft.trim()}
-                            onClick={async () => {
-                              const trimmed = addUrlDraft.trim();
-                              if (!trimmed || !session) return;
-                              const vid = getYoutubeVideoId(trimmed);
-                              if (!vid) {
-                                setAddUrlError('Only YouTube URLs are allowed (e.g. youtube.com/watch?v=... or youtu.be/...)');
-                                return;
-                              }
-                              setAddUrlError(null);
-                              setAddUrlSaving(true);
-                              try {
-                                await onSaveVideoUrl!(session.id, trimmed);
-                                setShowAddUrlForm(false);
-                                setAddUrlDraft('');
-                              } catch (e) {
-                                setAddUrlError(e instanceof Error ? e.message : 'Failed to save URL');
-                              } finally {
-                                setAddUrlSaving(false);
-                              }
-                            }}
-                            style={{
-                              padding: `${SPACING.xs}px ${SPACING.md}px`,
-                              borderRadius: RADIUS.sm,
-                              border: 'none',
-                              backgroundColor: COLORS.primary,
-                              color: COLORS.textPrimary,
-                              ...TYPOGRAPHY.label,
-                              fontWeight: 600,
-                              cursor: addUrlSaving ? 'default' : 'pointer',
-                              opacity: addUrlSaving ? 0.8 : 1,
-                            }}
-                          >
-                            {addUrlSaving ? 'Saving…' : 'Save'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      width: '100%',
-                      aspectRatio: '16 / 9',
-                      minHeight: 200,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: SPACING.lg,
-                    }}
-                  >
-                    <p
-                      style={{
-                        margin: 0,
-                        ...TYPOGRAPHY.bodySmall,
-                        color: 'rgba(255,255,255,0.7)',
-                      }}
-                    >
-                      No video for this session.
-                    </p>
-                  </div>
-                )
-              ) : isYoutube && youtubeVideoId ? (
-                <>
-                  <div
-                    style={{
-                      position: 'relative',
-                      width: '100%',
-                      aspectRatio: '16 / 9',
-                      overflow: 'hidden',
-                    }}
-                  >
-                  <div
-                    ref={playerContainerRef}
-                    key={`yt-${session.id}`}
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      width: '100%',
-                      height: '100%',
-                      display: 'block',
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      zIndex: 1,
-                      pointerEvents: !isVideoPlaying ? 'auto' : 'none',
-                    }}
-                    onClick={handlePlayPause}
-                    onKeyDown={(e) => {
-                      if (e.key === ' ' || e.key === 'Enter') {
-                        e.preventDefault();
-                        handlePlayPause();
-                      }
-                    }}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
-                  >
-                  </div>
-                  </div>
-                </>
-              ) : (
-                <>
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: videoAspectRatio ?? '16 / 9',
-                }}
-              >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 1,
-                  pointerEvents: !isVideoPlaying ? 'auto' : 'none',
-                }}
-                onClick={handlePlayPause}
-                onKeyDown={(e) => {
-                  if (e.key === ' ' || e.key === 'Enter') {
-                    e.preventDefault();
-                    handlePlayPause();
+              {session && (
+                <VideoPlayer
+                  videoUrl={session.videoUrl}
+                  videoKey={session.id}
+                  markers={
+                    comments
+                      .filter((c) => c.timestampSeconds != null)
+                      .map<VideoPlayerMarker>((c) => ({
+                        time: c.timestampSeconds ?? 0,
+                        id: c.id,
+                        label: `${c.author}: ${
+                          c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text
+                        }`,
+                      }))
                   }
-                }}
-                role="button"
-                tabIndex={0}
-                aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
-              >
-              {videoError && (
-                <div
-                  style={{
-                    padding: SPACING.md,
-                    textAlign: 'center',
-                    color: 'rgba(255,255,255,0.95)',
-                    ...TYPOGRAPHY.bodySmall,
-                    maxWidth: 280,
+                  onMarkerClick={(marker) => {
+                    if (marker.id != null) {
+                      setActiveCommentId(marker.id);
+                    }
                   }}
-                >
-                  {videoError}
-                </div>
+                  onTimeUpdate={(t, dur) => {
+                    setCurrentVideoTime(t);
+                    setVideoDuration(dur);
+                  }}
+                  onActiveMarkerChange={(marker) => {
+                    setActiveCommentId(marker?.id ?? null);
+                  }}
+                  seekToSeconds={pendingSeekSeconds}
+                  onSeekHandled={() => setPendingSeekSeconds(null)}
+                  canRequestAddUrl={canAddVideoUrl && !hasVideoUrl && !showAddUrlForm}
+                  onRequestAddUrl={() => {
+                    setShowAddUrlForm(true);
+                    setAddUrlError(null);
+                    setAddUrlDraft('');
+                  }}
+                />
               )}
               </div>
-              <video
-                key={session.id}
-                ref={videoRef}
-                muted={isMuted}
-                playsInline
-                preload="metadata"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'block',
-                  objectFit: 'contain',
-                }}
-                onPlay={() => setIsVideoPlaying(true)}
-                onPause={() => setIsVideoPlaying(false)}
-                onEnded={() => setIsVideoPlaying(false)}
-                onTimeUpdate={(e) =>
-                  setCurrentVideoTime((e.target as HTMLVideoElement).currentTime)
-                }
-                onLoadedMetadata={(e) => {
-                  const v = e.target as HTMLVideoElement;
-                  setVideoDuration(v.duration);
-                  setVideoError(null);
-                  const w = v.videoWidth;
-                  const h = v.videoHeight;
-                  if (w && h) setVideoAspectRatio(`${w} / ${h}`);
-                }}
-                onError={() => {
-                  setVideoError('Video failed to load. The source may be unavailable or blocked.');
-                }}
-              >
-                <source src={session.videoUrl} type="video/mp4" />
-              </video>
-              </div>
-              </>
-              )}
-              </div>
-
-              {/* Frame.io-style timeline with comment markers */}
-              {videoDuration > 0 && (
-                <div
-                  style={{
-                    padding: `0 ${SPACING.md}px ${SPACING.sm}px`,
-                    backgroundColor: 'transparent',
-                    borderTop: 'none',
-                  }}
-                >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: SPACING.sm,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'inherit',
-                      fontSize: 12,
-                      color: '#FFFFFF',
-                      minWidth: 56,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {formatTimestamp(currentVideoTime)} / {formatTimestamp(videoDuration)}
-                  </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        position: 'relative',
-                        height: 20,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        minWidth: 0,
-                      }}
-                      onClick={(e) => {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const pct = Math.max(0, Math.min(1, x / rect.width));
-                        const time = pct * videoDuration;
-                        seekTo(time);
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          right: 0,
-                          height: 4,
-                          borderRadius: 2,
-                          background: `linear-gradient(to right, #FFFFFF ${videoDuration > 0 ? (currentVideoTime / videoDuration) * 100 : 0}%, rgba(255, 255, 255, 0.25) ${videoDuration > 0 ? (currentVideoTime / videoDuration) * 100 : 0}%)`,
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          left: `calc(${(currentVideoTime / videoDuration) * 100}% - 6px)`,
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          width: 12,
-                          height: 12,
-                          borderRadius: '50%',
-                          backgroundColor: '#FFFFFF',
-                          boxShadow: '0 0 0 1px rgba(0,0,0,0.2)',
-                          pointerEvents: 'none',
-                        }}
-                      />
-                      {comments
-                        .filter((c) => c.timestampSeconds != null)
-                        .map((c) => {
-                          const left =
-                            ((c.timestampSeconds ?? 0) / videoDuration) * 100;
-                          return (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                seekTo(c.timestampSeconds!);
-                                setActiveCommentId(c.id);
-                              }}
-                              style={{
-                                position: 'absolute',
-                                left: `calc(${left}% - 4px)`,
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                width: 8,
-                                height: 8,
-                                borderRadius: '50%',
-                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                border: 'none',
-                                cursor: 'pointer',
-                                padding: 0,
-                              }}
-                              title={`${c.author}: ${c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text}`}
-                            />
-                          );
-                        })}
-                    </div>
-                  <button
-                    type="button"
-                    onClick={handleMuteToggle}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: '50%',
-                      border: 'none',
-                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      color: '#FFFFFF',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      flexShrink: 0,
-                    }}
-                    aria-label={isMuted ? 'Unmute' : 'Mute'}
-                  >
-                    {isMuted ? (
-                      <IconVolumeX size={16} />
-                    ) : (
-                      <IconVolume2 size={16} />
-                    )}
-                  </button>
-                  </div>
-                {/* Skip buttons below the player */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: SPACING.xs,
-                    paddingTop: SPACING.xs,
-                    paddingBottom: SPACING.xs,
-                    borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-                    flexWrap: 'nowrap',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={goToPrevTimestamp}
-                    disabled={sortedCommentTimestamps.length === 0}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: sortedCommentTimestamps.length === 0 ? 'default' : 'pointer',
-                      padding: 0,
-                      opacity: sortedCommentTimestamps.length === 0 ? 0.5 : 1,
-                    }}
-                    aria-label="Previous comment timestamp"
-                    title="Previous timestamp"
-                  >
-                    <IconChevronLeft size={12} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(-1/30)}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(8px, 2vw, 9px)',
-                    }}
-                    aria-label="Skip back 1 frame"
-                    title="−1f"
-                  >
-                    −1f
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(-10)}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(8px, 2vw, 9px)',
-                    }}
-                    aria-label="Skip back 10 seconds"
-                    title="−10s"
-                  >
-                    −10s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(-5)}
-                    style={{
-                      width: 'clamp(28px, 7vw, 36px)',
-                      height: 'clamp(28px, 7vw, 36px)',
-                      minWidth: 28,
-                      minHeight: 28,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(9px, 2.2vw, 11px)',
-                    }}
-                    aria-label="Skip back 5 seconds"
-                    title="−5s"
-                  >
-                    −5s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(-1)}
-                    style={{
-                      width: 'clamp(28px, 7vw, 36px)',
-                      height: 'clamp(28px, 7vw, 36px)',
-                      minWidth: 28,
-                      minHeight: 28,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(9px, 2.2vw, 11px)',
-                    }}
-                    aria-label="Skip back 1 second"
-                    title="−1s"
-                  >
-                    −1s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handlePlayPause}
-                    style={{
-                      width: 'clamp(30px, 8vw, 40px)',
-                      height: 'clamp(30px, 8vw, 40px)',
-                      minWidth: 30,
-                      minHeight: 30,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.4)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                      color: 'rgba(0, 0, 0, 0.85)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                    }}
-                    aria-label={isVideoPlaying ? 'Pause' : 'Play'}
-                    title={isVideoPlaying ? 'Pause' : 'Play'}
-                  >
-                    {isVideoPlaying ? (
-                      <IconPause size={18} />
-                    ) : (
-                      <IconPlay size={18} />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(1)}
-                    style={{
-                      width: 'clamp(28px, 7vw, 36px)',
-                      height: 'clamp(28px, 7vw, 36px)',
-                      minWidth: 28,
-                      minHeight: 28,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(9px, 2.2vw, 11px)',
-                    }}
-                    aria-label="Skip forward 1 second"
-                    title="+1s"
-                  >
-                    +1s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(5)}
-                    style={{
-                      width: 'clamp(28px, 7vw, 36px)',
-                      height: 'clamp(28px, 7vw, 36px)',
-                      minWidth: 28,
-                      minHeight: 28,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(9px, 2.2vw, 11px)',
-                    }}
-                    aria-label="Skip forward 5 seconds"
-                    title="+5s"
-                  >
-                    +5s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(10)}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(8px, 2vw, 9px)',
-                    }}
-                    aria-label="Skip forward 10 seconds"
-                    title="+10s"
-                  >
-                    +10s
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => skipBy(1/30)}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      padding: 0,
-                      ...TYPOGRAPHY.label,
-                      fontSize: 'clamp(8px, 2vw, 9px)',
-                    }}
-                    aria-label="Skip forward 1 frame"
-                    title="+1f"
-                  >
-                    +1f
-                  </button>
-                  <button
-                    type="button"
-                    onClick={goToNextTimestamp}
-                    disabled={sortedCommentTimestamps.length === 0}
-                    style={{
-                      width: 'clamp(20px, 5vw, 26px)',
-                      height: 'clamp(20px, 5vw, 26px)',
-                      minWidth: 20,
-                      minHeight: 20,
-                      flexShrink: 0,
-                      borderRadius: '50%',
-                      border: '1px solid rgba(255, 255, 255, 0.35)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      color: 'rgba(255, 255, 255, 0.95)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: sortedCommentTimestamps.length === 0 ? 'default' : 'pointer',
-                      padding: 0,
-                      opacity: sortedCommentTimestamps.length === 0 ? 0.5 : 1,
-                    }}
-                    aria-label="Next comment timestamp"
-                    title="Next timestamp"
-                  >
-                    <IconChevronRight size={12} />
-                  </button>
-                </div>
-              </div>
-              )}
             </div>
           </div>
 
@@ -2564,7 +1693,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                seekTo(comment.timestampSeconds!);
+                                setPendingSeekSeconds(comment.timestampSeconds!);
                                 setActiveCommentId(comment.id);
                               }}
                               style={{
