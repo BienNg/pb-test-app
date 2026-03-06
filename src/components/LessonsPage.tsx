@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { Card, Button } from './BaseComponents';
 import { LessonCard } from './Cards';
+import { LessonView } from './LessonView';
 import { getYoutubeVideoId } from '../lib/youtube';
 import { createClient } from '@/lib/supabase/client';
 
@@ -239,6 +240,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
 
   const categories = CATEGORIES;
 
@@ -339,6 +341,28 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
           (lesson) =>
             lesson.category.toLowerCase() === selectedCategory.toLowerCase()
         );
+
+  const currentIndex = selectedLesson
+    ? filteredLessons.findIndex((l) => l.id === selectedLesson.id)
+    : -1;
+  const prevLesson = currentIndex > 0 ? filteredLessons[currentIndex - 1] : null;
+  const nextLesson =
+    currentIndex >= 0 && currentIndex < filteredLessons.length - 1
+      ? filteredLessons[currentIndex + 1]
+      : null;
+
+  if (selectedLesson) {
+    return (
+      <LessonView
+        lesson={selectedLesson}
+        onBack={() => setSelectedLesson(null)}
+        prevLesson={prevLesson}
+        nextLesson={nextLesson}
+        onPrevious={prevLesson ? () => setSelectedLesson(prevLesson) : undefined}
+        onNext={nextLesson ? () => setSelectedLesson(nextLesson) : undefined}
+      />
+    );
+  }
 
   return (
     <div
@@ -444,9 +468,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
               progress={lesson.progress}
               isVOD={lesson.isVOD}
               isCompleted={lesson.isCompleted}
-              onClick={() =>
-                console.log(`Clicked lesson: ${lesson.title}`)
-              }
+              onClick={() => setSelectedLesson(lesson)}
             />
           ))}
         </div>
