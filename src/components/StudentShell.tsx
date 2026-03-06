@@ -46,7 +46,7 @@ export function StudentShell() {
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
-          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+          sessions={sessionsForStudent}
         />
       );
     }
@@ -57,7 +57,7 @@ export function StudentShell() {
             selectedSegment={progressSelectedSegment}
             onSelectedSegmentChange={setProgressSelectedSegment}
             onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
-            sessions={loadingSessions ? [] : sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+            sessions={loadingSessions ? [] : sessionsForStudent}
           />
         );
       case 'library':
@@ -68,7 +68,7 @@ export function StudentShell() {
             selectedSegment={progressSelectedSegment}
             onSelectedSegmentChange={setProgressSelectedSegment}
             onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
-            sessions={loadingSessions ? [] : sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+            sessions={loadingSessions ? [] : sessionsForStudent}
           />
         );
     }

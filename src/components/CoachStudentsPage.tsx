@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { IconUser, IconChevronRight, IconSearch, IconChevronDown } from './Icons';
 import { LessonCard } from './Cards';
-import { TRAINING_SESSIONS } from './MyProgressPage';
+import type { TrainingSession } from './MyProgressPage';
 
 export type StudentLevel = 'newbie' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
@@ -141,6 +141,8 @@ interface CoachStudentsPageProps {
   onOpenSession?: (sessionId: string) => void;
   /** When false, only show the students list (no Students | My Sessions tabs). Default true for coach, false for admin. */
   showMySessionsTab?: boolean;
+  /** Optional list of sessions for "My Sessions" tab. When not provided, the tab shows an empty state. */
+  sessions?: TrainingSession[];
 }
 
 type SortField = 'name' | 'lessons' | 'lastActive' | 'level';
@@ -151,6 +153,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   onSelectStudent,
   onOpenSession,
   showMySessionsTab = true,
+  sessions = [],
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
   const [selectedSubSegment, setSelectedSubSegment] = useState<'completed' | 'new'>('completed');
@@ -159,7 +162,6 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [sortAsc, setSortAsc] = useState(true);
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const sessions = TRAINING_SESSIONS;
   const showStudentsOnly = !showMySessionsTab;
 
   const filteredAndSortedStudents = useMemo(() => {

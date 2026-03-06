@@ -8,7 +8,7 @@ import {
   IconFilter,
   IconMoreVertical,
 } from './Icons';
-import { TRAINING_SESSIONS, type SessionComment, type TrainingSession } from './MyProgressPage';
+import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
 
 /** Pickleball shot types available via "/" command in comments. */
@@ -674,7 +674,7 @@ const EditCommentInput: React.FC<{
 export interface TrainingSessionDetailProps {
   sessionId: string;
   onBack: () => void;
-  /** When provided (e.g. sessions from DB for a student), lookup session from this list. Otherwise uses TRAINING_SESSIONS. */
+  /** When provided (e.g. sessions from DB for a student), lookup session from this list. */
   sessions?: TrainingSession[];
   /** When provided (e.g. admin), allows adding a YouTube URL when session has no video. Called with session id and the new YouTube URL; persist to sessions.youtube_url. */
   onSaveVideoUrl?: (sessionId: string, youtubeUrl: string) => Promise<void>;
@@ -687,7 +687,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onSaveVideoUrl,
 }) => {
   const { user } = useAuth();
-  const sessionList = sessionsProp ?? TRAINING_SESSIONS;
+  const sessionList = sessionsProp ?? [];
   const session = sessionList.find((s) => s.id === sessionId);
   const hasVideoUrl = !!(session?.videoUrl?.trim());
   const canAddVideoUrl = !!onSaveVideoUrl;
