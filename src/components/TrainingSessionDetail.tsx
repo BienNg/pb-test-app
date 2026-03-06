@@ -2635,18 +2635,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           )}
                         </div>
                       </div>
-                      {comment.taggedUsers && comment.taggedUsers.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: SPACING.xs,
-                            ...TYPOGRAPHY.label,
-                            color: COLORS.textSecondary,
-                            fontSize: 11,
-                          }}
-                        >
-                          Tagged: {comment.taggedUsers.map((u) => u.name).join(', ')}
-                        </div>
-                      )}
                       {editingCommentId === comment.id ? (
                         <EditCommentInput
                           initialDraft={comment.text}

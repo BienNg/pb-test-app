@@ -429,16 +429,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
             >
               Pickleball Training Library
             </h1>
-            <p
-              style={{
-                ...TYPOGRAPHY.body,
-                color: COLORS.textSecondary,
-                margin: 0,
-                marginBottom: SPACING.lg,
-              }}
-            >
-              Learn from expert instructors. Master your technique, strategy, and game.
-            </p>
           </div>
           {isAdmin && (
             <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
