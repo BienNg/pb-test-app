@@ -10,6 +10,7 @@ import {
 } from './Icons';
 import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
+import { MOCK_COACHES } from '../data/mockCoaches';
 
 /** Pickleball shot types available via "/" command in comments. */
 export const SHOT_LIST = [
@@ -758,6 +759,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return [];
   });
 
+  // Admin session edit state (for DB-backed sessions)
+  const [showEditSession, setShowEditSession] = useState(false);
+  const [editSessionLoading, setEditSessionLoading] = useState(false);
+  const [editSessionSaving, setEditSessionSaving] = useState(false);
+  const [editSessionError, setEditSessionError] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
+  const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
+  const [editCoachId, setEditCoachId] = useState<string>('');
+  const [editStudentIds, setEditStudentIds] = useState<string[]>([]);
+  const [availableStudents, setAvailableStudents] = useState<
+    { id: string; name: string; email: string }[]
+  >([]);
+  const editSessionLoadedRef = useRef(false);
+
   useEffect(() => {
     const updateLayout = () => {
       if (typeof window === 'undefined') return;
@@ -836,6 +851,130 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       })
       .finally(() => setCommentsLoading(false));
   }, [isDbSession, sessionId, user?.id]);
+
+  // Lazy-load session details and student list for admin editing
+  useEffect(() => {
+    if (!isDbSession || !showEditSession || editSessionLoadedRef.current === true) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setEditSessionError('Supabase not configured');
+      return;
+    }
+    setEditSessionLoading(true);
+    setEditSessionError(null);
+    const load = async () => {
+      try {
+        const { data: sessionRow, error: sessionError } = await supabase
+          .from('sessions')
+          .select('date, coach_id, title')
+          .eq('id', sessionId)
+          .maybeSingle();
+        if (sessionError) throw sessionError;
+        if (sessionRow) {
+          const dateStr =
+            typeof sessionRow.date === 'string' && sessionRow.date.length >= 10
+              ? sessionRow.date.slice(0, 10)
+              : String(sessionRow.date);
+          setEditDate(dateStr);
+          setEditCoachId(sessionRow.coach_id ?? '');
+          setEditTitle((sessionRow.title as string | null) ?? (session?.title ?? ''));
+        } else if (session) {
+          setEditDate(session.dateKey);
+          setEditTitle(session.title);
+        }
+
+        const { data: studentLinks, error: linksError } = await supabase
+          .from('session_students')
+          .select('student_id')
+          .eq('session_id', sessionId);
+        if (linksError) throw linksError;
+        const linkedStudentIds = (studentLinks ?? []).map(
+          (r: { student_id: string }) => r.student_id,
+        );
+        setEditStudentIds(linkedStudentIds);
+
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, email, full_name, role');
+        if (profilesError) throw profilesError;
+        const rows = (profiles ?? []) as {
+          id: string;
+          email: string | null;
+          full_name: string | null;
+          role: string | null;
+        }[];
+        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+        setAvailableStudents(
+          filtered.map((r) => ({
+            id: r.id,
+            name: r.full_name?.trim() || r.email || r.id,
+            email: r.email ?? '',
+          })),
+        );
+        editSessionLoadedRef.current = true;
+      } catch (err) {
+        setEditSessionError(
+          err instanceof Error ? err.message : 'Failed to load session details for editing',
+        );
+      } finally {
+        setEditSessionLoading(false);
+      }
+    };
+    void load();
+  }, [isDbSession, showEditSession, sessionId, session]);
+
+  const toggleEditStudent = useCallback((id: string) => {
+    setEditStudentIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  }, []);
+
+  const handleSaveSessionDetails = useCallback(async () => {
+    if (!isDbSession) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setEditSessionError('Supabase not configured');
+      return;
+    }
+    if (!editDate || !editCoachId) {
+      setEditSessionError('Date and coach are required');
+      return;
+    }
+    setEditSessionSaving(true);
+    setEditSessionError(null);
+    try {
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({
+          date: editDate,
+          coach_id: editCoachId,
+          title: editTitle.trim() || null,
+        })
+        .eq('id', sessionId);
+      if (updateError) throw updateError;
+
+      const { error: deleteError } = await supabase
+        .from('session_students')
+        .delete()
+        .eq('session_id', sessionId);
+      if (deleteError) throw deleteError;
+
+      if (editStudentIds.length > 0) {
+        const { error: insertError } = await supabase.from('session_students').insert(
+          editStudentIds.map((student_id) => ({ session_id: sessionId, student_id })),
+        );
+        if (insertError) throw insertError;
+      }
+
+      setShowEditSession(false);
+    } catch (err) {
+      setEditSessionError(
+        err instanceof Error ? err.message : 'Failed to save session changes',
+      );
+    } finally {
+      setEditSessionSaving(false);
+    }
+  }, [isDbSession, editDate, editCoachId, editTitle, editStudentIds, sessionId]);
 
   const sortedCommentTimestamps = useMemo(
     () =>
@@ -1320,20 +1459,46 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           >
             ← Back to My Progress
           </button>
-          <span
+          <div
             style={{
-              display: 'inline-flex',
+              display: 'flex',
               alignItems: 'center',
-              gap: 6,
-              color: COLORS.textSecondary,
-              ...TYPOGRAPHY.bodySmall,
+              gap: SPACING.sm,
+              flexWrap: 'wrap',
             }}
           >
-            <span role="img" aria-label="calendar">
-              <IconCalendar size={16} />
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                color: COLORS.textSecondary,
+                ...TYPOGRAPHY.bodySmall,
+              }}
+            >
+              <span role="img" aria-label="calendar">
+                <IconCalendar size={16} />
+              </span>
+              <span>{session.dateLabel}</span>
             </span>
-            <span>{session.dateLabel}</span>
-          </span>
+            {isDbSession && (
+              <button
+                type="button"
+                onClick={() => setShowEditSession(true)}
+                style={{
+                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                  borderRadius: RADIUS.sm,
+                  border: `1px solid ${COLORS.textMuted}`,
+                  backgroundColor: COLORS.white,
+                  color: COLORS.textSecondary,
+                  ...TYPOGRAPHY.bodySmall,
+                  cursor: 'pointer',
+                }}
+              >
+                Edit session
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Main content */}
@@ -1429,6 +1594,307 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               )}
               </div>
             </div>
+            {isDbSession && (
+              <div
+                style={{
+                  marginTop: SPACING.lg,
+                  padding: SPACING.md,
+                  borderRadius: RADIUS.md,
+                  border: `1px solid ${COLORS.backgroundLight}`,
+                  backgroundColor: COLORS.cardBg,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: SPACING.sm,
+                    marginBottom: SPACING.sm,
+                  }}
+                >
+                  <h3
+                    style={{
+                      ...TYPOGRAPHY.bodySmall,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      color: COLORS.textSecondary,
+                      margin: 0,
+                    }}
+                  >
+                    Session details
+                  </h3>
+                  {showEditSession && (
+                    <button
+                      type="button"
+                      onClick={() => setShowEditSession(false)}
+                      disabled={editSessionSaving}
+                      style={{
+                        border: 'none',
+                        background: 'none',
+                        ...TYPOGRAPHY.bodySmall,
+                        color: COLORS.textMuted,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Close
+                    </button>
+                  )}
+                </div>
+                {!showEditSession ? (
+                  <div
+                    style={{
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textSecondary,
+                    }}
+                  >
+                    <div>{editTitle || 'Training Session'}</div>
+                    <div style={{ marginTop: 2 }}>
+                      Coach:{' '}
+                      {MOCK_COACHES.find((c) => c.id === editCoachId)?.name || 'Not set'}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                    {editSessionError && (
+                      <div
+                        style={{
+                          padding: SPACING.sm,
+                          borderRadius: RADIUS.sm,
+                          backgroundColor: 'rgba(255,107,107,0.08)',
+                          color: COLORS.red,
+                          ...TYPOGRAPHY.bodySmall,
+                        }}
+                      >
+                        {editSessionError}
+                      </div>
+                    )}
+                    {editSessionLoading ? (
+                      <p
+                        style={{
+                          ...TYPOGRAPHY.bodySmall,
+                          color: COLORS.textSecondary,
+                          margin: 0,
+                        }}
+                      >
+                        Loading session details…
+                      </p>
+                    ) : (
+                      <>
+                        <label
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: COLORS.textSecondary,
+                            }}
+                          >
+                            Title
+                          </span>
+                          <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="Training Session"
+                            style={{
+                              padding: SPACING.sm,
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.textMuted}`,
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                            }}
+                          />
+                        </label>
+                        <label
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: COLORS.textSecondary,
+                            }}
+                          >
+                            Date
+                          </span>
+                          <input
+                            type="date"
+                            value={editDate}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            style={{
+                              padding: SPACING.sm,
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.textMuted}`,
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                            }}
+                          />
+                        </label>
+                        <label
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: COLORS.textSecondary,
+                            }}
+                          >
+                            Coach
+                          </span>
+                          <select
+                            value={editCoachId}
+                            onChange={(e) => setEditCoachId(e.target.value)}
+                            style={{
+                              padding: SPACING.sm,
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.textMuted}`,
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                            }}
+                          >
+                            <option value="">Select coach</option>
+                            {MOCK_COACHES.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 4,
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: COLORS.textSecondary,
+                            }}
+                          >
+                            Students
+                          </span>
+                          <div
+                            style={{
+                              maxHeight: 150,
+                              overflowY: 'auto',
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.textMuted}`,
+                              padding: 4,
+                              backgroundColor: COLORS.white,
+                            }}
+                          >
+                            {availableStudents.length === 0 ? (
+                              <p
+                                style={{
+                                  ...TYPOGRAPHY.bodySmall,
+                                  color: COLORS.textSecondary,
+                                  margin: SPACING.sm,
+                                }}
+                              >
+                                No students found in database.
+                              </p>
+                            ) : (
+                              availableStudents.map((s) => (
+                                <label
+                                  key={s.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: SPACING.sm,
+                                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={editStudentIds.includes(s.id)}
+                                    onChange={() => toggleEditStudent(s.id)}
+                                    style={{ width: 16, height: 16, accentColor: COLORS.primary }}
+                                  />
+                                  <span
+                                    style={{
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textPrimary,
+                                    }}
+                                  >
+                                    {s.name}
+                                  </span>
+                                </label>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: SPACING.sm,
+                            marginTop: SPACING.sm,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowEditSession(false);
+                              setEditSessionError(null);
+                            }}
+                            disabled={editSessionSaving}
+                            style={{
+                              padding: `${SPACING.xs}px ${SPACING.md}px`,
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.textMuted}`,
+                              backgroundColor: COLORS.white,
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textSecondary,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveSessionDetails}
+                            disabled={editSessionSaving || !editDate || !editCoachId}
+                            style={{
+                              padding: `${SPACING.xs}px ${SPACING.md}px`,
+                              borderRadius: RADIUS.sm,
+                              border: 'none',
+                              backgroundColor:
+                                !editDate || !editCoachId || editSessionSaving
+                                  ? COLORS.textMuted
+                                  : COLORS.primary,
+                              color: COLORS.textPrimary,
+                              ...TYPOGRAPHY.bodySmall,
+                              fontWeight: 600,
+                              cursor:
+                                !editDate || !editCoachId || editSessionSaving
+                                  ? 'not-allowed'
+                                  : 'pointer',
+                            }}
+                          >
+                            {editSessionSaving ? 'Saving…' : 'Save changes'}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Comments column */}

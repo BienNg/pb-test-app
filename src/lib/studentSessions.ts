@@ -14,6 +14,7 @@ export function mapDbSessionToTrainingSession(row: {
   id: string;
   date: string;
   youtube_url: string | null;
+  title?: string | null;
 }): TrainingSession {
   const dateKey = typeof row.date === 'string' && row.date.length >= 10 ? row.date.slice(0, 10) : row.date;
   const d = new Date(dateKey + 'T12:00:00');
@@ -33,7 +34,7 @@ export function mapDbSessionToTrainingSession(row: {
     time: '—',
     thumbnail,
     duration: '—',
-    title: 'Training Session',
+    title: row.title?.trim() || 'Training Session',
     focus: '',
     videoUrl,
   };
@@ -71,12 +72,34 @@ export async function fetchSessionsForStudent(
     .eq('student_id', studentId);
   if (linkErr || !linkData?.length) return [];
   const sessionIds = (linkData as { session_id: string }[]).map((r) => r.session_id);
+  // Prefer querying the optional "title" column, but gracefully fall back if the DB
+  // hasn't been migrated yet (so "title" may not exist in the "sessions" table).
   const { data, error } = await supabase
     .from('sessions')
-    .select('id, date, youtube_url')
+    .select('id, date, youtube_url, title')
     .in('id', sessionIds)
     .order('date', { ascending: false });
-  if (error || !data) return [];
-  const rows = data as { id: string; date: string; youtube_url: string | null }[];
+
+  if (error || !data) {
+    // If the error indicates the "title" column doesn't exist, retry without it so
+    // older databases (without the migration) still work.
+    const needsFallback =
+      (error?.message && /column .*title.* does not exist/i.test(error.message)) ||
+      (typeof error?.details === 'string' && /column .*title.* does not exist/i.test(error.details));
+
+    if (!needsFallback) return [];
+
+    const { data: dataNoTitle, error: fallbackError } = await supabase
+      .from('sessions')
+      .select('id, date, youtube_url')
+      .in('id', sessionIds)
+      .order('date', { ascending: false });
+
+    if (fallbackError || !dataNoTitle) return [];
+    const fallbackRows = dataNoTitle as { id: string; date: string; youtube_url: string | null }[];
+    return fallbackRows.map(mapDbSessionToTrainingSession);
+  }
+
+  const rows = data as { id: string; date: string; youtube_url: string | null; title?: string | null }[];
   return rows.map(mapDbSessionToTrainingSession);
 }
