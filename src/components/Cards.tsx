@@ -171,6 +171,23 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           }}
         />
       ) : null}
+      {/* Duration badge - bottom right, YouTube style */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 6,
+          right: 6,
+          padding: '2px 6px',
+          borderRadius: 4,
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          color: '#FFFFFF',
+          fontSize: 12,
+          fontWeight: 500,
+          lineHeight: 1.2,
+        }}
+      >
+        {displayDuration}
+      </div>
       {/* Play icon overlay */}
       <div
         style={{
@@ -286,19 +303,6 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           ))}
         </div>
       )}
-      {/* Duration */}
-      <div
-        style={{
-          ...TYPOGRAPHY.label,
-          color: COLORS.textSecondary,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          marginTop: shots && shots.length > 0 ? SPACING.sm : 0,
-        }}
-      >
-        <IconClock size={16} /> {displayDuration}
-      </div>
     </div>
   </Card>
   );
