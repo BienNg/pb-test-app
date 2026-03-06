@@ -49,7 +49,6 @@ function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Technique');
-  const [duration, setDuration] = useState('0:00');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -67,7 +66,7 @@ function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
     setError(null);
     setSaving(true);
     try {
-      await onAdd({ title: title.trim() || 'New Video', category, duration: duration.trim() || '0:00', videoUrl: trimmed });
+      await onAdd({ title: title.trim() || 'New Video', category, duration: '0:00', videoUrl: trimmed });
       onClose();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to add video');
@@ -204,36 +203,6 @@ function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
                 </option>
               ))}
             </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="add-video-duration"
-              style={{
-                display: 'block',
-                ...TYPOGRAPHY.label,
-                color: COLORS.textSecondary,
-                marginBottom: SPACING.xs,
-              }}
-            >
-              Duration (optional)
-            </label>
-            <input
-              id="add-video-duration"
-              type="text"
-              placeholder="MM:SS"
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: SPACING.sm,
-                borderRadius: RADIUS.md,
-                border: `1px solid ${COLORS.textMuted}`,
-                ...TYPOGRAPHY.body,
-                color: COLORS.textPrimary,
-              }}
-            />
           </div>
 
           {error && (

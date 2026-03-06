@@ -1309,6 +1309,7 @@ export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
   const [requestedSessions, setRequestedSessions] = useState<RequestedSession[]>(() => [...MOCK_REQUESTED_SESSIONS_INITIAL]);
   const isDesktop = useIsDesktop();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Add session bottom sheet
   const [showAddSessionSheet, setShowAddSessionSheet] = useState(false);
@@ -1656,12 +1657,12 @@ export const AdminApp: React.FC = () => {
         width: '100%',
         minHeight: '100vh',
         paddingBottom: isDesktop ? SPACING.xl : 80,
-        paddingLeft: isDesktop ? SIDEBAR_WIDTH : 0,
+        paddingLeft: isDesktop && sidebarOpen ? SIDEBAR_WIDTH : 0,
         boxSizing: 'border-box',
         position: 'relative',
       }}
     >
-      {isDesktop && (
+      {isDesktop && sidebarOpen && (
         <aside
           style={{
             position: 'fixed',
@@ -1680,13 +1681,43 @@ export const AdminApp: React.FC = () => {
         >
           <div
             style={{
-              ...TYPOGRAPHY.h3,
-              color: COLORS.textPrimary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: SPACING.md,
-              paddingLeft: SPACING.sm,
             }}
           >
-            Admin
+            <div
+              style={{
+                ...TYPOGRAPHY.h3,
+                color: COLORS.textPrimary,
+                paddingLeft: SPACING.sm,
+              }}
+            >
+              Admin
+            </div>
+            <button
+              type="button"
+              aria-label="Collapse sidebar"
+              onClick={() => setSidebarOpen(false)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 36,
+                height: 36,
+                borderRadius: RADIUS.md,
+                border: `1px solid ${COLORS.border ?? '#e5e5e5'}`,
+                backgroundColor: COLORS.backgroundLight ?? '#f5f5f5',
+                color: COLORS.textPrimary,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+              </svg>
+            </button>
           </div>
           {tabs.map((tab) => tabButton(tab))}
           <button
@@ -1717,6 +1748,37 @@ export const AdminApp: React.FC = () => {
             Add session
           </button>
         </aside>
+      )}
+
+      {isDesktop && !sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Open sidebar"
+          onClick={() => setSidebarOpen(true)}
+          style={{
+            position: 'fixed',
+            left: 12,
+            top: 12,
+            zIndex: 101,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 40,
+            height: 40,
+            borderRadius: RADIUS.md,
+            border: 'none',
+            backgroundColor: COLORS.white,
+            color: COLORS.textPrimary,
+            cursor: 'pointer',
+            boxShadow: SHADOWS.md,
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
       )}
 
       <div style={{ width: '100%', minHeight: '100vh' }}>{renderContent()}</div>

@@ -2001,10 +2001,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: SPACING.sm,
+                    gap: SPACING.xs,
                     paddingTop: SPACING.xs,
                     paddingBottom: SPACING.xs,
                     borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                    flexWrap: 'nowrap',
                   }}
                 >
                   <button
@@ -2012,8 +2013,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     onClick={goToPrevTimestamp}
                     disabled={sortedCommentTimestamps.length === 0}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2034,8 +2038,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(-1/30)}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2046,7 +2053,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 9,
+                      fontSize: 'clamp(8px, 2vw, 9px)',
                     }}
                     aria-label="Skip back 1 frame"
                     title="−1f"
@@ -2057,8 +2064,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(-10)}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2069,7 +2079,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 9,
+                      fontSize: 'clamp(8px, 2vw, 9px)',
                     }}
                     aria-label="Skip back 10 seconds"
                     title="−10s"
@@ -2080,8 +2090,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(-5)}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 'clamp(28px, 7vw, 36px)',
+                      height: 'clamp(28px, 7vw, 36px)',
+                      minWidth: 28,
+                      minHeight: 28,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2092,7 +2105,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 11,
+                      fontSize: 'clamp(9px, 2.2vw, 11px)',
                     }}
                     aria-label="Skip back 5 seconds"
                     title="−5s"
@@ -2103,8 +2116,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(-1)}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 'clamp(28px, 7vw, 36px)',
+                      height: 'clamp(28px, 7vw, 36px)',
+                      minWidth: 28,
+                      minHeight: 28,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2115,7 +2131,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 11,
+                      fontSize: 'clamp(9px, 2.2vw, 11px)',
                     }}
                     aria-label="Skip back 1 second"
                     title="−1s"
@@ -2126,8 +2142,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={handlePlayPause}
                     style={{
-                      width: 40,
-                      height: 40,
+                      width: 'clamp(30px, 8vw, 40px)',
+                      height: 'clamp(30px, 8vw, 40px)',
+                      minWidth: 30,
+                      minHeight: 30,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.4)',
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -2137,7 +2156,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       justifyContent: 'center',
                       cursor: 'pointer',
                       padding: 0,
-                      flexShrink: 0,
                     }}
                     aria-label={isVideoPlaying ? 'Pause' : 'Play'}
                     title={isVideoPlaying ? 'Pause' : 'Play'}
@@ -2152,8 +2170,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(1)}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 'clamp(28px, 7vw, 36px)',
+                      height: 'clamp(28px, 7vw, 36px)',
+                      minWidth: 28,
+                      minHeight: 28,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2164,7 +2185,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 11,
+                      fontSize: 'clamp(9px, 2.2vw, 11px)',
                     }}
                     aria-label="Skip forward 1 second"
                     title="+1s"
@@ -2175,8 +2196,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(5)}
                     style={{
-                      width: 36,
-                      height: 36,
+                      width: 'clamp(28px, 7vw, 36px)',
+                      height: 'clamp(28px, 7vw, 36px)',
+                      minWidth: 28,
+                      minHeight: 28,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2187,7 +2211,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 11,
+                      fontSize: 'clamp(9px, 2.2vw, 11px)',
                     }}
                     aria-label="Skip forward 5 seconds"
                     title="+5s"
@@ -2198,8 +2222,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(10)}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2210,7 +2237,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 9,
+                      fontSize: 'clamp(8px, 2vw, 9px)',
                     }}
                     aria-label="Skip forward 10 seconds"
                     title="+10s"
@@ -2221,8 +2248,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     type="button"
                     onClick={() => skipBy(1/30)}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
@@ -2233,7 +2263,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       cursor: 'pointer',
                       padding: 0,
                       ...TYPOGRAPHY.label,
-                      fontSize: 9,
+                      fontSize: 'clamp(8px, 2vw, 9px)',
                     }}
                     aria-label="Skip forward 1 frame"
                     title="+1f"
@@ -2245,8 +2275,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     onClick={goToNextTimestamp}
                     disabled={sortedCommentTimestamps.length === 0}
                     style={{
-                      width: 26,
-                      height: 26,
+                      width: 'clamp(20px, 5vw, 26px)',
+                      height: 'clamp(20px, 5vw, 26px)',
+                      minWidth: 20,
+                      minHeight: 20,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: '1px solid rgba(255, 255, 255, 0.35)',
                       backgroundColor: 'rgba(255, 255, 255, 0.15)',
