@@ -3,8 +3,6 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconCalendar,
   IconClock,
-  IconChevronLeft,
-  IconChevronRight,
   IconFilter,
   IconMoreVertical,
 } from './Icons';
@@ -698,9 +696,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const isDbSession = sessionsProp != null && session != null;
 
   const [showAddUrlForm, setShowAddUrlForm] = useState(false);
-  const [addUrlDraft, setAddUrlDraft] = useState('');
-  const [addUrlSaving, setAddUrlSaving] = useState(false);
-  const [addUrlError, setAddUrlError] = useState<string | null>(null);
+  const [_addUrlDraft, setAddUrlDraft] = useState('');
+  const [_addUrlError, setAddUrlError] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const commentInputRef = useRef<HTMLDivElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
@@ -715,15 +712,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     width: number;
     height: number;
   } | null>(null);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [videoError, setVideoError] = useState<string | null>(null);
   const [commentDraft, setCommentDraft] = useState('');
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  const [videoDuration, setVideoDuration] = useState(0);
-  /** Intrinsic aspect ratio of the video (e.g. '16/9') so container height matches video and no letterboxing. */
-  const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
+  const [_videoDuration, setVideoDuration] = useState(0);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -978,7 +970,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     } finally {
       setEditSessionSaving(false);
     }
-  }, [isDbSession, editDate, editCoachId, editTitle, editStudentIds, sessionId]);
+  }, [isDbSession, editDate, editCoachId, editTitle, editStudentIds, sessionId, onSessionUpdated]);
 
   const sortedCommentTimestamps = useMemo(
     () =>
@@ -987,22 +979,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       ),
     [comments]
   );
-
-  const goToPrevTimestamp = useCallback(() => {
-    if (sortedCommentTimestamps.length === 0) return;
-    const now = currentVideoTime;
-    const prev = sortedCommentTimestamps.filter((t) => t < now - 0.5).pop();
-    const target = prev ?? sortedCommentTimestamps[sortedCommentTimestamps.length - 1];
-    setPendingSeekSeconds(target);
-  }, [sortedCommentTimestamps, currentVideoTime]);
-
-  const goToNextTimestamp = useCallback(() => {
-    if (sortedCommentTimestamps.length === 0) return;
-    const now = currentVideoTime;
-    const next = sortedCommentTimestamps.find((t) => t > now + 0.5);
-    const target = next ?? sortedCommentTimestamps[0];
-    setPendingSeekSeconds(target);
-  }, [sortedCommentTimestamps, currentVideoTime]);
 
   const shotsInComments = useMemo(() => {
     const shotSet = new Set<string>();

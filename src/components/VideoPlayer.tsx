@@ -117,11 +117,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   // Reset aspect + timing whenever key changes (e.g. new session)
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setVideoAspectRatio(null);
     setCurrentVideoTime(0);
     setVideoDuration(0);
     setVideoError(null);
     setIsVideoPlaying(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [videoKey]);
 
   // Load YouTube API and create player when we have a YouTube video
