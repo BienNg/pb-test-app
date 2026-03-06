@@ -4,9 +4,9 @@
  */
 
 export const COLORS = {
-  // Background — warm off-white base for gradient; use transparent on full-bleed pages so body gradient shows
-  background: '#F7F8FA',
-  backgroundLight: '#F0F2F5',
+  // Background — white app base
+  background: '#FFFFFF',
+  backgroundLight: '#F5F5F5',
   
   // Cards & Surfaces
   white: '#FFFFFF',

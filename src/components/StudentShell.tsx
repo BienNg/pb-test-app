@@ -111,6 +111,7 @@ export function StudentShell() {
         paddingBottom: 80,
         boxSizing: 'border-box',
         position: 'relative',
+        backgroundColor: '#ffffff',
       }}
     >
       {renderContent()}

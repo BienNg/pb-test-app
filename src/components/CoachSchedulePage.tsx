@@ -142,7 +142,7 @@ export const CoachSchedulePage: React.FC = () => {
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: SPACING.md,
         width: '100%',

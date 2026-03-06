@@ -35,7 +35,7 @@ export const CoachApp: React.FC = () => {
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
@@ -48,7 +48,7 @@ export const CoachApp: React.FC = () => {
   // When viewing a student's progress, show full-screen overlay (sessions from DB)
   if (selectedStudent) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <MyProgressPage
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}
@@ -128,6 +128,7 @@ export const CoachApp: React.FC = () => {
         paddingBottom: 80,
         boxSizing: 'border-box',
         position: 'relative',
+        backgroundColor: '#ffffff',
       }}
     >
       {renderContent()}

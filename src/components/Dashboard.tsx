@@ -36,7 +36,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToTab }) => {
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden',

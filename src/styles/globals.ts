@@ -16,13 +16,8 @@ export const globalStyles = `
       sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Soft multi-layer blue gradient: warm off-white base + very low-contrast glows */
-    background-color: #F7F8FA;
-    background-image:
-      radial-gradient(ellipse 140% 90% at 50% -10%, rgba(207, 252, 255, 0.15), transparent 70%),
-      radial-gradient(ellipse 120% 70% at 20% -5%, rgba(200, 248, 252, 0.12), transparent 65%),
-      radial-gradient(ellipse 100% 60% at 80% 0%, rgba(195, 245, 250, 0.1), transparent 60%);
-    background-attachment: fixed;
+    background-color: #ffffff;
+    background-image: none;
     color: #1C1C1E;
     overflow-x: hidden;
   }

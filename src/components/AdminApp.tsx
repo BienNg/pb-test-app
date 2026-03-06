@@ -153,7 +153,7 @@ function AdminOverviewPage({
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -432,7 +432,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When viewing a training session detail (from progress page), show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
@@ -446,7 +446,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When viewing a student's progress, show same view as coach (MyProgressPage with Your Sessions from DB)
   if (selectedStudent) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: 'transparent' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <MyProgressPage
           title={`${selectedStudent.name}'s Progress`}
           onBack={() => setSelectedStudent(null)}
@@ -460,7 +460,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -491,7 +491,7 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -702,7 +702,7 @@ function AdminRequestsPage({
   return (
     <div
       style={{
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
