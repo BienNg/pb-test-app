@@ -699,8 +699,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const isDbSession = sessionsProp != null && session != null;
 
   const [showAddUrlForm, setShowAddUrlForm] = useState(false);
-  const [_addUrlDraft, setAddUrlDraft] = useState('');
-  const [_addUrlError, setAddUrlError] = useState<string | null>(null);
+  const [, setAddUrlDraft] = useState('');
+  const [, setAddUrlError] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const commentInputRef = useRef<HTMLDivElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
@@ -718,7 +718,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [commentDraft, setCommentDraft] = useState('');
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
-  const [_videoDuration, setVideoDuration] = useState(0);
+  const [, setVideoDuration] = useState(0);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
