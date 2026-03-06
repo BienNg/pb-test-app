@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '../styles/theme';
 import { LessonCard } from './Cards';
 import { Card } from './BaseComponents';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { parseCommentTextWithShots } from './TrainingSessionDetail';
+import { IconUser } from './Icons';
+import { useAuth } from './providers/AuthProvider';
 
 export interface MyProgressPageProps {
   /** Override page title (e.g. "Alex's Progress" when coach views a student) */
@@ -66,11 +69,15 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
   onOpenSession,
   sessions: sessionsProp,
 }) => {
+  const { signOut } = useAuth();
+  const router = useRouter();
   const sessions = sessionsProp ?? TRAINING_SESSIONS;
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
   const selectedSegment = selectedSegmentProp ?? internalSelectedSegment;
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
   useEffect(() => {
@@ -101,6 +108,19 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
 
     void load();
   }, [sessionsProp]);
+
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [profileMenuOpen]);
 
   return (
     <div
@@ -143,16 +163,95 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               ← Back
             </button>
           )}
-          <h1
+          <div
             style={{
-              ...TYPOGRAPHY.h1,
-              color: COLORS.textPrimary,
               margin: 0,
               marginBottom: SPACING.xl,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: SPACING.md,
             }}
           >
-            {title ?? 'My Progress'}
-          </h1>
+            <h1
+              style={{
+                ...TYPOGRAPHY.h1,
+                color: COLORS.textPrimary,
+                margin: 0,
+              }}
+            >
+              {title ?? 'My Progress'}
+            </h1>
+            <div style={{ position: 'relative', flexShrink: 0 }} ref={profileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((o) => !o)}
+                aria-label="Profile menu"
+                aria-expanded={profileMenuOpen}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  border: 'none',
+                  background: COLORS.backgroundLight,
+                  color: COLORS.textPrimary,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                }}
+              >
+                <IconUser size={22} />
+              </button>
+              {profileMenuOpen && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: '100%',
+                    marginTop: 4,
+                    minWidth: 140,
+                    padding: 4,
+                    background: COLORS.white,
+                    borderRadius: 8,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                    zIndex: 10,
+                  }}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={async () => {
+                      setProfileMenuOpen(false);
+                      await signOut();
+                      router.replace('/login');
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      border: 'none',
+                      borderRadius: 6,
+                      background: 'transparent',
+                      color: COLORS.textPrimary,
+                      ...TYPOGRAPHY.body,
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = COLORS.backgroundLight;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Segmented Control */}
           <div
