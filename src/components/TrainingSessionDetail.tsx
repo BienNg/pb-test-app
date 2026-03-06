@@ -679,6 +679,8 @@ export interface TrainingSessionDetailProps {
   onSaveVideoUrl?: (sessionId: string, youtubeUrl: string) => Promise<void>;
   /** Optional callback to refresh parent session data after edits. */
   onSessionUpdated?: () => Promise<void> | void;
+  /** Optional callback invoked after a session is deleted. Typically navigates away. */
+  onDeleteSession?: (sessionId: string) => Promise<void> | void;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
@@ -687,6 +689,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   sessions: sessionsProp,
   onSaveVideoUrl,
   onSessionUpdated,
+  onDeleteSession,
 }) => {
   const { user } = useAuth();
   const sessionList = sessionsProp ?? [];
@@ -758,6 +761,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [showEditSession, setShowEditSession] = useState(false);
   const [editSessionLoading, setEditSessionLoading] = useState(false);
   const [editSessionSaving, setEditSessionSaving] = useState(false);
+  const [editSessionDeleting, setEditSessionDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editSessionError, setEditSessionError] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
@@ -971,6 +976,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditSessionSaving(false);
     }
   }, [isDbSession, editDate, editCoachId, editTitle, editStudentIds, sessionId, onSessionUpdated]);
+
+  const handleDeleteSession = useCallback(async () => {
+    if (!isDbSession) return;
+    const supabase = createClient();
+    if (!supabase) {
+      setEditSessionError('Supabase not configured');
+      return;
+    }
+    setEditSessionDeleting(true);
+    setEditSessionError(null);
+    try {
+      const { error: deleteError } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionId);
+      if (deleteError) throw deleteError;
+      setShowEditSession(false);
+      await onDeleteSession?.(sessionId);
+      onBack();
+    } catch (err) {
+      setEditSessionError(err instanceof Error ? err.message : 'Failed to delete session');
+      setEditSessionDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }, [isDbSession, sessionId, onDeleteSession, onBack]);
 
   const sortedCommentTimestamps = useMemo(
     () =>
@@ -2256,6 +2286,427 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           </div>
         </div>
       </div>
+      {/* Edit Session Modal */}
+      {showEditSession && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            padding: SPACING.md,
+          }}
+          onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit session"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 500,
+              backgroundColor: COLORS.white,
+              borderRadius: RADIUS.xl,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+              overflow: 'hidden',
+              maxHeight: '88vh',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: `${SPACING.lg}px ${SPACING.xl}px`,
+                borderBottom: `1px solid ${COLORS.backgroundLight}`,
+                flexShrink: 0,
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 17,
+                  fontWeight: 700,
+                  color: COLORS.textPrimary,
+                  letterSpacing: -0.3,
+                }}
+              >
+                Edit Session
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
+                style={{
+                  background: COLORS.backgroundLight,
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: 30,
+                  height: 30,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: COLORS.textSecondary,
+                  fontSize: 16,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: 'auto',
+                padding: `${SPACING.xl}px`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: SPACING.lg,
+              }}
+            >
+              {editSessionLoading ? (
+                <p style={{ margin: 0, color: COLORS.textSecondary, fontSize: 14 }}>
+                  Loading session details…
+                </p>
+              ) : (
+                <>
+                  {/* Title */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <label
+                      htmlFor="edit-session-title"
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      Session Title
+                    </label>
+                    <input
+                      id="edit-session-title"
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      placeholder="e.g. Dink drills, doubles strategy…"
+                      style={{
+                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                        borderRadius: RADIUS.sm,
+                        border: `1.5px solid ${COLORS.backgroundLight}`,
+                        fontSize: 15,
+                        color: COLORS.textPrimary,
+                        outline: 'none',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        backgroundColor: COLORS.white,
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <label
+                      htmlFor="edit-session-date"
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      Date
+                    </label>
+                    <input
+                      id="edit-session-date"
+                      type="date"
+                      value={editDate}
+                      onChange={(e) => setEditDate(e.target.value)}
+                      style={{
+                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                        borderRadius: RADIUS.sm,
+                        border: `1.5px solid ${COLORS.backgroundLight}`,
+                        fontSize: 15,
+                        color: COLORS.textPrimary,
+                        outline: 'none',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        backgroundColor: COLORS.white,
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
+
+                  {/* Coach */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <label
+                      htmlFor="edit-session-coach"
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      Coach
+                    </label>
+                    <select
+                      id="edit-session-coach"
+                      value={editCoachId}
+                      onChange={(e) => setEditCoachId(e.target.value)}
+                      style={{
+                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                        borderRadius: RADIUS.sm,
+                        border: `1.5px solid ${COLORS.backgroundLight}`,
+                        fontSize: 15,
+                        color: editCoachId ? COLORS.textPrimary : COLORS.textMuted,
+                        outline: 'none',
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        backgroundColor: COLORS.white,
+                        fontFamily: 'inherit',
+                        appearance: 'auto',
+                      }}
+                    >
+                      <option value="">Select a coach…</option>
+                      {MOCK_COACHES.map((coach) => (
+                        <option key={coach.id} value={coach.id}>
+                          {coach.name} — {coach.tier}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Students */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      Students
+                    </div>
+                    {availableStudents.length === 0 ? (
+                      <p style={{ margin: 0, fontSize: 14, color: COLORS.textMuted }}>
+                        No students found.
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 2,
+                          maxHeight: 200,
+                          overflowY: 'auto',
+                          border: `1.5px solid ${COLORS.backgroundLight}`,
+                          borderRadius: RADIUS.sm,
+                          padding: `${SPACING.xs}px 0`,
+                        }}
+                      >
+                        {availableStudents.map((student) => {
+                          const checked = editStudentIds.includes(student.id);
+                          return (
+                            <label
+                              key={student.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: SPACING.sm,
+                                padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                cursor: 'pointer',
+                                backgroundColor: checked ? 'rgba(49, 203, 0, 0.06)' : 'transparent',
+                                transition: 'background-color 0.1s ease',
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleEditStudent(student.id)}
+                                style={{ accentColor: COLORS.primary, width: 16, height: 16, flexShrink: 0 }}
+                              />
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: checked ? 600 : 400, color: COLORS.textPrimary }}>
+                                  {student.name}
+                                </div>
+                                {student.email && (
+                                  <div style={{ fontSize: 12, color: COLORS.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {student.email}
+                                  </div>
+                                )}
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {editStudentIds.length > 0 && (
+                      <div style={{ fontSize: 12, color: COLORS.textSecondary }}>
+                        {editStudentIds.length} student{editStudentIds.length !== 1 ? 's' : ''} selected
+                      </div>
+                    )}
+                  </div>
+
+                  {editSessionError && (
+                    <div
+                      style={{
+                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                        borderRadius: RADIUS.sm,
+                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                        border: '1px solid rgba(239, 68, 68, 0.25)',
+                        fontSize: 13,
+                        color: '#ef4444',
+                      }}
+                    >
+                      {editSessionError}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: `${SPACING.md}px ${SPACING.xl}px`,
+                borderTop: `1px solid ${COLORS.backgroundLight}`,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: SPACING.sm,
+                flexWrap: 'wrap',
+              }}
+            >
+              {/* Delete section */}
+              {!showDeleteConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={editSessionDeleting}
+                  style={{
+                    padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
+                    borderRadius: RADIUS.sm,
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    backgroundColor: 'rgba(239, 68, 68, 0.06)',
+                    color: '#ef4444',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Delete session
+                </button>
+              ) : (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: SPACING.xs,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <span style={{ fontSize: 13, color: COLORS.textSecondary, fontWeight: 500 }}>
+                    Are you sure?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleDeleteSession}
+                    disabled={editSessionDeleting}
+                    style={{
+                      padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
+                      borderRadius: RADIUS.sm,
+                      border: 'none',
+                      backgroundColor: '#ef4444',
+                      color: '#fff',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: editSessionDeleting ? 'default' : 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {editSessionDeleting ? 'Deleting…' : 'Yes, delete'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    style={{
+                      padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
+                      borderRadius: RADIUS.sm,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      backgroundColor: 'transparent',
+                      color: COLORS.textSecondary,
+                      fontSize: 13,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+
+              {/* Save / Cancel */}
+              <div style={{ display: 'flex', gap: SPACING.sm, marginLeft: 'auto' }}>
+                <button
+                  type="button"
+                  onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
+                  style={{
+                    padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
+                    borderRadius: RADIUS.sm,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: 'transparent',
+                    color: COLORS.textSecondary,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveSessionDetails}
+                  disabled={editSessionSaving || editSessionLoading}
+                  style={{
+                    padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
+                    borderRadius: RADIUS.sm,
+                    border: 'none',
+                    backgroundColor: editSessionSaving || editSessionLoading ? COLORS.primaryLight : COLORS.primary,
+                    color: COLORS.textPrimary,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: editSessionSaving || editSessionLoading ? 'default' : 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  {editSessionSaving ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Comment filter bottom sheet */}
       <div
         aria-hidden={!isFilterSheetOpen}
