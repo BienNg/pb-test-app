@@ -1483,7 +1483,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               </span>
               <span>{session.dateLabel}</span>
             </span>
-            {isDbSession && (
+            {isDbSession && canAddVideoUrl && (
               <button
                 type="button"
                 onClick={() => setShowEditSession(true)}
@@ -1596,307 +1596,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               )}
               </div>
             </div>
-            {isDbSession && (
-              <div
-                style={{
-                  marginTop: SPACING.lg,
-                  padding: SPACING.md,
-                  borderRadius: RADIUS.md,
-                  border: `1px solid ${COLORS.backgroundLight}`,
-                  backgroundColor: COLORS.cardBg,
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: SPACING.sm,
-                    marginBottom: SPACING.sm,
-                  }}
-                >
-                  <h3
-                    style={{
-                      ...TYPOGRAPHY.bodySmall,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      color: COLORS.textSecondary,
-                      margin: 0,
-                    }}
-                  >
-                    Session details
-                  </h3>
-                  {showEditSession && (
-                    <button
-                      type="button"
-                      onClick={() => setShowEditSession(false)}
-                      disabled={editSessionSaving}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        ...TYPOGRAPHY.bodySmall,
-                        color: COLORS.textMuted,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Close
-                    </button>
-                  )}
-                </div>
-                {!showEditSession ? (
-                  <div
-                    style={{
-                      ...TYPOGRAPHY.bodySmall,
-                      color: COLORS.textSecondary,
-                    }}
-                  >
-                    <div>{editTitle || 'Training Session'}</div>
-                    <div style={{ marginTop: 2 }}>
-                      Coach:{' '}
-                      {MOCK_COACHES.find((c) => c.id === editCoachId)?.name || 'Not set'}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
-                    {editSessionError && (
-                      <div
-                        style={{
-                          padding: SPACING.sm,
-                          borderRadius: RADIUS.sm,
-                          backgroundColor: 'rgba(255,107,107,0.08)',
-                          color: COLORS.red,
-                          ...TYPOGRAPHY.bodySmall,
-                        }}
-                      >
-                        {editSessionError}
-                      </div>
-                    )}
-                    {editSessionLoading ? (
-                      <p
-                        style={{
-                          ...TYPOGRAPHY.bodySmall,
-                          color: COLORS.textSecondary,
-                          margin: 0,
-                        }}
-                      >
-                        Loading session details…
-                      </p>
-                    ) : (
-                      <>
-                        <label
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 4,
-                          }}
-                        >
-                          <span
-                            style={{
-                              ...TYPOGRAPHY.label,
-                              color: COLORS.textSecondary,
-                            }}
-                          >
-                            Title
-                          </span>
-                          <input
-                            type="text"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            placeholder="Training Session"
-                            style={{
-                              padding: SPACING.sm,
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.textMuted}`,
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textPrimary,
-                            }}
-                          />
-                        </label>
-                        <label
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 4,
-                          }}
-                        >
-                          <span
-                            style={{
-                              ...TYPOGRAPHY.label,
-                              color: COLORS.textSecondary,
-                            }}
-                          >
-                            Date
-                          </span>
-                          <input
-                            type="date"
-                            value={editDate}
-                            onChange={(e) => setEditDate(e.target.value)}
-                            style={{
-                              padding: SPACING.sm,
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.textMuted}`,
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textPrimary,
-                            }}
-                          />
-                        </label>
-                        <label
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 4,
-                          }}
-                        >
-                          <span
-                            style={{
-                              ...TYPOGRAPHY.label,
-                              color: COLORS.textSecondary,
-                            }}
-                          >
-                            Coach
-                          </span>
-                          <select
-                            value={editCoachId}
-                            onChange={(e) => setEditCoachId(e.target.value)}
-                            style={{
-                              padding: SPACING.sm,
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.textMuted}`,
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textPrimary,
-                            }}
-                          >
-                            <option value="">Select coach</option>
-                            {MOCK_COACHES.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 4,
-                          }}
-                        >
-                          <span
-                            style={{
-                              ...TYPOGRAPHY.label,
-                              color: COLORS.textSecondary,
-                            }}
-                          >
-                            Students
-                          </span>
-                          <div
-                            style={{
-                              maxHeight: 150,
-                              overflowY: 'auto',
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.textMuted}`,
-                              padding: 4,
-                              backgroundColor: COLORS.white,
-                            }}
-                          >
-                            {availableStudents.length === 0 ? (
-                              <p
-                                style={{
-                                  ...TYPOGRAPHY.bodySmall,
-                                  color: COLORS.textSecondary,
-                                  margin: SPACING.sm,
-                                }}
-                              >
-                                No students found in database.
-                              </p>
-                            ) : (
-                              availableStudents.map((s) => (
-                                <label
-                                  key={s.id}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: SPACING.sm,
-                                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={editStudentIds.includes(s.id)}
-                                    onChange={() => toggleEditStudent(s.id)}
-                                    style={{ width: 16, height: 16, accentColor: COLORS.primary }}
-                                  />
-                                  <span
-                                    style={{
-                                      ...TYPOGRAPHY.bodySmall,
-                                      color: COLORS.textPrimary,
-                                    }}
-                                  >
-                                    {s.name}
-                                  </span>
-                                </label>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'flex-end',
-                            gap: SPACING.sm,
-                            marginTop: SPACING.sm,
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowEditSession(false);
-                              setEditSessionError(null);
-                            }}
-                            disabled={editSessionSaving}
-                            style={{
-                              padding: `${SPACING.xs}px ${SPACING.md}px`,
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.textMuted}`,
-                              backgroundColor: COLORS.white,
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textSecondary,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleSaveSessionDetails}
-                            disabled={editSessionSaving || !editDate || !editCoachId}
-                            style={{
-                              padding: `${SPACING.xs}px ${SPACING.md}px`,
-                              borderRadius: RADIUS.sm,
-                              border: 'none',
-                              backgroundColor:
-                                !editDate || !editCoachId || editSessionSaving
-                                  ? COLORS.textMuted
-                                  : COLORS.primary,
-                              color: COLORS.textPrimary,
-                              ...TYPOGRAPHY.bodySmall,
-                              fontWeight: 600,
-                              cursor:
-                                !editDate || !editCoachId || editSessionSaving
-                                  ? 'not-allowed'
-                                  : 'pointer',
-                            }}
-                          >
-                            {editSessionSaving ? 'Saving…' : 'Save changes'}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Comments column */}
@@ -2077,6 +1776,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <div
                       key={comment.id}
                       data-comment-id={comment.id}
+                      onClick={
+                        comment.timestampSeconds != null
+                          ? () => {
+                              setPendingSeekSeconds(comment.timestampSeconds!);
+                              setActiveCommentId(comment.id);
+                            }
+                          : undefined
+                      }
                       style={{
                         display: 'flex',
                         alignItems: 'flex-start',
@@ -2094,6 +1801,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           : `3px solid transparent`,
                         borderRadius: RADIUS.sm,
                         transition: 'background-color 0.2s ease',
+                        cursor: comment.timestampSeconds != null ? 'pointer' : 'default',
                       }}
                     >
                       <div
