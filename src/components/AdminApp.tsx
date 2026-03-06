@@ -3,7 +3,7 @@
 import React, { type ReactNode, useState, useEffect, useRef } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card, StatCard } from './BaseComponents';
-import { IconUsers, IconCircle, IconCalendar, IconCheck } from './Icons';
+import { IconUsers, IconCircle, IconCalendar, IconCheck, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
 import { MyProgressPage, type TrainingSession } from './MyProgressPage';
@@ -20,6 +20,7 @@ const formatDateLabel = (dateKey: string) => {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 const SIDEBAR_WIDTH = 220;
+const SIDEBAR_COLLAPSED_WIDTH = 72;
 
 function useIsDesktop(): boolean {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -1550,24 +1551,29 @@ export const AdminApp: React.FC = () => {
     !!newSessionCoachId &&
     newSessionStudentIds.length > 0;
 
+  const sidebarCollapsed = isDesktop && !sidebarOpen;
+
   const tabButton = (tab: (typeof tabs)[0]) => {
     const isActive = tab.id === activeTab;
     const showRequestsBadge = tab.id === 'requests' && pendingRequestsCount > 0;
+    const iconOnly = sidebarCollapsed;
     return (
       <button
         key={tab.id}
         type="button"
         onClick={() => setActiveTab(tab.id)}
+        title={iconOnly ? tab.label : undefined}
         style={{
           width: isDesktop ? '100%' : undefined,
           flex: isDesktop ? undefined : 1,
           background: isActive && isDesktop ? COLORS.primaryLight : 'none',
           border: 'none',
           outline: 'none',
-          padding: isDesktop ? SPACING.md : SPACING.xs,
+          padding: isDesktop ? (iconOnly ? SPACING.sm : SPACING.md) : SPACING.xs,
           display: 'flex',
           flexDirection: isDesktop ? 'row' : 'column',
           alignItems: 'center',
+          justifyContent: isDesktop && iconOnly ? 'center' : undefined,
           gap: isDesktop ? SPACING.md : 4,
           color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
           borderRadius: isDesktop ? RADIUS.md : 0,
@@ -1577,7 +1583,7 @@ export const AdminApp: React.FC = () => {
       >
         <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative' }}>
           {tab.icon}
-          {showRequestsBadge && !isDesktop && (
+          {showRequestsBadge && (isDesktop ? iconOnly : true) && (
             <span
               style={{
                 position: 'absolute',
@@ -1601,38 +1607,40 @@ export const AdminApp: React.FC = () => {
             </span>
           )}
         </span>
-        <span
-          style={{
-            ...TYPOGRAPHY.label,
-            fontWeight: isActive ? 600 : 500,
-            color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-            display: 'flex',
-            alignItems: 'center',
-            gap: SPACING.xs,
-          }}
-        >
-          {tab.label}
-          {showRequestsBadge && isDesktop && (
-            <span
-              style={{
-                minWidth: 18,
-                height: 18,
-                paddingLeft: 4,
-                paddingRight: 4,
-                borderRadius: 9,
-                backgroundColor: COLORS.red,
-                color: COLORS.white,
-                fontSize: 11,
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
-            </span>
-          )}
-        </span>
+        {(!iconOnly || !isDesktop) && (
+          <span
+            style={{
+              ...TYPOGRAPHY.label,
+              fontWeight: isActive ? 600 : 500,
+              color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+              display: 'flex',
+              alignItems: 'center',
+              gap: SPACING.xs,
+            }}
+          >
+            {tab.label}
+            {showRequestsBadge && isDesktop && !iconOnly && (
+              <span
+                style={{
+                  minWidth: 18,
+                  height: 18,
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  borderRadius: 9,
+                  backgroundColor: COLORS.red,
+                  color: COLORS.white,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+              </span>
+            )}
+          </span>
+        )}
         {!isDesktop && (
           <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {isActive && (
@@ -1657,19 +1665,19 @@ export const AdminApp: React.FC = () => {
         width: '100%',
         minHeight: '100vh',
         paddingBottom: isDesktop ? SPACING.xl : 80,
-        paddingLeft: isDesktop && sidebarOpen ? SIDEBAR_WIDTH : 0,
+        paddingLeft: isDesktop ? (sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH) : 0,
         boxSizing: 'border-box',
         position: 'relative',
       }}
     >
-      {isDesktop && sidebarOpen && (
+      {isDesktop && (
         <aside
           style={{
             position: 'fixed',
             left: 0,
             top: 0,
             bottom: 0,
-            width: SIDEBAR_WIDTH,
+            width: sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH,
             backgroundColor: COLORS.white,
             boxShadow: SHADOWS.md,
             zIndex: 100,
@@ -1677,29 +1685,33 @@ export const AdminApp: React.FC = () => {
             display: 'flex',
             flexDirection: 'column',
             gap: SPACING.xs,
+            transition: 'width 0.2s ease',
           }}
         >
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: sidebarOpen ? 'space-between' : 'center',
               marginBottom: SPACING.md,
+              minHeight: 32,
             }}
           >
-            <div
-              style={{
-                ...TYPOGRAPHY.h3,
-                color: COLORS.textPrimary,
-                paddingLeft: SPACING.sm,
-              }}
-            >
-              Admin
-            </div>
+            {sidebarOpen && (
+              <div
+                style={{
+                  ...TYPOGRAPHY.h3,
+                  color: COLORS.textPrimary,
+                  paddingLeft: SPACING.sm,
+                }}
+              >
+                Admin
+              </div>
+            )}
             <button
               type="button"
-              aria-label="Collapse sidebar"
-              onClick={() => setSidebarOpen(false)}
+              aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+              onClick={() => setSidebarOpen((o) => !o)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1707,30 +1719,32 @@ export const AdminApp: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: RADIUS.md,
-                border: `1px solid ${COLORS.border ?? '#e5e5e5'}`,
-                backgroundColor: COLORS.backgroundLight ?? '#f5f5f5',
+                backgroundColor: 'transparent',
                 color: COLORS.textPrimary,
                 cursor: 'pointer',
                 flexShrink: 0,
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
+              {sidebarOpen ? (
+                <IconChevronLeft size={18} />
+              ) : (
+                <IconChevronRight size={18} />
+              )}
             </button>
           </div>
           {tabs.map((tab) => tabButton(tab))}
           <button
             type="button"
             aria-label="Add session"
+            title="Add session"
             onClick={() => setShowAddSessionSheet(true)}
             style={{
               marginTop: 'auto',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: SPACING.sm,
-              padding: SPACING.md,
+              gap: sidebarOpen ? SPACING.sm : 0,
+              padding: sidebarOpen ? SPACING.md : SPACING.sm,
               borderRadius: RADIUS.md,
               backgroundColor: COLORS.primary,
               color: COLORS.white,
@@ -1745,40 +1759,9 @@ export const AdminApp: React.FC = () => {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-            Add session
+            {sidebarOpen && 'Add session'}
           </button>
         </aside>
-      )}
-
-      {isDesktop && !sidebarOpen && (
-        <button
-          type="button"
-          aria-label="Open sidebar"
-          onClick={() => setSidebarOpen(true)}
-          style={{
-            position: 'fixed',
-            left: 12,
-            top: 12,
-            zIndex: 101,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 40,
-            height: 40,
-            borderRadius: RADIUS.md,
-            border: 'none',
-            backgroundColor: COLORS.white,
-            color: COLORS.textPrimary,
-            cursor: 'pointer',
-            boxShadow: SHADOWS.md,
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
       )}
 
       <div style={{ width: '100%', minHeight: '100vh' }}>{renderContent()}</div>
