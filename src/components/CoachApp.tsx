@@ -1,6 +1,6 @@
 'use client';
 
-import React, { type ReactNode, useState, useEffect } from 'react';
+import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
@@ -21,16 +21,27 @@ export const CoachApp: React.FC = () => {
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
+  const reloadSelectedStudentSessions = useCallback(async () => {
+    if (!selectedStudent) {
+      setSessionsForStudent([]);
+      return;
+    }
+    setLoadingSessions(true);
+    try {
+      const sessions = await fetchSessionsForStudent(createClient(), selectedStudent.id);
+      setSessionsForStudent(sessions);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [selectedStudent]);
+
   useEffect(() => {
     if (!selectedStudent) {
       queueMicrotask(() => setSessionsForStudent([]));
       return;
     }
-    queueMicrotask(() => setLoadingSessions(true));
-    fetchSessionsForStudent(createClient(), selectedStudent.id)
-      .then(setSessionsForStudent)
-      .finally(() => setLoadingSessions(false));
-  }, [selectedStudent, selectedStudent?.id]);
+    void reloadSelectedStudentSessions();
+  }, [selectedStudent, selectedStudent?.id, reloadSelectedStudentSessions]);
 
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {
@@ -40,6 +51,7 @@ export const CoachApp: React.FC = () => {
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+          onSessionUpdated={reloadSelectedStudentSessions}
         />
       </div>
     );

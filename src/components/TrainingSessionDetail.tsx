@@ -679,6 +679,8 @@ export interface TrainingSessionDetailProps {
   sessions?: TrainingSession[];
   /** When provided (e.g. admin), allows adding a YouTube URL when session has no video. Called with session id and the new YouTube URL; persist to sessions.youtube_url. */
   onSaveVideoUrl?: (sessionId: string, youtubeUrl: string) => Promise<void>;
+  /** Optional callback to refresh parent session data after edits. */
+  onSessionUpdated?: () => Promise<void> | void;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
@@ -686,6 +688,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onBack,
   sessions: sessionsProp,
   onSaveVideoUrl,
+  onSessionUpdated,
 }) => {
   const { user } = useAuth();
   const sessionList = sessionsProp ?? [];
@@ -966,6 +969,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         if (insertError) throw insertError;
       }
 
+      await onSessionUpdated?.();
       setShowEditSession(false);
     } catch (err) {
       setEditSessionError(
@@ -1102,9 +1106,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const handleAddComment = async () => {
     if (!commentDraft.trim()) return;
 
-    const currentTime = isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function'
-      ? playerRef.current.getCurrentTime()
-      : videoRef.current?.currentTime ?? 0;
+    const currentTime = currentVideoTime ?? 0;
     const timestampSeconds = includeTimestamp ? Math.round(currentTime) : null;
 
     if (isDbSession && user?.id) {

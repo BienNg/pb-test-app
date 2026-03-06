@@ -359,50 +359,65 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
-  useEffect(() => {
+  const reloadStudents = React.useCallback(async () => {
     const supabase = createClient();
     if (!supabase) {
-      queueMicrotask(() => {
-        setError('Supabase not configured');
-        setLoading(false);
-      });
+      setError('Supabase not configured');
+      setLoading(false);
       return;
     }
-    queueMicrotask(() => {
-      setLoading(true);
-      setError(null);
-    });
-    void supabase
-      .from('profiles')
-      .select('id, email, full_name, role')
-      .then(async ({ data, error }) => {
-        if (error) {
-          setLoading(false);
-          setError(error.message);
-          setStudents([]);
-          return;
-        }
-        const rows = (data ?? []) as { id: string; email: string | null; full_name: string | null; role: string | null }[];
-        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
-        const studentIds = filtered.map((r) => r.id);
-        const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
-        setStudents(
-          filtered.map((r) => ({
-            id: r.id,
-            name: r.full_name?.trim() || r.email || r.id,
-            email: r.email ?? '',
-            lessonsCompleted: sessionCounts[r.id] ?? 0,
-            lastActive: '—',
-          }))
-        );
-        setLoading(false);
-      })
-      .then(undefined, (err: unknown) => {
-        setLoading(false);
-        setError(err instanceof Error ? err.message : 'Failed to load students');
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.from('profiles').select('id, email, full_name, role');
+      if (error) {
+        setError(error.message);
         setStudents([]);
-      });
+        return;
+      }
+      const rows = (data ?? []) as {
+        id: string;
+        email: string | null;
+        full_name: string | null;
+        role: string | null;
+      }[];
+      const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+      const studentIds = filtered.map((r) => r.id);
+      const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
+      setStudents(
+        filtered.map((r) => ({
+          id: r.id,
+          name: r.full_name?.trim() || r.email || r.id,
+          email: r.email ?? '',
+          lessonsCompleted: sessionCounts[r.id] ?? 0,
+          lastActive: '—',
+        }))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load students');
+      setStudents([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  const reloadSelectedStudentSessions = React.useCallback(async () => {
+    if (!selectedStudent) {
+      setSessionsForStudent([]);
+      return;
+    }
+    setLoadingSessions(true);
+    try {
+      const sessions = await fetchSessionsForStudent(createClient(), selectedStudent.id);
+      setSessionsForStudent(sessions);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [selectedStudent]);
+
+  useEffect(() => {
+    void reloadStudents();
+  }, [reloadStudents]);
 
   // When a student is selected, fetch their sessions from DB (session_students -> sessions)
   useEffect(() => {
@@ -410,11 +425,12 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       queueMicrotask(() => setSessionsForStudent([]));
       return;
     }
-    queueMicrotask(() => setLoadingSessions(true));
-    fetchSessionsForStudent(createClient(), selectedStudent.id)
-      .then(setSessionsForStudent)
-      .finally(() => setLoadingSessions(false));
-  }, [selectedStudent, selectedStudent?.id]);
+    void reloadSelectedStudentSessions();
+  }, [selectedStudent, selectedStudent?.id, reloadSelectedStudentSessions]);
+
+  const handleSessionUpdated = React.useCallback(async () => {
+    await Promise.all([reloadStudents(), reloadSelectedStudentSessions()]);
+  }, [reloadStudents, reloadSelectedStudentSessions]);
 
   const handleSaveVideoUrl = async (sid: string, youtubeUrl: string) => {
     const supabase = createClient();
@@ -439,6 +455,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
           onSaveVideoUrl={handleSaveVideoUrl}
+          onSessionUpdated={handleSessionUpdated}
         />
       </div>
     );

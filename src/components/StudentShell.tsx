@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
 import { MyProgressPage, type TrainingSession } from './MyProgressPage';
@@ -24,21 +24,22 @@ export function StudentShell() {
     setActiveTab(tabId);
   };
 
+  const reloadSessions = useCallback(async () => {
+    if (!user?.id) return;
+    const supabase = createClient();
+    setLoadingSessions(true);
+    try {
+      const sessions = await fetchSessionsForStudent(supabase, user.id);
+      setSessionsForStudent(sessions);
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [user?.id]);
+
   // Load DB-backed sessions for the logged-in student so ids line up with Supabase.
   useEffect(() => {
-    const load = async () => {
-      if (!user?.id) return;
-      const supabase = createClient();
-      setLoadingSessions(true);
-      try {
-        const sessions = await fetchSessionsForStudent(supabase, user.id);
-        setSessionsForStudent(sessions);
-      } finally {
-        setLoadingSessions(false);
-      }
-    };
-    load();
-  }, [user?.id]);
+    void reloadSessions();
+  }, [reloadSessions]);
 
   const renderContent = () => {
     if (activeTrainingSessionId != null) {
@@ -47,6 +48,7 @@ export function StudentShell() {
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent}
+          onSessionUpdated={reloadSessions}
         />
       );
     }
