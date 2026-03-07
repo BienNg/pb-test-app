@@ -1022,6 +1022,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return Array.from(shotSet).sort((a, b) => a.localeCompare(b));
   }, [comments]);
 
+  /** Count how many times each user is @mentioned in comment text across the session. */
+  const tagCountByUserId = useMemo(() => {
+    const count = new Map<string, number>();
+    comments.forEach((c) => {
+      parseCommentTextWithShots(c.text).forEach((seg) => {
+        if (seg.type === 'mention') {
+          count.set(seg.id, (count.get(seg.id) ?? 0) + 1);
+        }
+      });
+    });
+    return count;
+  }, [comments]);
+
   const studentsInComments = useMemo(
     () =>
       Array.from(
@@ -2935,6 +2948,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         }}
                       >
                         @{s.name}
+                        <span
+                          style={{
+                            marginLeft: 6,
+                            opacity: 0.85,
+                            fontWeight: 600,
+                          }}
+                        >
+                          ({tagCountByUserId.get(s.id) ?? 0})
+                        </span>
                       </button>
                     );
                   })}
