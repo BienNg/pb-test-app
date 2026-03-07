@@ -13,7 +13,7 @@ import { MOCK_COACHES } from '../data/mockCoaches';
 /** Pickleball shot types available via "/" command in comments. */
 export const SHOT_LIST = [
   'Serve', 'Return', 'Drive', 'Forehand Drive', 'Backhand Drive',
-  'Volley', 'Forehand Volley', 'Backhand Volley', 'Punch Volley', 'Block Volley', 'Roll Volley',
+  'Volley', 'Forehand Volley', 'Backhand Volley', 'Punch Volley', 'Block Volley', 'Roll Volley', 'Volley Dink',
   'Dink', 'Forehand Dink', 'Backhand Dink', 'Cross-Court Dink', 'Straight Dink', 'Dead Dink',
   'Slice Dink', 'Topspin Dink', 'Attack Dink', 'Drop', 'Third Shot Drop', 'Transition',
   'Third Shot Drive', 'Hybrid Drop', 'Reset', 'Smash', 'Put-Away', 'Backhand Overhead',
