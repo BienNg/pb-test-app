@@ -115,6 +115,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
 
+  // Responsive: on small screens, skip buttons fill full width (no maxWidth cap)
+  const [skipButtonsFillWidth, setSkipButtonsFillWidth] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => setSkipButtonsFillWidth(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
   // Reset aspect + timing whenever key changes (e.g. new session)
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -642,6 +652,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               paddingBottom: SPACING.xs,
               borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               flexWrap: 'nowrap',
+              width: '100%',
             }}
           >
             <button
@@ -649,10 +660,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               onClick={goToPrevMarker}
               disabled={sortedMarkerTimes.length === 0}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -674,10 +686,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(-1 / 30)}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -700,10 +713,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(-10)}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -726,10 +740,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(-5)}
               style={{
-                width: 'clamp(28px, 7vw, 36px)',
-                height: 'clamp(28px, 7vw, 36px)',
+                flex: 1,
                 minWidth: 28,
-                minHeight: 28,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 36 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -752,10 +767,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(-1)}
               style={{
-                width: 'clamp(28px, 7vw, 36px)',
-                height: 'clamp(28px, 7vw, 36px)',
+                flex: 1,
                 minWidth: 28,
-                minHeight: 28,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 36 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -778,10 +794,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={handlePlayPause}
               style={{
-                width: 'clamp(30px, 8vw, 40px)',
-                height: 'clamp(30px, 8vw, 40px)',
+                flex: 1,
                 minWidth: 30,
-                minHeight: 30,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 40 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.4)',
@@ -802,10 +819,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(1)}
               style={{
-                width: 'clamp(28px, 7vw, 36px)',
-                height: 'clamp(28px, 7vw, 36px)',
+                flex: 1,
                 minWidth: 28,
-                minHeight: 28,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 36 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -828,10 +846,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(5)}
               style={{
-                width: 'clamp(28px, 7vw, 36px)',
-                height: 'clamp(28px, 7vw, 36px)',
+                flex: 1,
                 minWidth: 28,
-                minHeight: 28,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 36 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -854,10 +873,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(10)}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -880,10 +900,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               type="button"
               onClick={() => skipBy(1 / 30)}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
@@ -907,10 +928,11 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               onClick={goToNextMarker}
               disabled={sortedMarkerTimes.length === 0}
               style={{
-                width: 'clamp(20px, 5vw, 26px)',
-                height: 'clamp(20px, 5vw, 26px)',
+                flex: 1,
                 minWidth: 20,
-                minHeight: 20,
+                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
+                aspectRatio: 1,
+                height: 'auto',
                 flexShrink: 0,
                 borderRadius: '50%',
                 border: '1px solid rgba(255, 255, 255, 0.35)',
