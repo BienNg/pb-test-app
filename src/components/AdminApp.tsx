@@ -1340,6 +1340,7 @@ export const AdminApp: React.FC = () => {
   const [newSessionYoutubeUrl, setNewSessionYoutubeUrl] = useState('');
   const [newSessionStudentIds, setNewSessionStudentIds] = useState<string[]>([]);
   const [newSessionCoachId, setNewSessionCoachId] = useState<string>('');
+  const [newSessionType, setNewSessionType] = useState<'game' | 'drill' | ''>('');
 
   // Students from Supabase (profiles table; expected columns: id, email, full_name, role?)
   const [supabaseStudents, setSupabaseStudents] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -1397,7 +1398,8 @@ export const AdminApp: React.FC = () => {
         .insert({
           date: newSessionDate,
           youtube_url: newSessionYoutubeUrl.trim() || null,
-          coach_id: newSessionCoachId,
+          coach_id: newSessionCoachId || null,
+          session_type: newSessionType || null,
         })
         .select('id')
         .single();
@@ -1423,6 +1425,7 @@ export const AdminApp: React.FC = () => {
       setNewSessionYoutubeUrl('');
       setNewSessionStudentIds([]);
       setNewSessionCoachId('');
+      setNewSessionType('');
       closeAddSessionSheet();
     } catch (err) {
       setAddSessionError(err instanceof Error ? err.message : 'Failed to add session');
@@ -1565,7 +1568,6 @@ export const AdminApp: React.FC = () => {
 
   const canAddSession =
     !!newSessionDate &&
-    !!newSessionCoachId &&
     newSessionStudentIds.length > 0;
 
   const sidebarCollapsed = isDesktop && !sidebarOpen;
@@ -2140,6 +2142,73 @@ export const AdminApp: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Session type
+                </span>
+                <div style={{ display: 'flex', gap: SPACING.sm }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: SPACING.xs,
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${newSessionType === 'game' ? COLORS.primary : COLORS.textMuted}`,
+                      backgroundColor: newSessionType === 'game' ? COLORS.primaryLight : COLORS.white,
+                      cursor: 'pointer',
+                      ...TYPOGRAPHY.body,
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="add-session-type"
+                      value="game"
+                      checked={newSessionType === 'game'}
+                      onChange={() => setNewSessionType('game')}
+                      style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                    />
+                    Game
+                  </label>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: SPACING.xs,
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${newSessionType === 'drill' ? COLORS.primary : COLORS.textMuted}`,
+                      backgroundColor: newSessionType === 'drill' ? COLORS.primaryLight : COLORS.white,
+                      cursor: 'pointer',
+                      ...TYPOGRAPHY.body,
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="add-session-type"
+                      value="drill"
+                      checked={newSessionType === 'drill'}
+                      onChange={() => setNewSessionType('drill')}
+                      style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                    />
+                    Drill
+                  </label>
+                </div>
               </div>
 
               <div>
