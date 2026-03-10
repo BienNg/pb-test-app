@@ -708,6 +708,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const session = sessionList.find((s) => s.id === sessionId);
   const hasVideoUrl = !!(session?.videoUrl?.trim());
   const canAddVideoUrl = !!onSaveVideoUrl;
+  const isAdmin = !!onSaveVideoUrl;
   const isDbSession = sessionsProp != null && session != null;
 
   // Debug logging
@@ -797,6 +798,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
   const [editCoachId, setEditCoachId] = useState<string>('');
+
+  // Any overlay/modal state; used to pause video playback when true
+  const anyModalOpen =
+    isExampleModalOpen ||
+    viewExampleModal != null ||
+    showEditSession ||
+    showDeleteConfirm ||
+    isFilterSheetOpen;
 
   const shotExampleGifs = useMemo(() => {
     try {
@@ -1696,6 +1705,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 <VideoPlayer
                   videoUrl={session.videoUrl}
                   videoKey={session.id}
+                  pauseRequested={anyModalOpen}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
@@ -2048,7 +2058,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     Show example
                                   </button>
                                 );
-                              })() : (
+                              })() : isAdmin ? (
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -2071,7 +2081,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 >
                                   +example
                                 </button>
-                              )}
+                              ) : null}
                             </>
                           )}
                           {comment.role === 'You' && (
@@ -2225,7 +2235,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   Comment
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
-                  {pendingNewCommentGif ? (() => {
+                  {isAdmin && (pendingNewCommentGif ? (() => {
                     const gif = shotExampleGifs.find((g) => g.key === `./${pendingNewCommentGif}` || g.key === pendingNewCommentGif);
                     return (
                       <button
@@ -2272,7 +2282,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     >
                       +example
                     </button>
-                  )}
+                  ))}
                   <div
                     role="group"
                     aria-label="Comment timestamp"

@@ -80,6 +80,9 @@ export interface VideoPlayerProps {
   /** Called after an external seek request has been applied. */
   onSeekHandled?: () => void;
 
+  /** When true, the player should pause playback (used when modals are open). */
+  pauseRequested?: boolean;
+
   /**
    * When true and there is no videoUrl, show an "Add Video URL" call-to-action.
    * Parent is responsible for rendering the actual form; this just surfaces the intent.
@@ -100,6 +103,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onSeekHandled,
   canRequestAddUrl,
   onRequestAddUrl,
+  pauseRequested,
 }) => {
   const youtubeVideoId = getYoutubeVideoId(videoUrl || undefined);
   const isYoutube = !!youtubeVideoId;
@@ -124,6 +128,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
+
+  // Pause playback whenever pauseRequested toggles true (e.g. when any modal is open)
+  useEffect(() => {
+    if (!pauseRequested) return;
+    if (isYoutube && playerRef.current) {
+      playerRef.current.pauseVideo();
+    } else if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [pauseRequested, isYoutube]);
 
   // Reset aspect + timing whenever key changes (e.g. new session)
   useEffect(() => {
