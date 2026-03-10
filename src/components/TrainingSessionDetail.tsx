@@ -10,6 +10,17 @@ import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
 import { MOCK_COACHES } from '../data/mockCoaches';
 
+declare const require: {
+  context: (
+    directory: string,
+    useSubdirectories: boolean,
+    regExp: RegExp
+  ) => {
+    keys: () => string[];
+    (id: string): unknown;
+  };
+};
+
 /** Pickleball shot types available via "/" command in comments. */
 export const SHOT_LIST = [
   'Serve', 'Return', 'Drive', 'Forehand Drive', 'Backhand Drive',
@@ -729,6 +740,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [includeTimestamp, setIncludeTimestamp] = useState(true);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [, setVideoDuration] = useState(0);
+  const [isExampleModalOpen, setIsExampleModalOpen] = useState(false);
+  const [selectedExampleKey, setSelectedExampleKey] = useState<string | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -777,6 +790,53 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
   const [editCoachId, setEditCoachId] = useState<string>('');
+
+  const shotExampleGifs = useMemo(() => {
+    try {
+      const ctx = require.context('../assets/shot-examples', false, /\.gif$/);
+      const toTitle = (fileName: string) => {
+        const base = fileName.replace(/^\.\//, '').replace(/\.gif$/i, '');
+        const cleaned = base.replace(/^shot-example-/, '').replace(/[-_]+/g, ' ').trim();
+        return cleaned.replace(/\b\w/g, (c: string) => c.toUpperCase());
+      };
+      return ctx.keys()
+        .map((k: string) => {
+          const mod = ctx(k) as
+            | string
+            | { default?: string | { src?: string } }
+            | { src?: string };
+
+          const src =
+            typeof mod === 'string'
+              ? mod
+              : typeof (mod as { default?: unknown }).default === 'string'
+                ? ((mod as { default: string }).default)
+                : typeof (mod as { default?: { src?: unknown } }).default === 'object' &&
+                    (mod as { default?: { src?: unknown } }).default?.src &&
+                    typeof (mod as { default?: { src?: unknown } }).default?.src === 'string'
+                  ? ((mod as { default: { src: string } }).default.src)
+                  : typeof (mod as { src?: unknown }).src === 'string'
+                    ? ((mod as { src: string }).src)
+                    : '';
+
+          return { key: k, src, title: toTitle(k) };
+        })
+        .filter((g: { src: string }) => Boolean(g.src))
+        .sort((a: { title: string }, b: { title: string }) => a.title.localeCompare(b.title));
+    } catch {
+      return [] as { key: string; src: string; title: string }[];
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isExampleModalOpen) return;
+    setSelectedExampleKey(null);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsExampleModalOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isExampleModalOpen]);
   const [editSessionType, setEditSessionType] = useState<'game' | 'drill' | ''>('');
   const [editStudentIds, setEditStudentIds] = useState<string[]>([]);
   const [availableStudents, setAvailableStudents] = useState<
@@ -1908,29 +1968,52 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           }}
                         >
                           {comment.timestampSeconds != null && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPendingSeekSeconds(comment.timestampSeconds!);
-                                setActiveCommentId(comment.id);
-                              }}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                borderRadius: RADIUS.sm,
-                                border: `1px solid ${COLORS.primaryLight}`,
-                                backgroundColor: 'rgba(49, 203, 0, 0.12)',
-                                color: COLORS.primary,
-                                ...TYPOGRAPHY.label,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <span style={{ opacity: 0.9 }}>▶</span>
-                              {formatTimestamp(comment.timestampSeconds)}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPendingSeekSeconds(comment.timestampSeconds!);
+                                  setActiveCommentId(comment.id);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                  borderRadius: RADIUS.sm,
+                                  border: `1px solid ${COLORS.primaryLight}`,
+                                  backgroundColor: 'rgba(49, 203, 0, 0.12)',
+                                  color: COLORS.primary,
+                                  ...TYPOGRAPHY.label,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <span style={{ opacity: 0.9 }}>▶</span>
+                                {formatTimestamp(comment.timestampSeconds)}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsExampleModalOpen(true);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                  borderRadius: RADIUS.sm,
+                                  border: `1px solid ${COLORS.backgroundLight}`,
+                                  backgroundColor: COLORS.cardBg,
+                                  color: COLORS.textSecondary,
+                                  ...TYPOGRAPHY.label,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                +example
+                              </button>
+                            </>
                           )}
                           {comment.role === 'You' && (
                             <button
@@ -2082,55 +2165,78 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 >
                   Comment
                 </label>
-                <div
-                  role="group"
-                  aria-label="Comment timestamp"
-                  style={{
-                    display: 'inline-flex',
-                    padding: 2,
-                    borderRadius: RADIUS.sm,
-                    backgroundColor: COLORS.backgroundLight,
-                    gap: 0,
-                  }}
-                >
+                <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
                   <button
                     type="button"
-                    onClick={() => setIncludeTimestamp(false)}
-                    style={{
-                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                      borderRadius: RADIUS.sm - 2,
-                      border: 'none',
-                      backgroundColor: !includeTimestamp ? COLORS.white : 'transparent',
-                      color: !includeTimestamp ? COLORS.textPrimary : COLORS.textSecondary,
-                      ...TYPOGRAPHY.label,
-                      fontWeight: !includeTimestamp ? 600 : 500,
-                      cursor: 'pointer',
-                      boxShadow: !includeTimestamp ? SHADOWS.light : 'none',
+                    onClick={() => {
+                      setIsExampleModalOpen(true);
                     }}
-                  >
-                    No timestamp
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIncludeTimestamp(true)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 4,
                       padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                      borderRadius: RADIUS.sm - 2,
-                      border: 'none',
-                      backgroundColor: includeTimestamp ? COLORS.white : 'transparent',
-                      color: includeTimestamp ? COLORS.primary : COLORS.textSecondary,
+                      borderRadius: RADIUS.sm,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      backgroundColor: COLORS.cardBg,
+                      color: COLORS.textSecondary,
                       ...TYPOGRAPHY.label,
-                      fontWeight: includeTimestamp ? 600 : 500,
+                      fontWeight: 600,
                       cursor: 'pointer',
-                      boxShadow: includeTimestamp ? SHADOWS.light : 'none',
+                      flexShrink: 0,
                     }}
                   >
-                    <IconClock size={14} />
-                    {formatTimestamp(currentVideoTime)}
+                    +example
                   </button>
+                  <div
+                    role="group"
+                    aria-label="Comment timestamp"
+                    style={{
+                      display: 'inline-flex',
+                      padding: 2,
+                      borderRadius: RADIUS.sm,
+                      backgroundColor: COLORS.backgroundLight,
+                      gap: 0,
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setIncludeTimestamp(false)}
+                      style={{
+                        padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                        borderRadius: RADIUS.sm - 2,
+                        border: 'none',
+                        backgroundColor: !includeTimestamp ? COLORS.white : 'transparent',
+                        color: !includeTimestamp ? COLORS.textPrimary : COLORS.textSecondary,
+                        ...TYPOGRAPHY.label,
+                        fontWeight: !includeTimestamp ? 600 : 500,
+                        cursor: 'pointer',
+                        boxShadow: !includeTimestamp ? SHADOWS.light : 'none',
+                      }}
+                    >
+                      No timestamp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIncludeTimestamp(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                        borderRadius: RADIUS.sm - 2,
+                        border: 'none',
+                        backgroundColor: includeTimestamp ? COLORS.white : 'transparent',
+                        color: includeTimestamp ? COLORS.primary : COLORS.textSecondary,
+                        ...TYPOGRAPHY.label,
+                        fontWeight: includeTimestamp ? 600 : 500,
+                        cursor: 'pointer',
+                        boxShadow: includeTimestamp ? SHADOWS.light : 'none',
+                      }}
+                    >
+                      <IconClock size={14} />
+                      {formatTimestamp(currentVideoTime)}
+                    </button>
+                  </div>
                 </div>
               </div>
               {/* Tag line with manual "+ Add person" dropdown removed; mentions are handled via @ in the comment box */}
@@ -3089,6 +3195,142 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {isExampleModalOpen && (
+        <div
+          role="presentation"
+          onClick={() => setIsExampleModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1200,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Shot examples"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(960px, 100%)',
+              maxHeight: 'min(80vh, 760px)',
+              overflow: 'auto',
+              backgroundColor: COLORS.white,
+              borderRadius: RADIUS.xl,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.22)',
+              padding: SPACING.xxl,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACING.md }}>
+              <div>
+                <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>Shot examples</h3>
+                <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, marginTop: 6 }}>
+                  {shotExampleGifs.length} example{shotExampleGifs.length === 1 ? '' : 's'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: SPACING.sm, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  disabled={selectedExampleKey == null}
+                  onClick={() => {
+                    // TODO: Implement adding selected example
+                  }}
+                  style={{
+                    border: 'none',
+                    backgroundColor: selectedExampleKey == null ? COLORS.backgroundLight : COLORS.primary,
+                    color: selectedExampleKey == null ? COLORS.textSecondary : COLORS.textPrimary,
+                    borderRadius: 999,
+                    padding: `${SPACING.xs}px ${SPACING.md}px`,
+                    cursor: selectedExampleKey == null ? 'not-allowed' : 'pointer',
+                    opacity: selectedExampleKey == null ? 0.7 : 1,
+                    ...TYPOGRAPHY.label,
+                    fontWeight: 700,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Add Example
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsExampleModalOpen(false)}
+                  style={{
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: COLORS.white,
+                    color: COLORS.textSecondary,
+                    borderRadius: 999,
+                    padding: `${SPACING.xs}px ${SPACING.md}px`,
+                    cursor: 'pointer',
+                    ...TYPOGRAPHY.label,
+                    fontWeight: 600,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: SPACING.xl,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: SPACING.lg,
+              }}
+            >
+              {shotExampleGifs.map((g) => (
+                <button
+                  key={g.key}
+                  type="button"
+                  onClick={() => setSelectedExampleKey(g.key)}
+                  style={{
+                    borderRadius: RADIUS.lg,
+                    border:
+                      selectedExampleKey === g.key
+                        ? `2px solid ${COLORS.primary}`
+                        : `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: selectedExampleKey === g.key ? 'rgba(49, 203, 0, 0.08)' : COLORS.white,
+                    overflow: 'hidden',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ padding: SPACING.md }}>
+                    <div style={{ ...TYPOGRAPHY.labelMed, color: COLORS.textPrimary, fontWeight: 700 }}>
+                      {g.title}
+                    </div>
+                  </div>
+                  <div style={{ padding: `0 ${SPACING.md}px ${SPACING.md}px` }}>
+                    <img
+                      src={g.src}
+                      alt={g.title}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        maxHeight: 320,
+                        objectFit: 'contain',
+                        borderRadius: RADIUS.md,
+                        border: `1px solid ${COLORS.backgroundLight}`,
+                        backgroundColor: COLORS.backgroundLight,
+                        display: 'block',
+                      }}
+                    />
+                  </div>
+                </button>
+              ))}
+              {shotExampleGifs.length === 0 && (
+                <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary }}>
+                  No GIFs found in <code style={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>src/assets/shot-examples</code>.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
