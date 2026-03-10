@@ -456,6 +456,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
           onSaveVideoUrl={handleSaveVideoUrl}
           onSessionUpdated={handleSessionUpdated}
+          onDeleteSession={handleSessionUpdated}
         />
       </div>
     );

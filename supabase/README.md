@@ -18,7 +18,7 @@ This will:
 - Add a trigger so new sign-ups in Auth get a matching `profiles` row.
 - Backfill `profiles` for any existing Auth users.
 
-After it runs, the “Add session” → Students list in the admin app should work.
+After it runs, the "Add session" → Students list in the admin app should work.
 
 ### 2. Sessions migration (`20260223000000_create_sessions.sql`)
 
@@ -32,4 +32,16 @@ This will:
 - Create `public.session_students` (session_id, student_id) to link sessions to students.
 - Enable RLS so authenticated users can read and insert sessions and session_students.
 
-After it runs, the “Add session” button in the admin app will persist new sessions (date, YouTube URL, coach, students) to Supabase.
+After it runs, the "Add session" button in the admin app will persist new sessions (date, YouTube URL, coach, students) to Supabase.
+
+### 3. Additional migrations
+
+Run these additional migrations in order (same process: SQL Editor → New query → paste → Run):
+
+- `20260223100000_sessions_update_policy.sql` - Allow authenticated users to update sessions
+- `20260223110000_create_session_comments.sql` - Create session_comments table
+- `20260306000000_alter_sessions_add_title_and_update_policies.sql` - Add title column to sessions
+- `20260306000001_allow_all_authenticated_users_to_access_session_comments.sql` - Update session comments access
+- `20260306000002_allow_authenticated_delete_session_students.sql` - Allow deleting session_students
+- `20260308000000_sessions_coach_nullable_and_session_type.sql` - Make coach_id nullable and add session_type
+- **`20260308100000_allow_authenticated_delete_sessions.sql` - Allow authenticated users to delete sessions** ← **REQUIRED for delete to work**

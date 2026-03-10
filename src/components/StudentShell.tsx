@@ -49,6 +49,7 @@ export function StudentShell() {
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent}
           onSessionUpdated={reloadSessions}
+          onDeleteSession={async () => { await reloadSessions(); }}
         />
       );
     }

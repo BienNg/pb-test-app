@@ -52,6 +52,7 @@ export const CoachApp: React.FC = () => {
           onBack={() => setActiveTrainingSessionId(null)}
           sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
           onSessionUpdated={reloadSelectedStudentSessions}
+          onDeleteSession={async () => { await reloadSelectedStudentSessions(); }}
         />
       </div>
     );

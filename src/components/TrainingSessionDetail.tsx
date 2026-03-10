@@ -698,6 +698,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const canAddVideoUrl = !!onSaveVideoUrl;
   const isDbSession = sessionsProp != null && session != null;
 
+  // Debug logging
+  console.log('[TrainingSessionDetail] Rendered:', {
+    sessionId,
+    hasSessionsProp: sessionsProp != null,
+    sessionCount: sessionList.length,
+    foundSession: session != null,
+    isDbSession,
+    hasOnDeleteSession: onDeleteSession != null,
+  });
+
   const [showAddUrlForm, setShowAddUrlForm] = useState(false);
   const [, setAddUrlDraft] = useState('');
   const [, setAddUrlError] = useState<string | null>(null);
@@ -767,6 +777,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
   const [editCoachId, setEditCoachId] = useState<string>('');
+  const [editSessionType, setEditSessionType] = useState<'game' | 'drill' | ''>('');
   const [editStudentIds, setEditStudentIds] = useState<string[]>([]);
   const [availableStudents, setAvailableStudents] = useState<
     { id: string; name: string; email: string }[]
@@ -866,7 +877,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       try {
         const { data: sessionRow, error: sessionError } = await supabase
           .from('sessions')
-          .select('date, coach_id, title')
+          .select('date, coach_id, title, session_type')
           .eq('id', sessionId)
           .maybeSingle();
         if (sessionError) throw sessionError;
@@ -878,6 +889,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           setEditDate(dateStr);
           setEditCoachId(sessionRow.coach_id ?? '');
           setEditTitle((sessionRow.title as string | null) ?? (session?.title ?? ''));
+          const st = sessionRow.session_type as string | null;
+          setEditSessionType(st === 'game' || st === 'drill' ? st : '');
         } else if (session) {
           setEditDate(session.dateKey);
           setEditTitle(session.title);
@@ -936,8 +949,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditSessionError('Supabase not configured');
       return;
     }
-    if (!editDate || !editCoachId) {
-      setEditSessionError('Date and coach are required');
+    if (!editDate) {
+      setEditSessionError('Date is required');
       return;
     }
     setEditSessionSaving(true);
@@ -947,8 +960,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         .from('sessions')
         .update({
           date: editDate,
-          coach_id: editCoachId,
+          coach_id: editCoachId || null,
           title: editTitle.trim() || null,
+          session_type: editSessionType || null,
         })
         .eq('id', sessionId);
       if (updateError) throw updateError;
@@ -975,10 +989,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     } finally {
       setEditSessionSaving(false);
     }
-  }, [isDbSession, editDate, editCoachId, editTitle, editStudentIds, sessionId, onSessionUpdated]);
+  }, [isDbSession, editDate, editCoachId, editSessionType, editTitle, editStudentIds, sessionId, onSessionUpdated]);
 
   const handleDeleteSession = useCallback(async () => {
-    if (!isDbSession) return;
+    if (!isDbSession) {
+      setEditSessionError('This session cannot be deleted.');
+      return;
+    }
     const supabase = createClient();
     if (!supabase) {
       setEditSessionError('Supabase not configured');
@@ -987,15 +1004,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setEditSessionDeleting(true);
     setEditSessionError(null);
     try {
+      console.log('[TrainingSessionDetail] Deleting session:', sessionId);
       const { error: deleteError } = await supabase
         .from('sessions')
         .delete()
         .eq('id', sessionId);
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        console.error('[TrainingSessionDetail] Delete error:', deleteError);
+        throw deleteError;
+      }
+      console.log('[TrainingSessionDetail] Session deleted successfully');
       setShowEditSession(false);
       await onDeleteSession?.(sessionId);
       onBack();
     } catch (err) {
+      console.error('[TrainingSessionDetail] Delete failed:', err);
       setEditSessionError(err instanceof Error ? err.message : 'Failed to delete session');
       setEditSessionDeleting(false);
       setShowDeleteConfirm(false);
@@ -2504,6 +2527,75 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     </select>
                   </div>
 
+                  {/* Session type (game / drill) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
+                    <label
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      Session type
+                    </label>
+                    <div style={{ display: 'flex', gap: SPACING.sm }}>
+                      <label
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: SPACING.xs,
+                          padding: SPACING.sm,
+                          borderRadius: RADIUS.sm,
+                          border: `2px solid ${editSessionType === 'game' ? COLORS.primary : COLORS.backgroundLight}`,
+                          backgroundColor: editSessionType === 'game' ? COLORS.primaryLight : COLORS.white,
+                          cursor: 'pointer',
+                          fontSize: 15,
+                          color: COLORS.textPrimary,
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="edit-session-type"
+                          value="game"
+                          checked={editSessionType === 'game'}
+                          onChange={() => setEditSessionType('game')}
+                          style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                        />
+                        Game
+                      </label>
+                      <label
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: SPACING.xs,
+                          padding: SPACING.sm,
+                          borderRadius: RADIUS.sm,
+                          border: `2px solid ${editSessionType === 'drill' ? COLORS.primary : COLORS.backgroundLight}`,
+                          backgroundColor: editSessionType === 'drill' ? COLORS.primaryLight : COLORS.white,
+                          cursor: 'pointer',
+                          fontSize: 15,
+                          color: COLORS.textPrimary,
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="edit-session-type"
+                          value="drill"
+                          checked={editSessionType === 'drill'}
+                          onChange={() => setEditSessionType('drill')}
+                          style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                        />
+                        Drill
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Students */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
                     <div
@@ -2612,7 +2704,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               {!showDeleteConfirm ? (
                 <button
                   type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
+                  onClick={() => {
+                    console.log('[TrainingSessionDetail] Delete button clicked, showing confirmation');
+                    setShowDeleteConfirm(true);
+                  }}
                   disabled={editSessionDeleting}
                   style={{
                     padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
@@ -2660,7 +2755,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      console.log('[TrainingSessionDetail] Cancel button clicked');
+                      setShowDeleteConfirm(false);
+                    }}
                     style={{
                       padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
                       borderRadius: RADIUS.sm,
