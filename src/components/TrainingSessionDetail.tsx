@@ -271,6 +271,7 @@ import {
   fetchSessionComments,
   insertSessionComment,
   updateSessionComment,
+  updateCommentExampleGif,
   deleteSessionComment,
   mapDbCommentToSessionComment,
   fetchSessionTaggableProfiles,
@@ -742,6 +743,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [, setVideoDuration] = useState(0);
   const [isExampleModalOpen, setIsExampleModalOpen] = useState(false);
   const [selectedExampleKey, setSelectedExampleKey] = useState<string | null>(null);
+  /** Which comment triggered the example modal ('new' = composer, else comment id) */
+  const [exampleModalContext, setExampleModalContext] = useState<string | number | 'new' | null>(null);
+  /** GIF attached to the pending new comment (before it is posted) */
+  const [pendingNewCommentGif, setPendingNewCommentGif] = useState<string | null>(null);
+  /** When set, shows the lightweight "view example" modal */
+  const [viewExampleModal, setViewExampleModal] = useState<{ src: string; title: string } | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -837,6 +844,28 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isExampleModalOpen]);
+
+  const handleAddExample = async () => {
+    if (!selectedExampleKey) return;
+    const gifFileName = selectedExampleKey.replace(/^\.\//, '');
+    if (exampleModalContext === 'new') {
+      setPendingNewCommentGif(gifFileName);
+      setIsExampleModalOpen(false);
+      return;
+    }
+    const commentId = exampleModalContext;
+    if (commentId == null) return;
+    // Optimistically update local state
+    setComments((prev) =>
+      prev.map((c) => (c.id === commentId ? { ...c, exampleGif: gifFileName } : c))
+    );
+    setIsExampleModalOpen(false);
+    // Persist to DB for real comments
+    if (isDbSession && typeof commentId === 'string') {
+      const supabase = createClient();
+      await updateCommentExampleGif(supabase, commentId, gifFileName);
+    }
+  };
   const [editSessionType, setEditSessionType] = useState<'game' | 'drill' | ''>('');
   const [editStudentIds, setEditStudentIds] = useState<string[]>([]);
   const [availableStudents, setAvailableStudents] = useState<
@@ -1221,13 +1250,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           user.id,
           commentDraft.trim(),
           timestampSeconds,
-          selectedMentionIds
+          selectedMentionIds,
+          pendingNewCommentGif
         );
         if (inserted) {
           const mapped = mapDbCommentToSessionComment(inserted, user.id);
           setComments((prev) => [...prev, mapped]);
           setCommentDraft('');
           setSelectedMentionIds([]);
+          setPendingNewCommentGif(null);
         }
       } finally {
         setPostingComment(false);
@@ -1242,9 +1273,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       createdAt: 'Just now',
       text: commentDraft.trim(),
       ...(timestampSeconds != null && { timestampSeconds }),
+      ...(pendingNewCommentGif != null && { exampleGif: pendingNewCommentGif }),
     };
     setComments((prev) => [...prev, newComment]);
     setCommentDraft('');
+    setPendingNewCommentGif(null);
   };
 
   const filteredShots = useMemo(() => {
@@ -1992,27 +2025,53 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 <span style={{ opacity: 0.9 }}>▶</span>
                                 {formatTimestamp(comment.timestampSeconds)}
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setIsExampleModalOpen(true);
-                                }}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                  borderRadius: RADIUS.sm,
-                                  border: `1px solid ${COLORS.backgroundLight}`,
-                                  backgroundColor: COLORS.cardBg,
-                                  color: COLORS.textSecondary,
-                                  ...TYPOGRAPHY.label,
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                +example
-                              </button>
+                              {comment.exampleGif ? (() => {
+                                const gif = shotExampleGifs.find((g) => g.key === `./${comment.exampleGif}` || g.key === comment.exampleGif);
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => gif && setViewExampleModal({ src: gif.src, title: gif.title })}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                      borderRadius: RADIUS.sm,
+                                      border: `1px solid ${COLORS.primaryLight}`,
+                                      backgroundColor: 'rgba(49, 203, 0, 0.08)',
+                                      color: COLORS.primary,
+                                      ...TYPOGRAPHY.label,
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    Show example
+                                  </button>
+                                );
+                              })() : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setExampleModalContext(comment.id);
+                                    setIsExampleModalOpen(true);
+                                  }}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                    borderRadius: RADIUS.sm,
+                                    border: `1px solid ${COLORS.backgroundLight}`,
+                                    backgroundColor: COLORS.cardBg,
+                                    color: COLORS.textSecondary,
+                                    ...TYPOGRAPHY.label,
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  +example
+                                </button>
+                              )}
                             </>
                           )}
                           {comment.role === 'You' && (
@@ -2166,27 +2225,54 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   Comment
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsExampleModalOpen(true);
-                    }}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                      borderRadius: RADIUS.sm,
-                      border: `1px solid ${COLORS.backgroundLight}`,
-                      backgroundColor: COLORS.cardBg,
-                      color: COLORS.textSecondary,
-                      ...TYPOGRAPHY.label,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                    }}
-                  >
-                    +example
-                  </button>
+                  {pendingNewCommentGif ? (() => {
+                    const gif = shotExampleGifs.find((g) => g.key === `./${pendingNewCommentGif}` || g.key === pendingNewCommentGif);
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => gif && setViewExampleModal({ src: gif.src, title: gif.title })}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                          borderRadius: RADIUS.sm,
+                          border: `1px solid ${COLORS.primaryLight}`,
+                          backgroundColor: 'rgba(49, 203, 0, 0.08)',
+                          color: COLORS.primary,
+                          ...TYPOGRAPHY.label,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        Show example
+                      </button>
+                    );
+                  })() : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExampleModalContext('new');
+                        setIsExampleModalOpen(true);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                        borderRadius: RADIUS.sm,
+                        border: `1px solid ${COLORS.backgroundLight}`,
+                        backgroundColor: COLORS.cardBg,
+                        color: COLORS.textSecondary,
+                        ...TYPOGRAPHY.label,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      +example
+                    </button>
+                  )}
                   <div
                     role="group"
                     aria-label="Comment timestamp"
@@ -3236,9 +3322,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 <button
                   type="button"
                   disabled={selectedExampleKey == null}
-                  onClick={() => {
-                    // TODO: Implement adding selected example
-                  }}
+                  onClick={handleAddExample}
                   style={{
                     border: 'none',
                     backgroundColor: selectedExampleKey == null ? COLORS.backgroundLight : COLORS.primary,
@@ -3328,6 +3412,73 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {viewExampleModal && (
+        <div
+          role="presentation"
+          onClick={() => setViewExampleModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1300,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label={viewExampleModal.title}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: RADIUS.xl,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+              padding: SPACING.xl,
+              width: 'min(560px, 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SPACING.md,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SPACING.md }}>
+              <div style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
+                {viewExampleModal.title}
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewExampleModal(null)}
+                style={{
+                  border: `1px solid ${COLORS.backgroundLight}`,
+                  backgroundColor: COLORS.white,
+                  color: COLORS.textSecondary,
+                  borderRadius: 999,
+                  padding: `${SPACING.xs}px ${SPACING.md}px`,
+                  cursor: 'pointer',
+                  ...TYPOGRAPHY.label,
+                  fontWeight: 600,
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <img
+              src={viewExampleModal.src}
+              alt={viewExampleModal.title}
+              style={{
+                width: '100%',
+                height: 'auto',
+                borderRadius: RADIUS.lg,
+                border: `1px solid ${COLORS.backgroundLight}`,
+                backgroundColor: COLORS.backgroundLight,
+                display: 'block',
+              }}
+            />
           </div>
         </div>
       )}

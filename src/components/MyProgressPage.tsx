@@ -48,6 +48,8 @@ export interface SessionComment {
   createdAtIso?: string;
   /** Tagged/mentioned users when from DB */
   taggedUsers?: { id: string; name: string }[];
+  /** Filename of an attached shot-example GIF (e.g. "shot-example-Dink-Volley.gif") */
+  exampleGif?: string;
 }
 
 export const MyProgressPage: React.FC<MyProgressPageProps> = ({

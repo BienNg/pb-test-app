@@ -10,6 +10,7 @@ export type SessionCommentRow = {
   author_id: string;
   text: string;
   timestamp_seconds: number | null;
+  example_gif: string | null;
   created_at: string;
 };
 
@@ -47,6 +48,7 @@ export function mapDbCommentToSessionComment(
     createdAtIso: row.created_at,
     text: row.text,
     timestampSeconds: row.timestamp_seconds ?? undefined,
+    exampleGif: row.example_gif ?? undefined,
     taggedUsers: (row.mentions ?? []).map((m) => ({
       id: m.profile_id,
       name: m.full_name?.trim() || 'Unknown',
@@ -68,6 +70,7 @@ export async function fetchSessionComments(
       author_id,
       text,
       timestamp_seconds,
+      example_gif,
       created_at
     `)
     .eq('session_id', sessionId)
@@ -156,7 +159,8 @@ export async function insertSessionComment(
   authorId: string,
   text: string,
   timestampSeconds: number | null,
-  mentionedProfileIds: string[] = []
+  mentionedProfileIds: string[] = [],
+  exampleGif: string | null = null
 ): Promise<SessionCommentWithAuthor | null> {
   if (!supabase) return null;
   const { data: inserted, error: insertError } = await supabase
@@ -166,8 +170,9 @@ export async function insertSessionComment(
       author_id: authorId,
       text,
       timestamp_seconds: timestampSeconds,
+      example_gif: exampleGif,
     })
-    .select('id, session_id, author_id, text, timestamp_seconds, created_at')
+    .select('id, session_id, author_id, text, timestamp_seconds, example_gif, created_at')
     .single();
   if (insertError || !inserted) return null;
   const row = inserted as SessionCommentRow;
@@ -215,6 +220,20 @@ export async function insertSessionComment(
     author: profileMap.get(row.author_id) ?? null,
     mentions,
   };
+}
+
+/** Update the example GIF attached to a comment. Returns true on success. */
+export async function updateCommentExampleGif(
+  supabase: SupabaseClient | null,
+  commentId: string,
+  exampleGif: string | null
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comments')
+    .update({ example_gif: exampleGif })
+    .eq('id', commentId);
+  return !error;
 }
 
 /** Update a comment text. Returns true on success. */
