@@ -1143,6 +1143,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return Array.from(shotSet).sort((a, b) => a.localeCompare(b));
   }, [comments]);
 
+  /** Count how many times each shot is tagged across the session comments. */
+  const shotCountByName = useMemo(() => {
+    const count = new Map<string, number>();
+    comments.forEach((c) => {
+      parseCommentTextWithShots(c.text).forEach((seg) => {
+        if (seg.type === 'shot') {
+          count.set(seg.name, (count.get(seg.name) ?? 0) + 1);
+        }
+      });
+    });
+    return count;
+  }, [comments]);
+
   /** Count how many times each user is @mentioned in comment text across the session. */
   const tagCountByUserId = useMemo(() => {
     const count = new Map<string, number>();
@@ -3184,6 +3197,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         }}
                       >
                         {shot}
+                        <span
+                          style={{
+                            marginLeft: 6,
+                            opacity: 0.85,
+                            fontWeight: 600,
+                          }}
+                        >
+                          ({shotCountByName.get(shot) ?? 0})
+                        </span>
                       </button>
                     );
                   })}

@@ -132,7 +132,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   // Pause playback whenever pauseRequested toggles true (e.g. when any modal is open)
   useEffect(() => {
     if (!pauseRequested) return;
-    if (isYoutube && playerRef.current) {
+    if (isYoutube && playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
       playerRef.current.pauseVideo();
     } else if (videoRef.current) {
       videoRef.current.pause();
