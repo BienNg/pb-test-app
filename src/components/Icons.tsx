@@ -32,6 +32,7 @@ import {
   MoreVertical,
   ArrowLeft,
   Pencil,
+  X,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -214,5 +215,11 @@ export const IconArrowLeft: React.FC<{ size?: number; style?: React.CSSPropertie
 export const IconPencil: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Pencil size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconX: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <X size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

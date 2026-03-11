@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconArrowLeft,
-  IconChevronDown,
+  IconCheck,
   IconClock,
   IconFilter,
   IconMoreVertical,
   IconPencil,
   IconPlay,
+  IconUser,
+  IconX,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
@@ -1137,30 +1139,43 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
+  /** When students are selected, only consider comments that mention at least one of them. */
+  const commentsForShotCount = useMemo(() => {
+    if (studentFilter.length === 0) return comments;
+    return comments.filter((c) =>
+      (c.taggedUsers ?? []).some((u) => studentFilter.includes(u.id))
+    );
+  }, [comments, studentFilter]);
+
+  /** Shot types in relevant comments. When students selected, only show shots with count > 0. */
   const shotsInComments = useMemo(() => {
     const shotSet = new Set<string>();
-    comments.forEach((c) => {
+    commentsForShotCount.forEach((c) => {
       parseCommentTextWithShots(c.text).forEach((seg) => {
-        if (seg.type === 'shot') {
-          shotSet.add(seg.name);
-        }
+        if (seg.type === 'shot') shotSet.add(seg.name);
       });
     });
-    return Array.from(shotSet).sort((a, b) => a.localeCompare(b));
-  }, [comments]);
+    const list = Array.from(shotSet).sort((a, b) => a.localeCompare(b));
+    if (studentFilter.length === 0) return list;
+    const count = new Map<string, number>();
+    commentsForShotCount.forEach((c) => {
+      parseCommentTextWithShots(c.text).forEach((seg) => {
+        if (seg.type === 'shot') count.set(seg.name, (count.get(seg.name) ?? 0) + 1);
+      });
+    });
+    return list.filter((shot) => (count.get(shot) ?? 0) > 0);
+  }, [commentsForShotCount, studentFilter.length]);
 
-  /** Count how many times each shot is tagged across the session comments. */
+  /** Count per shot in the relevant comments (all comments, or only those mentioning selected students). */
   const shotCountByName = useMemo(() => {
     const count = new Map<string, number>();
-    comments.forEach((c) => {
+    commentsForShotCount.forEach((c) => {
       parseCommentTextWithShots(c.text).forEach((seg) => {
-        if (seg.type === 'shot') {
-          count.set(seg.name, (count.get(seg.name) ?? 0) + 1);
-        }
+        if (seg.type === 'shot') count.set(seg.name, (count.get(seg.name) ?? 0) + 1);
       });
     });
     return count;
-  }, [comments]);
+  }, [commentsForShotCount]);
 
   /** Count how many times each user is @mentioned in comment text across the session. */
   const tagCountByUserId = useMemo(() => {
@@ -1824,42 +1839,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     {shotFilter.length + studentFilter.length}
                   </span>
                 )}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setCommentSort((s) =>
-                    s === 'date-desc'
-                      ? 'date-asc'
-                      : s === 'date-asc'
-                        ? 'timestamp-asc'
-                        : s === 'timestamp-asc'
-                          ? 'timestamp-desc'
-                          : 'date-desc'
-                  )
-                }
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: 0,
-                  border: 'none',
-                  background: 'none',
-                  color: REFERENCE_PRIMARY,
-                  fontSize: 'clamp(11px, 2.8vw, 12px)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                }}
-                aria-label={`Sort: ${commentSort}`}
-                title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
-              >
-                {commentSort.startsWith('date') ? (
-                  <>Date {commentSort === 'date-desc' ? '↓' : '↑'}</>
-                ) : (
-                  <>Time (Newest) {commentSort === 'timestamp-desc' ? '↓' : '↑'}</>
-                )}
-                <IconChevronDown size={14} />
               </button>
             </div>
 
@@ -2979,13 +2958,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         </div>
       )}
 
-      {/* Comment filter bottom sheet */}
+      {/* Comment filter bottom sheet - above bottom nav so Apply Filters is visible */}
       <div
         aria-hidden={!isFilterSheetOpen}
         style={{
           position: 'fixed',
           inset: 0,
-          zIndex: 40,
+          zIndex: 110,
           display: 'flex',
           alignItems: 'flex-end',
           justifyContent: 'center',
@@ -3003,58 +2982,73 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           style={{
             width: '100%',
             maxWidth: 640,
-            borderTopLeftRadius: RADIUS.xl,
-            borderTopRightRadius: RADIUS.xl,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
             backgroundColor: COLORS.cardBg,
             boxShadow: '0 -18px 40px rgba(0,0,0,0.45)',
             borderTop: `1px solid ${COLORS.backgroundLight}`,
-            padding: SPACING.lg,
-            paddingBottom: SPACING.xl,
-            maxHeight: '52vh',
-            minHeight: '46vh',
+            maxHeight: '90vh',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
             transform: isFilterSheetOpen ? 'translateY(0%)' : 'translateY(100%)',
             transition: 'transform 0.24s cubic-bezier(0.22, 0.61, 0.36, 1)',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              marginBottom: SPACING.md,
-            }}
-          >
-            <div
-              style={{
-                width: 44,
-                height: 4,
-                borderRadius: 999,
-                backgroundColor: COLORS.backgroundLight,
-              }}
-            />
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: SPACING.sm,
-              gap: SPACING.sm,
-            }}
-          >
-            <div>
+          {/* Handle + Header */}
+          <div style={{ flexShrink: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: SPACING.sm }}>
               <div
                 style={{
-                  ...TYPOGRAPHY.bodySmall,
+                  width: 48,
+                  height: 4,
+                  borderRadius: 999,
+                  backgroundColor: '#e2e8f0',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: `${SPACING.sm}px ${SPACING.lg}px ${SPACING.md}px`,
+                gap: SPACING.md,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsFilterSheetOpen(false)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 40,
+                  height: 40,
+                  padding: 0,
+                  border: 'none',
+                  background: 'none',
+                  color: COLORS.textPrimary,
+                  cursor: 'pointer',
+                  borderRadius: '50%',
+                }}
+                aria-label="Close filters"
+              >
+                <IconX size={24} />
+              </button>
+              <h2
+                style={{
+                  flex: 1,
+                  fontSize: 20,
                   fontWeight: 600,
-                  letterSpacing: 0.3,
-                  textTransform: 'uppercase',
-                  color: COLORS.textSecondary,
+                  color: COLORS.textPrimary,
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                  textAlign: 'center',
                 }}
               >
-                Filter comments
-              </div>
-            </div>
-            {(shotFilter.length > 0 || studentFilter.length > 0) && (
+                Filters
+              </h2>
               <button
                 type="button"
                 onClick={() => {
@@ -3062,58 +3056,51 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   setStudentFilter([]);
                 }}
                 style={{
-                  padding: '4px 10px',
-                  borderRadius: 999,
+                  padding: '4px 0',
+                  minWidth: 40,
                   border: 'none',
-                  backgroundColor: COLORS.backgroundLight,
-                  color: COLORS.textSecondary,
-                  ...TYPOGRAPHY.label,
-                  fontSize: 11,
-                  textTransform: 'uppercase',
+                  background: 'none',
+                  color: REFERENCE_PRIMARY,
+                  fontSize: 14,
+                  fontWeight: 500,
                   cursor: 'pointer',
                 }}
               >
-                Clear all
+                Reset
               </button>
-            )}
+            </div>
           </div>
+          {/* Scrollable content */}
           <div
             style={{
+              flex: 1,
+              overflowY: 'auto',
+              padding: `0 ${SPACING.lg}px ${SPACING.lg}px`,
               display: 'flex',
               flexDirection: 'column',
-              gap: SPACING.md,
-              overflowY: 'auto',
+              gap: 32,
             }}
           >
-            <div>
-              <div
-                style={{
-                  ...TYPOGRAPHY.label,
-                  textTransform: 'uppercase',
-                  color: COLORS.textSecondary,
-                  marginBottom: SPACING.xs,
-                }}
-              >
-                Shots in this thread
-              </div>
-              {shotsInComments.length === 0 ? (
-                <p
+            {/* Shots in this thread */}
+            <section>
+              <div style={{ marginBottom: SPACING.md }}>
+                <h3
                   style={{
-                    ...TYPOGRAPHY.bodySmall,
-                    color: COLORS.textMuted,
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: COLORS.textPrimary,
                     margin: 0,
                   }}
                 >
+                  Shots in this thread
+                </h3>
+              </div>
+              {shotsInComments.length === 0 ? (
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted, margin: 0 }}>
                   No shot tags have been used in the comments yet.
                 </p>
               ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                   {shotsInComments.map((shot) => {
                     const isActive = shotFilter.includes(shot);
                     return (
@@ -3122,34 +3109,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         type="button"
                         onClick={() =>
                           setShotFilter((prev) =>
-                            prev.includes(shot)
-                              ? prev.filter((s) => s !== shot)
-                              : [...prev, shot]
+                            prev.includes(shot) ? prev.filter((s) => s !== shot) : [...prev, shot]
                           )
                         }
                         style={{
-                          padding: '6px 10px',
-                          borderRadius: 999,
+                          padding: '10px 20px',
+                          borderRadius: 9999,
                           border: isActive
-                            ? `1px solid ${COLORS.primary}`
-                            : `1px solid ${COLORS.backgroundLight}`,
-                          backgroundColor: isActive
-                            ? 'rgba(49, 203, 0, 0.12)'
-                            : COLORS.backgroundLight,
-                          color: isActive ? COLORS.primary : COLORS.textPrimary,
-                          ...TYPOGRAPHY.bodySmall,
-                          fontSize: 12,
+                            ? `1px solid ${REFERENCE_PRIMARY}`
+                            : '1px solid #f1f5f9',
+                          backgroundColor: isActive ? REFERENCE_PRIMARY : '#f8fafc',
+                          color: isActive ? '#fff' : '#475569',
+                          fontSize: 14,
+                          fontWeight: 500,
                           cursor: 'pointer',
                         }}
                       >
                         {shot}
-                        <span
-                          style={{
-                            marginLeft: 6,
-                            opacity: 0.85,
-                            fontWeight: 600,
-                          }}
-                        >
+                        <span style={{ marginLeft: 4, opacity: isActive ? 0.9 : 0.85 }}>
                           ({shotCountByName.get(shot) ?? 0})
                         </span>
                       </button>
@@ -3157,105 +3134,175 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   })}
                 </div>
               )}
-            </div>
-            <div>
+            </section>
+            {/* Students in this thread */}
+            <section>
               <div
                 style={{
-                  ...TYPOGRAPHY.label,
-                  textTransform: 'uppercase',
-                  color: COLORS.textSecondary,
-                  marginBottom: SPACING.xs,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: SPACING.md,
                 }}
               >
-                Students in this thread
-              </div>
-              {studentsInComments.length === 0 ? (
-                <p
+                <h3
                   style={{
-                    ...TYPOGRAPHY.bodySmall,
-                    color: COLORS.textMuted,
+                    fontSize: 18,
+                    fontWeight: 600,
+                    color: COLORS.textPrimary,
                     margin: 0,
                   }}
                 >
+                  Students in this thread
+                </h3>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  {studentFilter.length} active
+                </span>
+              </div>
+              {studentsInComments.length === 0 ? (
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted, margin: 0 }}>
                   No students have been tagged in comments yet.
                 </p>
               ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {studentsInComments.map((s) => {
                     const isActive = studentFilter.includes(s.id);
+                    const handle = s.name.toLowerCase().replace(/\s+/g, '');
                     return (
                       <button
                         key={s.id}
                         type="button"
                         onClick={() =>
                           setStudentFilter((prev) =>
-                            prev.includes(s.id)
-                              ? prev.filter((id) => id !== s.id)
-                              : [...prev, s.id]
+                            prev.includes(s.id) ? prev.filter((id) => id !== s.id) : [...prev, s.id]
                           )
                         }
                         style={{
-                          padding: '6px 10px',
-                          borderRadius: 999,
-                          border: isActive
-                            ? `1px solid ${COLORS.primary}`
-                            : `1px solid ${COLORS.backgroundLight}`,
-                          backgroundColor: isActive
-                            ? 'rgba(49, 203, 0, 0.12)'
-                            : COLORS.backgroundLight,
-                          color: isActive ? COLORS.primary : COLORS.textPrimary,
-                          ...TYPOGRAPHY.bodySmall,
-                          fontSize: 12,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: 12,
+                          borderRadius: 12,
+                          border: `1px solid ${isActive ? '#e2e8f0' : '#f1f5f9'}`,
+                          backgroundColor: isActive ? '#f8fafc' : 'transparent',
                           cursor: 'pointer',
+                          width: '100%',
+                          textAlign: 'left',
                         }}
                       >
-                        @{s.name}
-                        <span
+                        <div
                           style={{
-                            marginLeft: 6,
-                            opacity: 0.85,
-                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            opacity: isActive ? 1 : 0.6,
                           }}
                         >
-                          ({tagCountByUserId.get(s.id) ?? 0})
-                        </span>
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              backgroundColor: '#e2e8f0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <IconUser size={20} style={{ color: '#94a3b8' }} />
+                          </div>
+                          <div>
+                            <p
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 500,
+                                color: COLORS.textPrimary,
+                                margin: 0,
+                              }}
+                            >
+                              {s.name}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: 12,
+                                color: '#64748b',
+                                margin: 0,
+                              }}
+                            >
+                              @{handle}({tagCountByUserId.get(s.id) ?? 0})
+                            </p>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            width: 24,
+                            height: 24,
+                            borderRadius: '50%',
+                            border: isActive ? 'none' : '1px solid #cbd5e1',
+                            backgroundColor: isActive ? REFERENCE_PRIMARY : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isActive && <IconCheck size={14} style={{ color: '#fff' }} />}
+                        </div>
                       </button>
                     );
                   })}
                 </div>
               )}
-            </div>
-            <div
+            </section>
+          </div>
+          {/* Footer: Apply Filters + results */}
+          <div
+            style={{
+              flexShrink: 0,
+              padding: SPACING.lg,
+              paddingTop: SPACING.md,
+              borderTop: `1px solid ${COLORS.backgroundLight}`,
+              backgroundColor: COLORS.cardBg,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setIsFilterSheetOpen(false)}
               style={{
-                display: 'flex',
-                justifyContent: 'flex-start',
-                marginTop: SPACING.xs,
+                width: '100%',
+                padding: '16px 24px',
+                borderRadius: 16,
+                border: 'none',
+                backgroundColor: REFERENCE_PRIMARY,
+                color: '#fff',
+                fontSize: 18,
+                fontWeight: 600,
+                cursor: 'pointer',
               }}
             >
-              <button
-                type="button"
-                onClick={() => setIsFilterSheetOpen(false)}
-                style={{
-                  padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
-                  borderRadius: 999,
-                  border: 'none',
-                  cursor: 'pointer',
-                  ...TYPOGRAPHY.labelMed,
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.4,
-                  backgroundColor: COLORS.primary,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                Apply filters
-              </button>
-            </div>
+              Apply Filters
+            </button>
+            <p
+              style={{
+                textAlign: 'center',
+                fontSize: 12,
+                color: '#94a3b8',
+                margin: 0,
+                marginTop: SPACING.md,
+              }}
+            >
+              Showing {visibleComments.length} results based on your selection
+            </p>
           </div>
         </div>
       </div>

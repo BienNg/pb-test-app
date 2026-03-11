@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Filter - Pickleball Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4">
+<!-- Bottom Sheet Container -->
+<div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh]">
+<!-- Bottom Sheet Handle/Header -->
+<div class="flex flex-col items-center pt-2">
+<div class="h-1 w-12 rounded-full bg-slate-200 dark:bg-slate-700 mb-2"></div>
+<div class="flex items-center w-full px-6 py-4 justify-between">
+<div class="flex items-center gap-4">
+<button class="text-slate-900 dark:text-slate-100 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined block text-2xl">close</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-semibold tracking-tight">Filters</h2>
+</div>
+<button class="text-primary font-medium hover:opacity-80 transition-opacity">
+                    Reset
+                </button>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 overflow-y-auto px-6 py-4 space-y-8">
+<!-- Category: Shots -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-semibold">Shots in this thread</h3>
+<span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Select Multiple</span>
+</div>
+<div class="flex flex-wrap gap-2">
+<button class="px-5 py-2.5 rounded-full bg-primary text-white text-sm font-medium shadow-sm border border-primary transition-all">
+                        Dink
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium border border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all">
+                        Drive
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-primary/10 text-primary text-sm font-semibold border border-primary/20 transition-all">
+                        Drop
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium border border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all">
+                        Return
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium border border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all">
+                        Serve
+                    </button>
+<button class="px-5 py-2.5 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium border border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all">
+                        Volley Dink
+                    </button>
+</div>
+</section>
+<!-- Category: Students -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-semibold">Students in this thread</h3>
+<span class="text-xs font-medium text-slate-400 uppercase tracking-wider">2 Active</span>
+</div>
+<div class="space-y-3">
+<!-- Student 1 -->
+<div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
+<img alt="Profile photo of Ayhan Kaplan" class="w-full h-full object-cover" data-alt="Close up portrait of a smiling male student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAxhbmfYZcWpOkpLGln7QnRSYR0QFagMF6cyHKeNc7m0CSnjjbEZGPdXfMo2qBC7ESH7HrVdEApRcNKUVUH9fx_o0oqG5Ych55b8-6QKRwPRYCuAUEwt90eVVEmSPEG6Xp2grhefCInXxfyvKmztI32A06IP9K9-H3yGsddFcF0m5nbb4vxERbfUwrTOwrNve96BLIv1GIMf6juJCTeG-RD6M_g4E3uodxwZz2A6pzT8dP8rg44CFcI5r55mRRKfVq6JbSY1XX0xpli"/>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-medium text-sm">Ayhan Kaplan</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">@ayhankaplan</p>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">check</span>
+</div>
+</div>
+<!-- Student 2 -->
+<div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+<div class="flex items-center gap-3 opacity-60">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
+<img alt="Profile photo of Simon Ma" class="w-full h-full object-cover" data-alt="Portrait of a young man with glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEeEV7gGwCrKkz23vfLsIdHi8Ob4VvwitAZNcSGU1ayMQBlb-eYde46V5LsA-cySvpe8AQnR-RB27j5Slg_kS3jQIlv_G-8mkjbCN92LbQIGPVfwE58wuuTFR3DMbw8se15iQnsgmT5cS9vRWnNw4yaInQaeUwxPI8SvYmlbhxpfY3rYQS-PTi5B004v6ULv9TCS5qwIEJTFWi7kzl2Qu1IxmErgDM17aESqAgZIv24JYVW0xmF9Bes0pxh4gdQr9rz-jFWDjPLkRe"/>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-medium text-sm">Simon Ma</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs">@simonma</p>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-700"></div>
+</div>
+</div>
+</section>
+<!-- Sort By or Additional Options -->
+<section>
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-semibold mb-4">Sort By</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl border border-primary bg-primary/5 text-primary text-sm font-medium">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+                        Newest First
+                    </button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium">
+<span class="material-symbols-outlined text-lg">trending_up</span>
+                        Top Rated
+                    </button>
+</div>
+</section>
+</div>
+<!-- Footer / Action Button -->
+<div class="p-6 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+<button class="w-full bg-primary text-white py-4 rounded-2xl font-semibold text-lg shadow-lg shadow-primary/20 hover:bg-opacity-90 active:scale-[0.98] transition-all">
+                Apply Filters
+            </button>
+<p class="text-center text-slate-400 dark:text-slate-500 text-xs mt-4">
+                Showing 12 results based on your selection
+            </p>
+</div>
+</div>
+</body></html>

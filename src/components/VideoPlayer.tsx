@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconPause,
   IconPlay,
   IconVolume2,
@@ -299,22 +297,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
     return videoRef.current?.currentTime ?? 0;
   }, [isYoutube]);
-
-  const goToPrevMarker = useCallback(() => {
-    if (sortedMarkerTimes.length === 0) return;
-    const now = getCurrentTime();
-    const prev = sortedMarkerTimes.filter((t) => t < now - 0.5).pop();
-    const target = prev ?? sortedMarkerTimes[sortedMarkerTimes.length - 1];
-    seekTo(target);
-  }, [sortedMarkerTimes, getCurrentTime, seekTo]);
-
-  const goToNextMarker = useCallback(() => {
-    if (sortedMarkerTimes.length === 0) return;
-    const now = getCurrentTime();
-    const next = sortedMarkerTimes.find((t) => t > now + 0.5);
-    const target = next ?? sortedMarkerTimes[0];
-    seekTo(target);
-  }, [sortedMarkerTimes, getCurrentTime, seekTo]);
 
   // Apply external seek requests from parent
   useEffect(() => {
@@ -876,33 +858,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           >
             <button
               type="button"
-              onClick={goToPrevMarker}
-              disabled={sortedMarkerTimes.length === 0}
-              style={{
-                flex: 1,
-                minWidth: 20,
-                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
-                aspectRatio: 1,
-                height: 'auto',
-                flexShrink: 0,
-                borderRadius: '50%',
-                border: '1px solid rgba(255, 255, 255, 0.35)',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                color: 'rgba(255, 255, 255, 0.95)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: sortedMarkerTimes.length === 0 ? 'default' : 'pointer',
-                padding: 0,
-                opacity: sortedMarkerTimes.length === 0 ? 0.5 : 1,
-              }}
-              aria-label="Previous marker"
-              title="Previous marker"
-            >
-              <IconChevronLeft size={12} />
-            </button>
-            <button
-              type="button"
               onClick={() => skipBy(-1 / 30)}
               style={{
                 flex: 1,
@@ -1142,33 +1097,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             >
               +1f
             </button>
-            <button
-              type="button"
-              onClick={goToNextMarker}
-              disabled={sortedMarkerTimes.length === 0}
-              style={{
-                flex: 1,
-                minWidth: 20,
-                ...(skipButtonsFillWidth ? {} : { maxWidth: 26 }),
-                aspectRatio: 1,
-                height: 'auto',
-                flexShrink: 0,
-                borderRadius: '50%',
-                border: '1px solid rgba(255, 255, 255, 0.35)',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                color: 'rgba(255, 255, 255, 0.95)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: sortedMarkerTimes.length === 0 ? 'default' : 'pointer',
-                padding: 0,
-                opacity: sortedMarkerTimes.length === 0 ? 0.5 : 1,
-              }}
-              aria-label="Next marker"
-              title="Next marker"
-            >
-              <IconChevronRight size={12} />
-            </button>
           </div>
           )}
         </div>
@@ -1195,9 +1123,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          <button type="button" onClick={goToPrevMarker} disabled={sortedMarkerTimes.length === 0} style={sessionDetailCircleBtn(sortedMarkerTimes.length === 0)} aria-label="Previous marker" title="Previous marker">
-            <IconChevronLeft size={12} />
-          </button>
           <button type="button" onClick={() => skipBy(-1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="-1f" title="−1f">
             −1f
           </button>
@@ -1224,9 +1149,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </button>
           <button type="button" onClick={() => skipBy(1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="+1f" title="+1f">
             +1f
-          </button>
-          <button type="button" onClick={goToNextMarker} disabled={sortedMarkerTimes.length === 0} style={sessionDetailCircleBtn(sortedMarkerTimes.length === 0)} aria-label="Next marker" title="Next marker">
-            <IconChevronRight size={12} />
           </button>
         </div>
       )}
