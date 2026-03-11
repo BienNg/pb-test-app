@@ -3001,7 +3001,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
             backgroundColor: COLORS.cardBg,
-            boxShadow: '0 -18px 40px rgba(0,0,0,0.45)',
+            boxShadow: isFilterSheetOpen ? '0 -18px 40px rgba(0,0,0,0.45)' : 'none',
             borderTop: `1px solid ${COLORS.backgroundLight}`,
             maxHeight: '90vh',
             minHeight: 0,

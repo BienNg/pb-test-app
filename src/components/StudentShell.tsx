@@ -120,97 +120,97 @@ export function StudentShell() {
       {renderContent()}
 
       <nav
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: COLORS.white,
-          boxShadow: SHADOWS.md,
-          padding: '5px 16px 10px',
-          zIndex: 100,
-          overflow: 'visible',
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        }}
-      >
-        <div
           style={{
-            maxWidth: 600,
-            margin: '0 auto',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 0,
-            position: 'relative',
-            minHeight: 60,
+            position: 'fixed',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: COLORS.white,
+            boxShadow: SHADOWS.md,
+            padding: '5px 16px 10px',
+            zIndex: 100,
+            overflow: 'visible',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
           }}
         >
-          {tabs.map((tab) => {
-            const isActive = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                type="button"
-                style={{
-                  flex: 1,
-                  background: 'none',
-                  border: 'none',
-                  outline: 'none',
-                  padding: 2,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 2,
-                  color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
-                <span
-                  style={{
-                    ...TYPOGRAPHY.label,
-                    fontSize: 11,
-                    fontWeight: isActive ? 600 : 500,
-                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {tab.label}
-                </span>
-                <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {isActive && (
-                    <div
-                      style={{
-                        width: 18,
-                        height: 2,
-                        borderRadius: 999,
-                        backgroundColor: COLORS.primary,
-                      }}
-                    />
-                  )}
-                </div>
-              </button>
-            );
-          })}
           <div
             style={{
-              flex: 1,
-              padding: 2,
+              maxWidth: 600,
+              margin: '0 auto',
               display: 'flex',
-              flexDirection: 'column',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              justifyContent: 'center',
-              gap: 2,
-              color: COLORS.textSecondary,
+              gap: 0,
+              position: 'relative',
+              minHeight: 60,
             }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{rightTab}</span>
-            <span style={{ ...TYPOGRAPHY.label, fontSize: 11, fontWeight: 500, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Profile</span>
-            <div style={{ height: 4 }} />
+            {tabs.map((tab) => {
+              const isActive = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => handleTabClick(tab.id)}
+                  type="button"
+                  style={{
+                    flex: 1,
+                    background: 'none',
+                    border: 'none',
+                    outline: 'none',
+                    padding: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{tab.icon}</span>
+                  <span
+                    style={{
+                      ...TYPOGRAPHY.label,
+                      fontSize: 11,
+                      fontWeight: isActive ? 600 : 500,
+                      color: isActive ? COLORS.textPrimary : COLORS.textSecondary,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.label}
+                  </span>
+                  <div style={{ height: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {isActive && (
+                      <div
+                        style={{
+                          width: 18,
+                          height: 2,
+                          borderRadius: 999,
+                          backgroundColor: COLORS.primary,
+                        }}
+                      />
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+            <div
+              style={{
+                flex: 1,
+                padding: 2,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                color: COLORS.textSecondary,
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{rightTab}</span>
+              <span style={{ ...TYPOGRAPHY.label, fontSize: 11, fontWeight: 500, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Profile</span>
+              <div style={{ height: 4 }} />
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
     </main>
   );
 }
