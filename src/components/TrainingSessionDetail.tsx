@@ -1967,7 +1967,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      gif && setViewExampleModal({ src: gif.src, title: gif.title });
+                                      if (gif) setViewExampleModal({ src: gif.src, title: gif.title });
                                     }}
                                     style={{
                                       display: 'inline-flex',
@@ -2194,7 +2194,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     return (
                       <button
                         type="button"
-                        onClick={() => gif && setViewExampleModal({ src: gif.src, title: gif.title })}
+                        onClick={() => { if (gif) setViewExampleModal({ src: gif.src, title: gif.title }); }}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
