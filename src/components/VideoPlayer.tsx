@@ -89,6 +89,11 @@ export interface VideoPlayerProps {
    */
   canRequestAddUrl?: boolean;
   onRequestAddUrl?: () => void;
+
+  /** UI variant: sessionDetail = progress overlay on video, play accent, controls in card below. */
+  variant?: 'default' | 'sessionDetail';
+  /** Accent color for sessionDetail variant (e.g. #8FB9A8). */
+  accentColor?: string;
 }
 
 /** Reusable video player with Frame.io-style timeline, skip controls, and optional markers. */
@@ -104,7 +109,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   canRequestAddUrl,
   onRequestAddUrl,
   pauseRequested,
+  variant = 'default',
+  accentColor = COLORS.primary,
 }) => {
+  const isSessionDetail = variant === 'sessionDetail';
   const youtubeVideoId = getYoutubeVideoId(videoUrl || undefined);
   const isYoutube = !!youtubeVideoId;
 
@@ -405,15 +413,18 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
+    <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
       {isYoutube && youtubeVideoId ? (
         <>
           <div
             style={{
               position: 'relative',
               width: '100%',
+              maxWidth: '100%',
               aspectRatio: '16 / 9',
               overflow: 'hidden',
+              minWidth: 0,
+              ...(isSessionDetail ? { borderRadius: 12 } : {}),
             }}
           >
             <div
@@ -448,7 +459,102 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               role="button"
               tabIndex={0}
               aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
-            />
+            >
+            </div>
+            {isSessionDetail && videoDuration > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: 'clamp(8px, 2vw, 16px)',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                  zIndex: 2,
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)', minWidth: 0 }}>
+                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                    {formatTimestamp(currentVideoTime)}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: 6,
+                      borderRadius: 3,
+                      background: 'rgba(255,255,255,0.3)',
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                      seekTo(pct * videoDuration);
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${(videoDuration > 0 ? currentVideoTime / videoDuration : 0) * 100}%`,
+                        borderRadius: 3,
+                        backgroundColor: accentColor,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${(videoDuration > 0 ? currentVideoTime / videoDuration : 0) * 100}% - 6px)`,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: accentColor,
+                        border: '2px solid #fff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    {markers.map((m) => {
+                      const left = (m.time / videoDuration) * 100;
+                      return (
+                        <button
+                          key={m.id ?? m.time}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            seekTo(m.time);
+                            if (onMarkerClick) onMarkerClick(m);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: `calc(${left}% - 4px)`,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                          title={m.label}
+                        />
+                      );
+                    })}
+                  </div>
+                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                    {formatTimestamp(videoDuration)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </>
       ) : (
@@ -457,7 +563,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             style={{
               position: 'relative',
               width: '100%',
+              maxWidth: '100%',
               aspectRatio: videoAspectRatio ?? '16 / 9',
+              minWidth: 0,
+              ...(isSessionDetail ? { borderRadius: 12, overflow: 'hidden' } : {}),
             }}
           >
             <div
@@ -528,16 +637,111 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             >
               <source src={videoUrl} />
             </video>
+            {isSessionDetail && videoDuration > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: 'clamp(8px, 2vw, 16px)',
+                  background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                  zIndex: 2,
+                  minWidth: 0,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)', minWidth: 0 }}>
+                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                    {formatTimestamp(currentVideoTime)}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      height: 6,
+                      borderRadius: 3,
+                      background: 'rgba(255,255,255,0.3)',
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                      seekTo(pct * videoDuration);
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${(videoDuration > 0 ? currentVideoTime / videoDuration : 0) * 100}%`,
+                        borderRadius: 3,
+                        backgroundColor: accentColor,
+                      }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${(videoDuration > 0 ? currentVideoTime / videoDuration : 0) * 100}% - 6px)`,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 12,
+                        height: 12,
+                        borderRadius: '50%',
+                        backgroundColor: accentColor,
+                        border: '2px solid #fff',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    {markers.map((m) => {
+                      const left = (m.time / videoDuration) * 100;
+                      return (
+                        <button
+                          key={m.id ?? m.time}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            seekTo(m.time);
+                            if (onMarkerClick) onMarkerClick(m);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: `calc(${left}% - 4px)`,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 0,
+                          }}
+                          title={m.label}
+                        />
+                      );
+                    })}
+                  </div>
+                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                    {formatTimestamp(videoDuration)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
 
-      {videoDuration > 0 && (
+      {videoDuration > 0 && !isSessionDetail && (
         <div
           style={{
-            padding: `0 ${SPACING.md}px ${SPACING.sm}px`,
+            padding: `0 clamp(${SPACING.sm}px, 2vw, ${SPACING.md}px) ${SPACING.sm}px`,
             backgroundColor: 'transparent',
             borderTop: 'none',
+            minWidth: 0,
           }}
         >
           <div
@@ -545,6 +749,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: SPACING.sm,
+              minWidth: 0,
             }}
           >
             <span
@@ -655,7 +860,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
             </button>
           </div>
-          {/* Skip buttons below the player */}
+          {!isSessionDetail && (
           <div
             style={{
               display: 'flex',
@@ -965,9 +1170,108 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <IconChevronRight size={12} />
             </button>
           </div>
+          )}
+        </div>
+      )}
+
+      {videoDuration > 0 && isSessionDetail && (
+        <div
+          style={{
+            marginTop: SPACING.md,
+            padding: SPACING.sm,
+            backgroundColor: '#f8fafc',
+            borderRadius: 12,
+            border: '1px solid #f1f5f9',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: SPACING.xs,
+            flexWrap: 'nowrap',
+            width: '100%',
+            minWidth: 0,
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+          }}
+        >
+          <button type="button" onClick={goToPrevMarker} disabled={sortedMarkerTimes.length === 0} style={sessionDetailCircleBtn(sortedMarkerTimes.length === 0)} aria-label="Previous marker" title="Previous marker">
+            <IconChevronLeft size={12} />
+          </button>
+          <button type="button" onClick={() => skipBy(-1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="-1f" title="−1f">
+            −1f
+          </button>
+          <button type="button" onClick={() => skipBy(-10)} style={sessionDetailCircleBtn(false)} aria-label="-10s" title="−10s">
+            −10s
+          </button>
+          <button type="button" onClick={() => skipBy(-5)} style={sessionDetailCircleBtn(false)} aria-label="-5s" title="−5s">
+            −5s
+          </button>
+          <button type="button" onClick={() => skipBy(-1)} style={sessionDetailCircleBtn(false)} aria-label="-1s" title="−1s">
+            −1s
+          </button>
+          <button type="button" onClick={handlePlayPause} style={sessionDetailPlayPauseBtn(accentColor)} aria-label={isVideoPlaying ? 'Pause' : 'Play'} title={isVideoPlaying ? 'Pause' : 'Play'}>
+            {isVideoPlaying ? <IconPause size={18} /> : <IconPlay size={18} />}
+          </button>
+          <button type="button" onClick={() => skipBy(1)} style={sessionDetailCircleBtn(false)} aria-label="+1s" title="+1s">
+            +1s
+          </button>
+          <button type="button" onClick={() => skipBy(5)} style={sessionDetailCircleBtn(false)} aria-label="+5s" title="+5s">
+            +5s
+          </button>
+          <button type="button" onClick={() => skipBy(10)} style={sessionDetailCircleBtn(false)} aria-label="+10s" title="+10s">
+            +10s
+          </button>
+          <button type="button" onClick={() => skipBy(1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="+1f" title="+1f">
+            +1f
+          </button>
+          <button type="button" onClick={goToNextMarker} disabled={sortedMarkerTimes.length === 0} style={sessionDetailCircleBtn(sortedMarkerTimes.length === 0)} aria-label="Next marker" title="Next marker">
+            <IconChevronRight size={12} />
+          </button>
         </div>
       )}
     </div>
   );
 };
+
+function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
+  return {
+    flex: '1 1 auto',
+    minWidth: 28,
+    maxWidth: 40,
+    aspectRatio: 1,
+    flexShrink: 0,
+    borderRadius: '50%',
+    border: '1px solid #e2e8f0',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    color: '#475569',
+    fontSize: 10,
+    fontWeight: 700,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: disabled ? 'default' : 'pointer',
+    padding: 0,
+    opacity: disabled ? 0.5 : 1,
+  };
+}
+
+function sessionDetailPlayPauseBtn(accentColor: string): React.CSSProperties {
+  return {
+    flex: '1 1 auto',
+    minWidth: 36,
+    maxWidth: 48,
+    aspectRatio: 1,
+    flexShrink: 0,
+    borderRadius: '50%',
+    border: `1px solid ${accentColor}`,
+    backgroundColor: `${accentColor}1A`,
+    color: accentColor,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    padding: 0,
+  };
+}
 

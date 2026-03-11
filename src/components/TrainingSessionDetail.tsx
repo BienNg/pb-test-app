@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
-  IconCalendar,
+  IconArrowLeft,
+  IconChevronDown,
   IconClock,
   IconFilter,
   IconMoreVertical,
+  IconPencil,
+  IconPlay,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
@@ -67,15 +70,18 @@ export function parseCommentTextWithShots(text: string): CommentSegment[] {
   return segments.length ? segments : [{ type: 'text', value: text }];
 }
 
+/** Reference UI primary (Training Session Detail screen). */
+const REFERENCE_PRIMARY = '#8FB9A8';
+
 export const SHOT_PILL_STYLE: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   margin: '0 2px',
   padding: '2px 8px',
   borderRadius: RADIUS.sm,
-  border: '1px solid rgba(212, 168, 75, 0.6)',
-  backgroundColor: 'rgba(212, 168, 75, 0.14)',
-  color: '#8B6914',
+  border: '1px solid rgba(148, 163, 184, 0.5)',
+  backgroundColor: '#f1f5f9',
+  color: '#475569',
   ...TYPOGRAPHY.label,
   fontWeight: 600,
 };
@@ -86,9 +92,9 @@ const MENTION_PILL_STYLE: React.CSSProperties = {
   margin: '0 2px',
   padding: '2px 8px',
   borderRadius: RADIUS.sm,
-  border: '1px solid rgba(80, 140, 255, 0.6)',
-  backgroundColor: 'rgba(80, 140, 255, 0.12)',
-  color: '#1D4ED8',
+  border: `1px solid ${REFERENCE_PRIMARY}40`,
+  backgroundColor: `${REFERENCE_PRIMARY}1A`,
+  color: REFERENCE_PRIMARY,
   ...TYPOGRAPHY.label,
   fontWeight: 600,
 };
@@ -1575,99 +1581,101 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       style={{
         backgroundColor: '#ffffff',
         minHeight: isDesktop ? 'auto' : '100vh',
-        padding: `${SPACING.md}px`,
         width: '100%',
+        margin: 0,
         boxSizing: 'border-box',
+        boxShadow: '0 0 0 1px rgba(0,0,0,0.04)',
       }}
     >
+      {/* Header: back icon, center date, right icon — scrolls with content */}
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: SPACING.sm,
+          padding: `${SPACING.md}px clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px)`,
+          borderBottom: '1px solid #f1f5f9',
+          backgroundColor: '#ffffff',
+          minWidth: 0,
+        }}
+      >
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'none',
+            color: '#475569',
+            cursor: 'pointer',
+          }}
+          aria-label="Back"
+        >
+          <IconArrowLeft size={22} />
+        </button>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 'clamp(15px, 4.5vw, 18px)',
+            fontWeight: 700,
+            letterSpacing: '-0.02em',
+            color: COLORS.textPrimary,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {session.dateLabel}
+        </h1>
+        {isDbSession && canAddVideoUrl ? (
+          <button
+            type="button"
+            onClick={() => setShowEditSession(true)}
+            style={{
+              width: 40,
+              height: 40,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%',
+              border: 'none',
+              background: 'none',
+              color: '#475569',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+            aria-label="Edit session"
+          >
+            <IconPencil size={20} />
+          </button>
+        ) : (
+          <div style={{ width: 40, flexShrink: 0 }} />
+        )}
+      </header>
       <div
         style={{
-          maxWidth: '100%',
-          margin: '0 auto',
+          padding: `0 clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px)`,
           width: '100%',
           boxSizing: 'border-box',
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            marginBottom: SPACING.lg,
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: SPACING.sm,
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            type="button"
-            onClick={onBack}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              display: 'flex',
-              alignItems: 'center',
-              gap: SPACING.xs,
-              color: COLORS.textSecondary,
-              ...TYPOGRAPHY.bodySmall,
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            ← Back to My Progress
-          </button>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: SPACING.sm,
-              flexWrap: 'wrap',
-            }}
-          >
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                color: COLORS.textSecondary,
-                ...TYPOGRAPHY.bodySmall,
-              }}
-            >
-              <span role="img" aria-label="calendar">
-                <IconCalendar size={16} />
-              </span>
-              <span>{session.dateLabel}</span>
-            </span>
-            {isDbSession && canAddVideoUrl && (
-              <button
-                type="button"
-                onClick={() => setShowEditSession(true)}
-                style={{
-                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                  borderRadius: RADIUS.sm,
-                  border: `1px solid ${COLORS.textMuted}`,
-                  backgroundColor: COLORS.white,
-                  color: COLORS.textSecondary,
-                  ...TYPOGRAPHY.bodySmall,
-                  cursor: 'pointer',
-                }}
-              >
-                Edit session
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Main content */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: isNarrow
               ? 'minmax(0, 1fr)'
-              : 'minmax(0, 1fr) 400px',
-            gap: SPACING.lg,
+              : 'minmax(0, 1fr) minmax(280px, 400px)',
+            gap: SPACING.sm,
+            minWidth: 0,
           }}
         >
           {/* Video + session info */}
@@ -1698,19 +1706,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
                   top: 0,
                   zIndex: 2,
-                  width: isNarrow && videoStickyBox ? videoStickyBox.width : (isNarrow ? `calc(100% + ${SPACING.md * 2}px)` : '100%'),
-                  marginLeft: isNarrow && !videoStickyBox ? -SPACING.md : undefined,
-                  marginRight: isNarrow && !videoStickyBox ? -SPACING.md : undefined,
+                  width: isNarrow && videoStickyBox ? videoStickyBox.width : (isNarrow ? '100%' : '100%'),
+                  marginLeft: undefined,
+                  marginRight: undefined,
                   left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
-                  borderRadius: isNarrow ? 0 : RADIUS.lg,
+                  borderRadius: 12,
                   overflow: 'hidden',
-                  background:
-                    'radial-gradient(circle at 10% 20%, #31cb00 0%, #1C1C1E 45%, #000000 100%)',
-                  boxShadow: 'none',
-                  marginBottom: SPACING.md,
-                  border: isNarrow ? 'none' : '1px solid rgba(255, 255, 255, 0.06)',
-                  borderTop: isNarrow ? '1px solid rgba(255, 255, 255, 0.06)' : undefined,
-                  borderBottom: isNarrow ? '1px solid rgba(255, 255, 255, 0.06)' : undefined,
+                  background: '#ffffff',
+                  marginBottom: SPACING.sm,
+                  border: 'none',
                 }}
               >
               <div style={{ position: 'relative', width: '100%' }}>
@@ -1718,6 +1722,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 <VideoPlayer
                   videoUrl={session.videoUrl}
                   videoKey={session.id}
+                  variant="sessionDetail"
+                  accentColor={REFERENCE_PRIMARY}
                   pauseRequested={anyModalOpen}
                   markers={
                     comments
@@ -1763,140 +1769,107 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               display: 'flex',
               flexDirection: 'column',
               maxHeight: 'none',
+              overflow: 'hidden',
             }}
           >
+            {/* Filter & Sort */}
             <div
               style={{
                 display: 'flex',
+                flexWrap: 'wrap',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                gap: SPACING.sm,
-                marginBottom: SPACING.sm,
+                padding: `${SPACING.xs}px 0`,
+                gap: SPACING.xs,
+                minWidth: 0,
               }}
             >
-              <h3
+              <button
+                type="button"
+                onClick={() => setIsFilterSheetOpen(true)}
                 style={{
-                  ...TYPOGRAPHY.bodySmall,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  color: COLORS.textSecondary,
-                  margin: 0,
-                }}
-              >
-                Comments
-              </h3>
-              <div
-                style={{
-                  display: 'inline-flex',
+                  display: 'flex',
                   alignItems: 'center',
-                  backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                  borderRadius: 999,
-                  padding: 3,
+                  gap: 8,
+                  padding: '6px 12px',
+                  borderRadius: 9999,
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: 'transparent',
+                  color: '#64748b',
+                  fontSize: 'clamp(11px, 2.8vw, 12px)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0,
                 }}
+                aria-label="Filter comments"
+                title="Filter comments by shots and students"
               >
-                <button
-                  type="button"
-                  onClick={() => setIsFilterSheetOpen(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    border: 'none',
-                    backgroundColor:
-                      shotFilter.length || studentFilter.length
-                        ? COLORS.primary
-                        : 'transparent',
-                    color:
-                      shotFilter.length || studentFilter.length
-                        ? COLORS.textPrimary
-                        : COLORS.textSecondary,
-                    ...TYPOGRAPHY.labelMed,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  aria-label="Filter comments"
-                  title="Filter comments by shots and students"
-                >
-                  <IconFilter size={14} />
-                  Filter
-                  {(shotFilter.length || studentFilter.length) > 0 && (
-                    <span
-                      style={{
-                        minWidth: 18,
-                        height: 18,
-                        borderRadius: 999,
-                        backgroundColor: 'rgba(0, 0, 0, 0.25)',
-                        color: COLORS.textPrimary,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 10,
-                        padding: '0 6px',
-                        marginLeft: 2,
-                        boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)'
-                      }}
-                    >
-                      {shotFilter.length + studentFilter.length}
-                    </span>
-                  )}
-                </button>
-
-                <div style={{ width: 1, height: 16, backgroundColor: 'rgba(255, 255, 255, 0.15)', margin: '0 4px' }} />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCommentSort((s) =>
-                      s === 'date-desc'
-                        ? 'date-asc'
-                        : s === 'date-asc'
-                          ? 'timestamp-asc'
-                          : s === 'timestamp-asc'
-                            ? 'timestamp-desc'
-                            : 'date-desc'
-                    )
-                  }
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    border: 'none',
-                    backgroundColor: 'transparent',
-                    color: COLORS.textSecondary,
-                    ...TYPOGRAPHY.labelMed,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  aria-label={`Sort: ${commentSort}`}
-                  title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
-                >
-                  {commentSort.startsWith('date') ? (
-                    <>
-                      <IconCalendar size={14} />
-                      Date {commentSort === 'date-desc' ? '↓' : '↑'}
-                    </>
-                  ) : (
-                    <>
-                      <IconClock size={14} />
-                      Time {commentSort === 'timestamp-desc' ? '↓' : '↑'}
-                    </>
-                  )}
-                </button>
-              </div>
+                <IconFilter size={14} />
+                Filters
+                {(shotFilter.length || studentFilter.length) > 0 && (
+                  <span
+                    style={{
+                      minWidth: 18,
+                      height: 18,
+                      borderRadius: 999,
+                      backgroundColor: REFERENCE_PRIMARY,
+                      color: '#fff',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 10,
+                      padding: '0 5px',
+                    }}
+                  >
+                    {shotFilter.length + studentFilter.length}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setCommentSort((s) =>
+                    s === 'date-desc'
+                      ? 'date-asc'
+                      : s === 'date-asc'
+                        ? 'timestamp-asc'
+                        : s === 'timestamp-asc'
+                          ? 'timestamp-desc'
+                          : 'date-desc'
+                  )
+                }
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: 0,
+                  border: 'none',
+                  background: 'none',
+                  color: REFERENCE_PRIMARY,
+                  fontSize: 'clamp(11px, 2.8vw, 12px)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+                aria-label={`Sort: ${commentSort}`}
+                title={`Sort: ${commentSort.replace('-', ' ')}. Click to cycle.`}
+              >
+                {commentSort.startsWith('date') ? (
+                  <>Date {commentSort === 'date-desc' ? '↓' : '↑'}</>
+                ) : (
+                  <>Time (Newest) {commentSort === 'timestamp-desc' ? '↓' : '↑'}</>
+                )}
+                <IconChevronDown size={14} />
+              </button>
             </div>
 
             <div
               ref={commentsScrollRef}
               style={{
                 flex: 1,
+                minWidth: 0,
                 overflowY: 'auto',
+                overflowX: 'hidden',
                 paddingRight: SPACING.sm,
                 marginBottom: SPACING.md,
               }}
@@ -1934,44 +1907,30 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <div
                       key={comment.id}
                       data-comment-id={comment.id}
-                      onClick={
-                        comment.timestampSeconds != null
-                          ? () => {
-                              setPendingSeekSeconds(comment.timestampSeconds!);
-                              setActiveCommentId(comment.id);
-                            }
-                          : undefined
-                      }
                       style={{
                         display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: SPACING.sm,
-                        padding: `${SPACING.sm}px ${SPACING.sm}px`,
-                        margin: `0 -${SPACING.xs}px`,
-                        borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                        backgroundColor: isActive
-                          ? 'rgba(49, 203, 0, 0.12)'
-                          : isCoach
-                            ? COLORS.backgroundLight
-                            : 'transparent',
-                        borderLeft: isCoach
-                          ? `3px solid ${COLORS.primaryLight}`
-                          : `3px solid transparent`,
-                        borderRadius: RADIUS.sm,
-                        transition: 'background-color 0.2s ease',
-                        cursor: comment.timestampSeconds != null ? 'pointer' : 'default',
+                        gap: 12,
+                        padding: `${SPACING.sm}px 0`,
+                        cursor: 'default',
+                        backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
+                        borderRadius: 8,
+                        margin: isActive ? `0 -${SPACING.sm}px` : 0,
+                        paddingLeft: isActive ? SPACING.sm : 0,
+                        paddingRight: isActive ? SPACING.sm : 0,
                       }}
                     >
                       <div
                         style={{
-                          width: 32,
-                          height: 32,
+                          width: 40,
+                          height: 40,
                           borderRadius: '50%',
-                          backgroundColor: isCoach ? COLORS.primaryLight : COLORS.iconBg,
+                          backgroundColor: `${REFERENCE_PRIMARY}33`,
+                          flexShrink: 0,
+                          overflow: 'hidden',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: 16,
+                          fontSize: 18,
                         }}
                       >
                         {isCoach ? '🎓' : '🙂'}
@@ -1980,39 +1939,26 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       <div
                         style={{
                           display: 'flex',
-                          alignItems: 'baseline',
+                          alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: SPACING.sm,
+                          marginBottom: 4,
+                          minWidth: 0,
                         }}
                       >
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                          }}
-                        >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
                           <span
                             style={{
-                              ...TYPOGRAPHY.bodySmall,
-                              fontWeight: isCoach ? 700 : 600,
+                              fontSize: 14,
+                              fontWeight: 700,
                               color: COLORS.textPrimary,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             {comment.author}
                           </span>
-                          {isCoach && (
-                            <span
-                              style={{
-                                ...TYPOGRAPHY.label,
-                                textTransform: 'uppercase',
-                                color: COLORS.textPrimary,
-                                opacity: 0.9,
-                              }}
-                            >
-                              {comment.role}
-                            </span>
-                          )}
                         </div>
                         <div
                           style={{
@@ -2027,7 +1973,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             <>
                               <button
                                 type="button"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   setPendingSeekSeconds(comment.timestampSeconds!);
                                   setActiveCommentId(comment.id);
                                 }}
@@ -2035,17 +1982,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 4,
-                                  padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                  borderRadius: RADIUS.sm,
-                                  border: `1px solid ${COLORS.primaryLight}`,
-                                  backgroundColor: 'rgba(49, 203, 0, 0.12)',
-                                  color: COLORS.primary,
-                                  ...TYPOGRAPHY.label,
-                                  fontWeight: 600,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  border: 'none',
+                                  backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                                  color: REFERENCE_PRIMARY,
+                                  fontSize: 10,
+                                  fontWeight: 700,
                                   cursor: 'pointer',
                                 }}
                               >
-                                <span style={{ opacity: 0.9 }}>▶</span>
+                                <IconPlay size={12} style={{ flexShrink: 0 }} />
                                 {formatTimestamp(comment.timestampSeconds)}
                               </button>
                               {comment.exampleGif ? (() => {
@@ -2060,9 +2007,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       gap: 4,
                                       padding: `${SPACING.xs}px ${SPACING.sm}px`,
                                       borderRadius: RADIUS.sm,
-                                      border: `1px solid ${COLORS.primaryLight}`,
-                                      backgroundColor: 'rgba(49, 203, 0, 0.08)',
-                                      color: COLORS.primary,
+                                      border: `1px solid ${REFERENCE_PRIMARY}40`,
+                                      backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                                      color: REFERENCE_PRIMARY,
                                       ...TYPOGRAPHY.label,
                                       fontWeight: 600,
                                       cursor: 'pointer',
@@ -2082,12 +2029,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: 4,
-                                    padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                    borderRadius: RADIUS.sm,
-                                    border: `1px solid ${COLORS.backgroundLight}`,
+                                    padding: '2px 8px',
+                                    borderRadius: 6,
+                                    border: '1px solid #e2e8f0',
                                     backgroundColor: COLORS.cardBg,
                                     color: COLORS.textSecondary,
-                                    ...TYPOGRAPHY.label,
+                                    fontSize: 10,
                                     fontWeight: 600,
                                     cursor: 'pointer',
                                   }}
@@ -2129,8 +2076,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 marginTop: 4,
                                 backgroundColor: COLORS.cardBg,
                                 borderRadius: RADIUS.md,
-                                boxShadow: SHADOWS.md,
-                                border: `1px solid ${COLORS.backgroundLight}`,
                                 zIndex: 10,
                                 minWidth: 120,
                                 overflow: 'hidden',
@@ -2193,6 +2138,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             ...TYPOGRAPHY.bodySmall,
                             margin: `${SPACING.xs}px 0 0`,
                             color: COLORS.textPrimary,
+                            wordBreak: 'break-word',
+                            overflowWrap: 'break-word',
                           }}
                         >
                           {parseCommentTextWithShots(comment.text).map((seg, i) => {
@@ -2222,10 +2169,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <div
               style={{
                 borderRadius: RADIUS.md,
-                border: `1px solid ${COLORS.backgroundLight}`,
                 padding: SPACING.sm,
                 backgroundColor: COLORS.cardBg,
-                boxShadow: SHADOWS.light,
+                border: `1px solid ${COLORS.backgroundLight}`,
               }}
             >
               <div
@@ -2260,9 +2206,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           gap: 4,
                           padding: `${SPACING.xs}px ${SPACING.sm}px`,
                           borderRadius: RADIUS.sm,
-                          border: `1px solid ${COLORS.primaryLight}`,
-                          backgroundColor: 'rgba(49, 203, 0, 0.08)',
-                          color: COLORS.primary,
+                          border: `1px solid ${REFERENCE_PRIMARY}40`,
+                          backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                          color: REFERENCE_PRIMARY,
                           ...TYPOGRAPHY.label,
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -2335,7 +2281,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         borderRadius: RADIUS.sm - 2,
                         border: 'none',
                         backgroundColor: includeTimestamp ? COLORS.white : 'transparent',
-                        color: includeTimestamp ? COLORS.primary : COLORS.textSecondary,
+                        color: includeTimestamp ? REFERENCE_PRIMARY : COLORS.textSecondary,
                         ...TYPOGRAPHY.label,
                         fontWeight: includeTimestamp ? 600 : 500,
                         cursor: 'pointer',
@@ -2520,11 +2466,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     textTransform: 'uppercase',
                     letterSpacing: 0.4,
                     backgroundColor: commentDraft.trim()
-                      ? COLORS.primary
-                      : COLORS.primaryLight,
-                    color: COLORS.textPrimary,
+                      ? REFERENCE_PRIMARY
+                      : `${REFERENCE_PRIMARY}26`,
+                    color: commentDraft.trim() ? '#1e293b' : COLORS.textPrimary,
                     boxShadow: commentDraft.trim()
-                      ? '0 6px 14px rgba(49, 203, 0, 0.45)'
+                      ? `0 4px 12px ${REFERENCE_PRIMARY}40`
                       : 'none',
                     transition:
                       'background-color 0.15s ease-out, box-shadow 0.15s ease-out, transform 0.1s ease-out',

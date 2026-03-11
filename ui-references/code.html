@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.75rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Pickleball Pro Analysis</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="max-w-md mx-auto min-h-screen flex flex-col bg-white dark:bg-slate-900 shadow-xl">
+<!-- Header -->
+<header class="flex items-center justify-between px-4 py-4 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-20">
+<button class="size-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight">Feb 24, 2024</h1>
+<button class="size-10 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-700 dark:text-slate-300">share</span>
+</button>
+</header>
+<!-- Video Player -->
+<div class="px-4 pt-4">
+<div class="relative aspect-video rounded-xl overflow-hidden bg-slate-900 group shadow-lg" data-alt="Pickleball court during a professional match analysis session" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBDm9Fd0BHSv3spPJ5EjdtvWJ0nc-AYpJ-x7MpnL5Kq1tyopqkg3brPUuTnz4fPWriWHnwxgitQkN8h8kqeZ7avYlRjlqZaeMHx4trxFQqN3TbPlOzdeUPQ9GwJZ5OvAV3n7nqp-jUqTps4iLOjizW-DjaLszNwV9FUflqDyiWmv0mXD2VIRoCpj2ijv0OeSbVYoOEP9BH_8LhhwmfTvvinRVfXyrLMUcKK6bcl0UiY62Ndti4p5aaZmmwFoGtOugqFxKVnQjDSkZRy'); background-size: cover; background-position: center;">
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<button class="size-16 rounded-full bg-primary flex items-center justify-center text-slate-900 shadow-2xl hover:scale-105 transition-transform" style="background-color: #8FB9A8;">
+<span class="material-symbols-outlined text-4xl fill-1">play_arrow</span>
+</button>
+</div>
+<!-- Progress Bar -->
+<div class="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/60 to-transparent">
+<div class="flex items-center gap-3">
+<span class="text-[10px] font-bold text-white">0:41</span>
+<div class="flex-1 h-1.5 bg-white/30 rounded-full relative">
+<div class="absolute left-0 top-0 h-full w-[28%] bg-primary rounded-full" style="background-color: #8FB9A8;"></div>
+<div class="absolute left-[28%] top-1/2 -translate-y-1/2 size-3 bg-primary border-2 border-white rounded-full shadow-md" style="background-color: #8FB9A8;"></div>
+</div>
+<span class="text-[10px] font-bold text-white">3:15</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Playback Controls -->
+<div class="px-4 py-6">
+<div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-2 flex items-center justify-around shadow-sm border border-slate-100 dark:border-slate-800">
+<button class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">replay_10</span>
+<span class="text-[10px] font-bold text-slate-500">-10s</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">replay_5</span>
+<span class="text-[10px] font-bold text-slate-500">-5s</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-4 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all" style="background-color: rgba(143, 185, 168, 0.1);">
+<span class="material-symbols-outlined fill-1">pause</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">forward_5</span>
+<span class="text-[10px] font-bold text-slate-500">+5s</span>
+</button>
+<button class="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-white dark:hover:bg-slate-700 transition-all group">
+<span class="material-symbols-outlined text-slate-500 group-hover:text-primary">forward_10</span>
+<span class="text-[10px] font-bold text-slate-500">+10s</span>
+</button>
+</div>
+</div>
+<!-- Section Tabs -->
+<div class="px-4 border-b border-slate-100 dark:border-slate-800 flex gap-6">
+<button class="pb-3 border-b-2 border-primary text-slate-900 dark:text-slate-100 text-sm font-bold tracking-wide" style="border-color: #8FB9A8;">COMMENTS</button>
+<button class="pb-3 border-b-2 border-transparent text-slate-400 dark:text-slate-500 text-sm font-bold tracking-wide hover:text-slate-600 transition-colors">ANALYSIS</button>
+</div>
+<!-- Filter & Sort -->
+<div class="px-4 py-3 flex items-center justify-between">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                Filters
+            </button>
+<button class="flex items-center gap-2 text-xs font-semibold text-primary" style="color: #8FB9A8;">
+                Time (Newest)
+                <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+</button>
+</div>
+<!-- Comments List -->
+<div class="flex-1 overflow-y-auto px-4 pb-24 space-y-4">
+<!-- Comment 1 -->
+<div class="flex gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 overflow-hidden" style="border-color: rgba(143, 185, 168, 0.3);">
+<img alt="Bien Nguyen Avatar" class="size-full" data-alt="Stylized avatar of a male coach" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2qsD2OKAtLos9xPmzfPTW9byo9duyvRBr4dMTZfM6YyrTU-0X5Nt2hEGsyWYoL15g3DKoYZQ9DpirF7zzRKfyKF3W3boQwJPzO3HHp-NaqHqtXteiIBTiQRhfVuDpSRj7NI_aXrfH1z_kZrvEilt_1DNkqwY9jbuqPnj-AI1HasXYRPEZYtuhf_Wwg7nTJky0oPgD1Mazned91jTS18WSg6h7dCjOyeIw11bPnNyvd1HrMgOXGd622Oo2Tz1D0mgDjKXh2cKV257j"/>
+</div>
+<div class="flex-1 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm">bien-nguyen</span>
+<span class="text-[10px] text-slate-400">2h ago</span>
+</div>
+<button class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style="background-color: rgba(143, 185, 168, 0.1);">
+<span class="material-symbols-outlined text-xs">play_circle</span>
+                            0:41
+                        </button>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Block Volley</span>
+</div>
+<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+<span class="text-primary font-semibold" style="color: #8FB9A8;">@bien-nguyen</span> Your paddle position was slightly too low here. Keep the head up to react faster to the body shot. Great recovery though!
+                    </p>
+</div>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-800"></div>
+<!-- Comment 2 -->
+<div class="flex gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 overflow-hidden" style="border-color: rgba(143, 185, 168, 0.3);">
+<img alt="Bien Nguyen Avatar" class="size-full" data-alt="Stylized avatar of a male coach" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDo_V6QTQDl0sqdKQopzYOlqA950Ey6_BEcl7E9cifnUaqnbnFEGNr8AtAR_JgBEbbgq7pWxvjccevY6bIJQAzijSYiWSKPCbpQaK9hUSuJfOa8bK8ullQCDQ5dPtbSvtw2YBVj5ctsAsG1V-Zv-Z1K_HuItBkC-dKhUbB_e21Uen1fnB5OEtgONlfzdhCxy-gIWtShQhsqDGshaHOR8npVOicS9Z_p0TxCJCDvtaEe-giNIjDwEvbakJP2Yb5Y5KmZKFe-i6OoZuED"/>
+</div>
+<div class="flex-1 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm">bien-nguyen</span>
+<span class="text-[10px] text-slate-400">5h ago</span>
+</div>
+<button class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style="background-color: rgba(143, 185, 168, 0.1);">
+<span class="material-symbols-outlined text-xs">play_circle</span>
+                            1:12
+                        </button>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Third Shot Drop</span>
+</div>
+<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+<span class="text-primary font-semibold" style="color: #8FB9A8;">@bien-nguyen</span> Perfect execution on the drop. You stayed low and followed through. This is exactly how we practiced it.
+                    </p>
+</div>
+</div>
+<div class="h-px bg-slate-100 dark:bg-slate-800"></div>
+<!-- Comment 3 -->
+<div class="flex gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 overflow-hidden" style="border-color: rgba(143, 185, 168, 0.3);">
+<img alt="Bien Nguyen Avatar" class="size-full" data-alt="Stylized avatar of a male coach" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATuEMlwZ9XNpNHG3sUXGhO1_G8Ki2kCKJm5kcofRU4YAWHfBAFc_vDy0u0F1_RkI91qja7A_cyxVtBdqSXs1Hw7IPLS8AxC8ulFUc7xMjvuadoT0y9diXdKVzhOxqFiUc39ZXq61uiUpQKYranDcTFXBN7aVc2rph0Z-ruCUpJGXXgGEcg0j8-hqYJOYLB99JdphLcunWkpK9uYF98Ihb7VxlGUbJ3IWo18LqPi-o5wRR0DbpPobFxwRcCSvxg1N9-ulXrwY-d_lg_"/>
+</div>
+<div class="flex-1 space-y-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-bold text-sm">bien-nguyen</span>
+<span class="text-[10px] text-slate-400">1d ago</span>
+</div>
+<button class="bg-primary/10 text-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1" style="background-color: rgba(143, 185, 168, 0.1);">
+<span class="material-symbols-outlined text-xs">play_circle</span>
+                            2:05
+                        </button>
+</div>
+<div class="flex gap-2">
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Return</span>
+<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">Dink</span>
+</div>
+<p class="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+<span class="text-primary font-semibold" style="color: #8FB9A8;">@bien-nguyen</span> Don't rush the transition. Take one more small step before hitting that dink.
+                    </p>
+</div>
+</div>
+</div>
+<!-- Bottom NavBar -->
+<nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-6 py-3 pb-6 flex items-center justify-between z-30">
+<a class="flex flex-col items-center gap-1 text-primary" href="#" style="color: #8FB9A8;">
+<span class="material-symbols-outlined fill-1">insights</span>
+<span class="text-[10px] font-bold">Progress</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">video_library</span>
+<span class="text-[10px] font-bold">Library</span>
+</a>
+<a class="relative -top-6" href="#">
+<div class="size-14 rounded-full bg-primary shadow-lg shadow-primary/40 flex items-center justify-center border-4 border-white dark:border-slate-900" style="box-shadow: 0 10px 15px -3px rgba(143, 185, 168, 0.4), 0 4px 6px -4px rgba(143, 185, 168, 0.4);">
+<span class="material-symbols-outlined text-slate-900 text-3xl font-bold">add</span>
+</div>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-[10px] font-bold">Sessions</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</a>
+</nav>
+</div>
+</body></html>
