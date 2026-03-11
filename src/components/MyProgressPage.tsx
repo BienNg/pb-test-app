@@ -263,11 +263,12 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               style={{
                 paddingBottom: '12px',
                 border: 'none',
-                borderBottom: `2px solid ${selectedSegment === 'videos' ? '#8FB9A8' : 'transparent'}`,
+                borderBottom: `3px solid ${selectedSegment === 'videos' ? '#6a9a95' : 'transparent'}`,
+                borderRadius: 0,
                 backgroundColor: 'transparent',
-                color: selectedSegment === 'videos' ? '#2d3a38' : '#618986',
+                color: selectedSegment === 'videos' ? '#333333' : '#6a9a95',
                 fontSize: 14,
-                fontWeight: selectedSegment === 'videos' ? 600 : 500,
+                fontWeight: selectedSegment === 'videos' ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
@@ -280,11 +281,12 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               style={{
                 paddingBottom: '12px',
                 border: 'none',
-                borderBottom: `2px solid ${selectedSegment === 'duprCoach' ? '#8FB9A8' : 'transparent'}`,
+                borderBottom: `3px solid ${selectedSegment === 'duprCoach' ? '#6a9a95' : 'transparent'}`,
+                borderRadius: 0,
                 backgroundColor: 'transparent',
-                color: selectedSegment === 'duprCoach' ? '#2d3a38' : '#618986',
+                color: selectedSegment === 'duprCoach' ? '#333333' : '#6a9a95',
                 fontSize: 14,
-                fontWeight: selectedSegment === 'duprCoach' ? 600 : 500,
+                fontWeight: selectedSegment === 'duprCoach' ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
               }}
