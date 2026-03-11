@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
-import { SHOT_PILL_STYLE } from './TrainingSessionDetail';
 
 interface TrainerCardProps {
   name: string;
@@ -115,6 +114,7 @@ interface LessonCardProps {
   onClick?: () => void;
   /** Unique shot names from comments for this session (displayed as pills). */
   shots?: string[];
+  dateLabel?: string;
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
@@ -127,6 +127,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   isCompleted = false,
   onClick,
   shots,
+  dateLabel,
 }) => {
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
   const displayDuration = useMemo(() => {
@@ -137,13 +138,21 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   }, [duration]);
 
   return (
-  <Card
+  <div
     onClick={onClick}
     style={{
+      backgroundColor: '#FFFFFF',
+      borderRadius: '16px',
       overflow: 'hidden',
+      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+      border: '1px solid #e1e9e7',
+      cursor: onClick ? 'pointer' : 'default',
       transition: 'transform 0.2s, box-shadow 0.2s',
+      width: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
     }}
-    padding={0}
   >
     {/* Thumbnail */}
     <div
@@ -171,15 +180,16 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           }}
         />
       ) : null}
-      {/* Duration badge - bottom right, YouTube style */}
+      {/* Duration badge - bottom right, reference style */}
       <div
         style={{
           position: 'absolute',
-          bottom: 6,
-          right: 6,
-          padding: '2px 6px',
-          borderRadius: 4,
-          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          bottom: 12,
+          right: 12,
+          padding: '4px 8px',
+          borderRadius: 8,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(4px)',
           color: '#FFFFFF',
           fontSize: 12,
           fontWeight: 500,
@@ -222,89 +232,113 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     </div>
 
     {/* Content */}
-    <div style={{ padding: SPACING.lg }}>
-      <div style={{
-        ...TYPOGRAPHY.label,
-        color: COLORS.textSecondary,
-        marginBottom: SPACING.xs,
-        textTransform: 'uppercase',
-      }}>
-        {category}
+    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            color: '#8FB9A8',
+            textTransform: 'uppercase',
+            marginBottom: 2,
+          }}>
+            {category}
+          </div>
+          <h3 style={{
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#2d3a38',
+            margin: 0,
+            marginTop: 2,
+            marginBottom: 4,
+          }}>
+            {title}
+          </h3>
+          {dateLabel && (
+            <p style={{
+              fontSize: 14,
+              color: '#618986',
+              margin: 0,
+            }}>
+              {dateLabel}
+            </p>
+          )}
+        </div>
       </div>
-      <h3 style={{
-        ...TYPOGRAPHY.bodySmall,
-        color: COLORS.textPrimary,
-        fontWeight: 600,
-        margin: 0,
-        marginBottom: SPACING.md,
-        display: '-webkit-box',
-        WebkitLineClamp: 2,
-        WebkitBoxOrient: 'vertical',
-        overflow: 'hidden',
-      }}>
-        {title}
-      </h3>
 
-      {/* Progress Bar */}
-      {progress > 0 && (
-        <div style={{ marginBottom: SPACING.md }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: SPACING.xs,
-          }}>
-            <span style={{
-              ...TYPOGRAPHY.label,
-              color: COLORS.textSecondary,
+      {/* Bottom Section */}
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* Progress Bar */}
+        {progress > 0 && (
+          <div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: 4,
             }}>
-              Progress
-            </span>
-            <span style={{
-              ...TYPOGRAPHY.label,
-              color: COLORS.textPrimary,
-              fontWeight: 600,
+              <span style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: '#618986',
+              }}>
+                Progress
+              </span>
+              <span style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#2d3a38',
+              }}>
+                {progress}%
+              </span>
+            </div>
+            <div style={{
+              width: '100%',
+              height: '6px',
+              backgroundColor: '#e1e9e7',
+              borderRadius: 4,
+              overflow: 'hidden',
             }}>
-              {progress}%
-            </span>
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: '100%',
+                  backgroundColor: '#8FB9A8',
+                  transition: 'width 0.3s ease',
+                }}
+              />
+            </div>
           </div>
-          <div style={{
-            width: '100%',
-            height: '6px',
-            backgroundColor: COLORS.iconBg,
-            borderRadius: RADIUS.sm,
-            overflow: 'hidden',
-          }}>
-            <div
-              style={{
-                width: `${progress}%`,
-                height: '100%',
-                backgroundColor: COLORS.primary,
-                transition: 'width 0.3s ease',
-              }}
-            />
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Shots pills from comments */}
-      {shots && shots.length > 0 && (
-        <div
-          style={{
-            marginTop: SPACING.sm,
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 4,
-          }}
-        >
-          {shots.map((name) => (
-            <span key={name} style={SHOT_PILL_STYLE}>
-              {name}
-            </span>
-          ))}
-        </div>
-      )}
+        {/* Shots pills from comments */}
+        {shots && shots.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              paddingTop: progress > 0 ? 4 : 0,
+            }}
+          >
+            {shots.map((name) => (
+              <span key={name} style={{
+                padding: '4px 12px',
+                backgroundColor: '#f6f8f8',
+                color: '#618986',
+                fontSize: 12,
+                fontWeight: 500,
+                borderRadius: 8,
+                border: `1px solid #e1e9e7`,
+              }}>
+                {name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </Card>
+  </div>
   );
 };
 

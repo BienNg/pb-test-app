@@ -34,6 +34,7 @@ export interface TrainingSession {
   title: string;
   focus: string;
   videoUrl: string;
+  session_type?: string;
 }
 
 export interface SessionComment {
@@ -116,12 +117,13 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
   return (
     <div
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: '#f6f8f8',
         minHeight: '100vh',
-        padding: `${SPACING.md}px`,
+        padding: '24px 24px 128px 24px',
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden',
+        color: '#2d3a38',
       }}
     >
       <div
@@ -133,7 +135,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
         }}
       >
         {/* Header */}
-        <div style={{ marginBottom: SPACING.xl }}>
+        <div>
           {onBack && (
             <button
               type="button"
@@ -157,7 +159,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
           <div
             style={{
               margin: 0,
-              marginBottom: SPACING.xl,
+              marginBottom: 24,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -166,8 +168,10 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
           >
             <h1
               style={{
-                ...TYPOGRAPHY.h1,
-                color: COLORS.textPrimary,
+                fontSize: 24,
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: '#2d3a38',
                 margin: 0,
               }}
             >
@@ -186,11 +190,11 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  border: 'none',
-                  background: COLORS.backgroundLight,
-                  color: COLORS.textPrimary,
+                  border: '1px solid rgba(143, 185, 168, 0.3)',
+                  background: 'rgba(143, 185, 168, 0.2)',
+                  color: '#2d3a38',
                   cursor: 'pointer',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  overflow: 'hidden',
                 }}
               >
                 <IconUser size={22} />
@@ -248,62 +252,24 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
           <div
             style={{
               display: 'flex',
-              background: `linear-gradient(135deg, ${COLORS.backgroundLight} 0%, ${COLORS.iconBg} 100%)`,
-              borderRadius: 999,
-              padding: 2,
-              gap: 2,
-              marginBottom: SPACING.xl,
-              boxShadow: 'inset 0px 1px 2px rgba(0, 0, 0, 0.04), 0px 1px 3px rgba(0, 0, 0, 0.06)',
-              border: `1px solid rgba(0, 0, 0, 0.04)`,
-              position: 'relative',
-              overflow: 'hidden',
-              maxWidth: 480,
-              width: '100%',
-              margin: '0 auto',
+              gap: '32px',
+              borderBottom: '1px solid #e1e9e7',
+              marginBottom: '24px',
             }}
           >
-            {/* Subtle shimmer overlay */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%)',
-                pointerEvents: 'none',
-              }}
-            />
             <button
               type="button"
               onClick={() => setSelectedSegment('videos')}
               style={{
-                flex: 1,
-                padding: `${SPACING.sm}px ${SPACING.md}px`,
-                borderRadius: 999,
+                paddingBottom: '12px',
                 border: 'none',
-                backgroundColor: selectedSegment === 'videos' ? COLORS.white : 'transparent',
-                color: selectedSegment === 'videos' ? COLORS.textPrimary : COLORS.textSecondary,
-                ...TYPOGRAPHY.bodySmall,
+                borderBottom: `2px solid ${selectedSegment === 'videos' ? '#8FB9A8' : 'transparent'}`,
+                backgroundColor: 'transparent',
+                color: selectedSegment === 'videos' ? '#2d3a38' : '#618986',
+                fontSize: 14,
                 fontWeight: selectedSegment === 'videos' ? 600 : 500,
                 cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: selectedSegment === 'videos' 
-                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
-                  : 'none',
-                transform: selectedSegment === 'videos' ? 'translateY(-1px)' : 'translateY(0)',
-                position: 'relative',
-                zIndex: selectedSegment === 'videos' ? 1 : 0,
-              }}
-              onMouseEnter={(e) => {
-                if (selectedSegment !== 'videos') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedSegment !== 'videos') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
+                transition: 'all 0.2s',
               }}
             >
               Your Sessions
@@ -312,32 +278,15 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               type="button"
               onClick={() => setSelectedSegment('duprCoach')}
               style={{
-                flex: 1,
-                padding: `${SPACING.sm}px ${SPACING.md}px`,
-                borderRadius: 999,
+                paddingBottom: '12px',
                 border: 'none',
-                backgroundColor: selectedSegment === 'duprCoach' ? COLORS.white : 'transparent',
-                color: selectedSegment === 'duprCoach' ? COLORS.textPrimary : COLORS.textSecondary,
-                ...TYPOGRAPHY.bodySmall,
+                borderBottom: `2px solid ${selectedSegment === 'duprCoach' ? '#8FB9A8' : 'transparent'}`,
+                backgroundColor: 'transparent',
+                color: selectedSegment === 'duprCoach' ? '#2d3a38' : '#618986',
+                fontSize: 14,
                 fontWeight: selectedSegment === 'duprCoach' ? 600 : 500,
                 cursor: 'pointer',
-                transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: selectedSegment === 'duprCoach' 
-                  ? '0px 2px 8px rgba(0, 0, 0, 0.08), 0px 1px 2px rgba(0, 0, 0, 0.04)' 
-                  : 'none',
-                transform: selectedSegment === 'duprCoach' ? 'translateY(-1px)' : 'translateY(0)',
-                position: 'relative',
-                zIndex: selectedSegment === 'duprCoach' ? 1 : 0,
-              }}
-              onMouseEnter={(e) => {
-                if (selectedSegment !== 'duprCoach') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedSegment !== 'duprCoach') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
+                transition: 'all 0.2s',
               }}
             >
               DUPR Coach
@@ -347,12 +296,12 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
 
         {/* Content based on selected segment */}
         {selectedSegment === 'videos' && (
-          <div style={{ marginBottom: SPACING.xl }}>
+          <div style={{ marginBottom: 24 }}>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: `${SPACING.lg}px`,
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '24px',
               }}
             >
               {sessions.map((session) => (
@@ -361,8 +310,9 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   id={`session-${session.id}`}
                 >
                   <LessonCard
-                    title={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
-                    category="Training Session"
+                    title={session.title || session.focus || 'Training Session'}
+                    dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
+                    category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
                     duration={session.duration}
                     thumbnail={session.thumbnail}
                     videoUrl={session.videoUrl}

@@ -15,6 +15,7 @@ export function mapDbSessionToTrainingSession(row: {
   date: string;
   youtube_url: string | null;
   title?: string | null;
+  session_type?: string | null;
 }): TrainingSession {
   const dateKey = typeof row.date === 'string' && row.date.length >= 10 ? row.date.slice(0, 10) : row.date;
   const d = new Date(dateKey + 'T12:00:00');
@@ -37,6 +38,7 @@ export function mapDbSessionToTrainingSession(row: {
     title: row.title?.trim() || 'Training Session',
     focus: '',
     videoUrl,
+    session_type: row.session_type || undefined,
   };
 }
 
@@ -76,7 +78,7 @@ export async function fetchSessionsForStudent(
   // hasn't been migrated yet (so "title" may not exist in the "sessions" table).
   const { data, error } = await supabase
     .from('sessions')
-    .select('id, date, youtube_url, title')
+    .select('id, date, youtube_url, title, session_type')
     .in('id', sessionIds)
     .order('date', { ascending: false });
 
@@ -84,8 +86,8 @@ export async function fetchSessionsForStudent(
     // If the error indicates the "title" column doesn't exist, retry without it so
     // older databases (without the migration) still work.
     const needsFallback =
-      (error?.message && /column .*title.* does not exist/i.test(error.message)) ||
-      (typeof error?.details === 'string' && /column .*title.* does not exist/i.test(error.details));
+      (error?.message && /column .*(title|session_type).* does not exist/i.test(error.message)) ||
+      (typeof error?.details === 'string' && /column .*(title|session_type).* does not exist/i.test(error.details));
 
     if (!needsFallback) return [];
 
@@ -100,6 +102,6 @@ export async function fetchSessionsForStudent(
     return fallbackRows.map(mapDbSessionToTrainingSession);
   }
 
-  const rows = data as { id: string; date: string; youtube_url: string | null; title?: string | null }[];
+  const rows = data as { id: string; date: string; youtube_url: string | null; title?: string | null; session_type?: string | null }[];
   return rows.map(mapDbSessionToTrainingSession);
 }
