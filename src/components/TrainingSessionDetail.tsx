@@ -769,8 +769,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [mentionMenu, setMentionMenu] = useState<{ query: string; atStart: number; highlightIndex: number } | null>(null);
   /** Vertical position (px from top of comment input) where inline dropdowns should appear. */
   const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
-  type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
-  const commentSort: CommentSortMode = 'timestamp-asc';
   const [shotFilter, setShotFilter] = useState<string[]>([]);
   const [studentFilter, setStudentFilter] = useState<string[]>([]);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -1205,30 +1203,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
+  /** Comments sorted by timestamp ascending (newest last); comments without timestamp first. */
   const sortedComments = useMemo(() => {
-    if (commentSort === 'date-asc' || commentSort === 'date-desc') {
-      const desc = commentSort === 'date-desc';
-      return [...comments].map((c, i) => ({ c, i })).sort((a, b) => {
-        const isoA = a.c.createdAtIso ?? '';
-        const isoB = b.c.createdAtIso ?? '';
-        if (isoA && isoB) return desc ? isoB.localeCompare(isoA) : isoA.localeCompare(isoB);
-        return a.i - b.i;
-      }).map(({ c }) => c);
-    }
-    const asc = commentSort === 'timestamp-asc';
     return [...comments].sort((a, b) => {
       const hasA = a.timestampSeconds != null ? 1 : 0;
       const hasB = b.timestampSeconds != null ? 1 : 0;
-      // Comments without a timestamp always on top when sorted by time
       if (hasA !== hasB) return hasA - hasB;
       if (hasA && hasB) {
         const ta = a.timestampSeconds ?? 0;
         const tb = b.timestampSeconds ?? 0;
-        return asc ? ta - tb : tb - ta;
+        return ta - tb; // ascending (newest last)
       }
       return 0;
     });
-  }, [comments, commentSort]);
+  }, [comments]);
 
   const visibleComments = useMemo(() => {
     if (shotFilter.length === 0 && studentFilter.length === 0) return sortedComments;
