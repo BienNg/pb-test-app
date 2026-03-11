@@ -770,7 +770,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** Vertical position (px from top of comment input) where inline dropdowns should appear. */
   const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
   type CommentSortMode = 'date-asc' | 'date-desc' | 'timestamp-asc' | 'timestamp-desc';
-  const [commentSort, setCommentSort] = useState<CommentSortMode>('timestamp-asc');
+  const commentSort: CommentSortMode = 'timestamp-asc';
   const [shotFilter, setShotFilter] = useState<string[]>([]);
   const [studentFilter, setStudentFilter] = useState<string[]>([]);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);

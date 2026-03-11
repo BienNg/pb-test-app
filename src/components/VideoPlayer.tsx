@@ -291,13 +291,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     [markers]
   );
 
-  const getCurrentTime = useCallback(() => {
-    if (isYoutube && playerRef.current && typeof playerRef.current.getCurrentTime === 'function') {
-      return playerRef.current.getCurrentTime();
-    }
-    return videoRef.current?.currentTime ?? 0;
-  }, [isYoutube]);
-
   // Apply external seek requests from parent
   useEffect(() => {
     if (seekToSeconds == null || !Number.isFinite(seekToSeconds)) return;
