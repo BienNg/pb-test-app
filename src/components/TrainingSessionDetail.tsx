@@ -1874,11 +1874,32 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <div
                       key={comment.id}
                       data-comment-id={comment.id}
+                      role={comment.timestampSeconds != null ? 'button' : undefined}
+                      tabIndex={comment.timestampSeconds != null ? 0 : undefined}
+                      onClick={
+                        comment.timestampSeconds != null
+                          ? () => {
+                              setPendingSeekSeconds(comment.timestampSeconds!);
+                              setActiveCommentId(comment.id);
+                            }
+                          : undefined
+                      }
+                      onKeyDown={
+                        comment.timestampSeconds != null
+                          ? (e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setPendingSeekSeconds(comment.timestampSeconds!);
+                                setActiveCommentId(comment.id);
+                              }
+                            }
+                          : undefined
+                      }
                       style={{
                         display: 'flex',
                         gap: 12,
                         padding: `${SPACING.sm}px 0`,
-                        cursor: 'default',
+                        cursor: comment.timestampSeconds != null ? 'pointer' : 'default',
                         backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
                         borderRadius: 8,
                         margin: isActive ? `0 -${SPACING.sm}px` : 0,
@@ -1935,39 +1956,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             flexShrink: 0,
                             position: 'relative',
                           }}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           {comment.timestampSeconds != null && (
                             <>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPendingSeekSeconds(comment.timestampSeconds!);
-                                  setActiveCommentId(comment.id);
-                                }}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '2px 8px',
-                                  borderRadius: 6,
-                                  border: 'none',
-                                  backgroundColor: `${REFERENCE_PRIMARY}1A`,
-                                  color: REFERENCE_PRIMARY,
-                                  fontSize: 10,
-                                  fontWeight: 700,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                <IconPlay size={12} style={{ flexShrink: 0 }} />
-                                {formatTimestamp(comment.timestampSeconds)}
-                              </button>
                               {comment.exampleGif ? (() => {
                                 const gif = shotExampleGifs.find((g) => g.key === `./${comment.exampleGif}` || g.key === comment.exampleGif);
                                 return (
                                   <button
                                     type="button"
-                                    onClick={() => gif && setViewExampleModal({ src: gif.src, title: gif.title })}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      gif && setViewExampleModal({ src: gif.src, title: gif.title });
+                                    }}
                                     style={{
                                       display: 'inline-flex',
                                       alignItems: 'center',
@@ -1988,7 +1989,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               })() : isAdmin ? (
                                 <button
                                   type="button"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setExampleModalContext(comment.id);
                                     setIsExampleModalOpen(true);
                                   }}
@@ -2009,6 +2011,30 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   +example
                                 </button>
                               ) : null}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPendingSeekSeconds(comment.timestampSeconds!);
+                                  setActiveCommentId(comment.id);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  padding: '6px 12px',
+                                  borderRadius: 8,
+                                  border: 'none',
+                                  backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                                  color: REFERENCE_PRIMARY,
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                <IconPlay size={14} style={{ flexShrink: 0 }} />
+                                {formatTimestamp(comment.timestampSeconds)}
+                              </button>
                             </>
                           )}
                           {comment.role === 'You' && (
@@ -2093,12 +2119,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         </div>
                       </div>
                       {editingCommentId === comment.id ? (
-                        <EditCommentInput
-                          initialDraft={comment.text}
-                          taggableProfiles={taggableProfiles}
-                          onSave={(newDraft) => handleEditComment(comment.id, newDraft)}
-                          onCancel={() => setEditingCommentId(null)}
-                        />
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <EditCommentInput
+                            initialDraft={comment.text}
+                            taggableProfiles={taggableProfiles}
+                            onSave={(newDraft) => handleEditComment(comment.id, newDraft)}
+                            onCancel={() => setEditingCommentId(null)}
+                          />
+                        </div>
                       ) : (
                         <p
                           style={{
