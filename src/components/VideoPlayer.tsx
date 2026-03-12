@@ -330,6 +330,60 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     [markers]
   );
 
+  const handleScrubPointerDown = useCallback(
+    (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      if (videoDuration <= 0) return;
+
+      event.preventDefault();
+
+      const target = event.currentTarget;
+      const rect = target.getBoundingClientRect();
+
+      const getClientX = (ev: MouseEvent | TouchEvent): number => {
+        if ('touches' in ev) {
+          const touch = ev.touches[0] ?? ev.changedTouches[0];
+          return touch?.clientX ?? 0;
+        }
+        return (ev as MouseEvent).clientX;
+      };
+
+      const updateFromClientX = (clientX: number) => {
+        const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        seekTo(pct * videoDuration);
+      };
+
+      const nativeEvent = event.nativeEvent as any;
+      let startClientX = 0;
+      if ('clientX' in nativeEvent && typeof nativeEvent.clientX === 'number') {
+        startClientX = nativeEvent.clientX;
+      } else if ('touches' in nativeEvent && nativeEvent.touches[0]) {
+        startClientX = nativeEvent.touches[0].clientX;
+      }
+      if (startClientX) updateFromClientX(startClientX);
+
+      const handleMove = (ev: MouseEvent | TouchEvent) => {
+        ev.preventDefault();
+        updateFromClientX(getClientX(ev));
+      };
+
+      const handleUp = (ev: MouseEvent | TouchEvent) => {
+        ev.preventDefault();
+        window.removeEventListener('mousemove', handleMove as any);
+        window.removeEventListener('mouseup', handleUp as any);
+        window.removeEventListener('touchmove', handleMove as any);
+        window.removeEventListener('touchend', handleUp as any);
+        window.removeEventListener('touchcancel', handleUp as any);
+      };
+
+      window.addEventListener('mousemove', handleMove as any);
+      window.addEventListener('mouseup', handleUp as any);
+      window.addEventListener('touchmove', handleMove as any, { passive: false });
+      window.addEventListener('touchend', handleUp as any);
+      window.addEventListener('touchcancel', handleUp as any);
+    },
+    [seekTo, videoDuration]
+  );
+
   // Apply external seek requests from parent
   useEffect(() => {
     if (seekToSeconds == null || !Number.isFinite(seekToSeconds)) return;
@@ -555,11 +609,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       position: 'relative',
                       cursor: 'pointer',
                     }}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      seekTo(pct * videoDuration);
-                    }}
+                    onMouseDown={handleScrubPointerDown}
+                    onTouchStart={handleScrubPointerDown}
                   >
                     <div
                       style={{
@@ -758,11 +809,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       position: 'relative',
                       cursor: 'pointer',
                     }}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      seekTo(pct * videoDuration);
-                    }}
+                    onMouseDown={handleScrubPointerDown}
+                    onTouchStart={handleScrubPointerDown}
                   >
                     <div
                       style={{
