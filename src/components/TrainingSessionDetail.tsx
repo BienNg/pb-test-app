@@ -13,7 +13,6 @@ import {
 } from './Icons';
 import type { SessionComment, TrainingSession } from './MyProgressPage';
 import { createClient } from '@/lib/supabase/client';
-import { MOCK_COACHES } from '../data/mockCoaches';
 
 declare const require: {
   context: (
@@ -287,409 +286,6 @@ import {
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
 
-const EditCommentInput: React.FC<{
-  initialDraft: string;
-  taggableProfiles: { id: string; name: string }[];
-  onSave: (draft: string) => void;
-  onCancel: () => void;
-}> = ({ initialDraft, taggableProfiles, onSave, onCancel }) => {
-  const [draft, setDraft] = useState(initialDraft);
-  const inputRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<number | null>(null);
-
-  const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
-  const [mentionMenu, setMentionMenu] = useState<{ query: string; atStart: number; highlightIndex: number } | null>(null);
-  const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
-
-  const filteredShots = useMemo(() => {
-    if (!shotMenu) return [];
-    const q = shotMenu.query.trim().toLowerCase();
-    if (!q) return [...SHOT_LIST];
-    return SHOT_LIST.filter((shot) => shot.toLowerCase().includes(q));
-  }, [shotMenu]);
-
-  const filteredMentions = useMemo(() => {
-    if (!mentionMenu) return [];
-    const q = mentionMenu.query.trim().toLowerCase();
-    const base = taggableProfiles;
-    if (!q) return base;
-    return base.filter((p) => p.name.toLowerCase().includes(q));
-  }, [mentionMenu, taggableProfiles]);
-
-  const handleInput = useCallback(() => {
-    const container = inputRef.current;
-    const sel = window.getSelection();
-    if (!container || !sel || !container.contains(sel.anchorNode)) return;
-    const { text, cursorOffset } = serializeContentEditable(container, sel);
-    setDraft(text);
-    cursorRef.current = cursorOffset;
-
-    const beforeCursor = text.slice(0, cursorOffset);
-    const lastSlash = beforeCursor.lastIndexOf('/');
-    const lastAt = beforeCursor.lastIndexOf('@');
-
-    let anyMenu = false;
-    if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
-      setShotMenu({
-        query: text.slice(lastSlash + 1, cursorOffset),
-        slashStart: lastSlash,
-        highlightIndex: 0,
-      });
-      anyMenu = true;
-    } else {
-      setShotMenu(null);
-    }
-
-    if (lastAt !== -1 && !beforeCursor.slice(lastAt).includes('\n')) {
-      const query = text.slice(lastAt + 1, cursorOffset);
-      setMentionMenu({
-        query,
-        atStart: lastAt,
-        highlightIndex: 0,
-      });
-      anyMenu = true;
-    } else if (lastAt === -1) {
-      setMentionMenu(null);
-    }
-
-    if (anyMenu) {
-      setInlineMenuTop(getCaretTopOffset(container) + 20);
-    } else {
-      setInlineMenuTop(null);
-    }
-  }, []);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === '/' || e.key === '@') {
-        e.preventDefault();
-        const container = inputRef.current;
-        const sel = window.getSelection();
-        if (!container || !sel || !container.contains(sel.anchorNode)) return;
-        const { text, cursorOffset } = serializeContentEditable(container, sel);
-        const char = e.key;
-        const newText = text.slice(0, cursorOffset) + char + text.slice(cursorOffset);
-        setDraft(newText);
-        cursorRef.current = cursorOffset + 1;
-        if (char === '/') {
-          setShotMenu({
-            query: '',
-            slashStart: cursorOffset,
-            highlightIndex: 0,
-          });
-        } else if (char === '@') {
-          setMentionMenu({
-            query: '',
-            atStart: cursorOffset,
-            highlightIndex: 0,
-          });
-        }
-        setInlineMenuTop(getCaretTopOffset(container) + 20);
-        inputRef.current?.focus();
-        return;
-      }
-
-      if (shotMenu || mentionMenu) {
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          if (shotMenu) {
-            setShotMenu((m) =>
-              m ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredShots.length - 1) } : null
-            );
-          } else if (mentionMenu) {
-            setMentionMenu((m) =>
-              m ? { ...m, highlightIndex: Math.min(m.highlightIndex + 1, filteredMentions.length - 1) } : null
-            );
-          }
-          return;
-        }
-        if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          if (shotMenu) {
-            setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
-          } else if (mentionMenu) {
-            setMentionMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
-          }
-          return;
-        }
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const container = inputRef.current;
-          const sel = window.getSelection();
-          if (!container || !sel || !container.contains(sel.anchorNode)) return;
-          const { text, cursorOffset } = serializeContentEditable(container, sel);
-          if (shotMenu && filteredShots.length > 0) {
-            const shot = filteredShots[shotMenu.highlightIndex];
-            if (shot) {
-              const start = shotMenu.slashStart;
-              const replacement = `[[shot:${shot}]] `;
-              const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
-              setDraft(nextDraft);
-              setShotMenu(null);
-              cursorRef.current = start + replacement.length;
-              inputRef.current?.focus();
-            }
-          } else if (mentionMenu && filteredMentions.length > 0) {
-            const mention = filteredMentions[mentionMenu.highlightIndex];
-            if (mention) {
-              const start = mentionMenu.atStart;
-              const marker = `[[mention:${mention.id}|${mention.name}]] `;
-              const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
-              setDraft(nextDraft);
-              setMentionMenu(null);
-              cursorRef.current = start + marker.length;
-              inputRef.current?.focus();
-            }
-          }
-          return;
-        }
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          setShotMenu(null);
-          setMentionMenu(null);
-          setInlineMenuTop(null);
-          return;
-        }
-      }
-    },
-    [shotMenu, mentionMenu, filteredShots, filteredMentions]
-  );
-
-  const selectShotFromMenu = useCallback(
-    (shot: string) => {
-      if (!shotMenu) return;
-      const container = inputRef.current;
-      const sel = window.getSelection();
-      if (!container || !sel || !container.contains(sel.anchorNode)) return;
-      const { text, cursorOffset } = serializeContentEditable(container, sel);
-      const start = shotMenu.slashStart;
-      const replacement = `[[shot:${shot}]] `;
-      const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
-      setDraft(nextDraft);
-      setShotMenu(null);
-      cursorRef.current = start + replacement.length;
-      inputRef.current?.focus();
-    },
-    [shotMenu]
-  );
-
-  const selectMentionFromMenu = useCallback(
-    (mentionId: string) => {
-      if (!mentionMenu) return;
-      const mention = taggableProfiles.find((p) => p.id === mentionId);
-      if (!mention) return;
-      const container = inputRef.current;
-      const sel = window.getSelection();
-      if (!container || !sel || !container.contains(sel.anchorNode)) return;
-      const { text, cursorOffset } = serializeContentEditable(container, sel);
-      const start = mentionMenu.atStart;
-      const marker = `[[mention:${mention.id}|${mention.name}]] `;
-      const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
-      setDraft(nextDraft);
-      setMentionMenu(null);
-      cursorRef.current = start + marker.length;
-      inputRef.current?.focus();
-    },
-    [mentionMenu, taggableProfiles]
-  );
-
-  useEffect(() => {
-    const container = inputRef.current;
-    if (!container) return;
-    syncContentEditableFromDraft(container, draft);
-    if (cursorRef.current != null) {
-      const offset = cursorRef.current;
-      cursorRef.current = null;
-      setContentEditableCursor(container, offset);
-    }
-  }, [draft]);
-
-  return (
-    <div style={{ marginTop: SPACING.xs, position: 'relative' }}>
-      <div
-        ref={inputRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        style={{
-          width: '100%',
-          minHeight: 60,
-          padding: SPACING.sm,
-          borderRadius: RADIUS.sm,
-          border: `1px solid ${COLORS.backgroundLight}`,
-          backgroundColor: 'transparent',
-          color: COLORS.textPrimary,
-          ...TYPOGRAPHY.bodySmall,
-          fontFamily: 'inherit',
-          boxSizing: 'border-box',
-          outline: 'none',
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-        }}
-      />
-      {(shotMenu || mentionMenu) && inlineMenuTop != null && (
-        <div
-          style={{
-            position: 'absolute',
-            top: inlineMenuTop,
-            left: 0,
-            zIndex: 50,
-            width: 240,
-            maxHeight: 200,
-            overflowY: 'auto',
-            backgroundColor: COLORS.cardBg,
-            borderRadius: RADIUS.md,
-            boxShadow: SHADOWS.md,
-            border: `1px solid ${COLORS.backgroundLight}`,
-            padding: `${SPACING.xs}px 0`,
-          }}
-        >
-          {shotMenu && (
-            <>
-              <div
-                style={{
-                  padding: `${SPACING.xs}px ${SPACING.md}px`,
-                  ...TYPOGRAPHY.label,
-                  color: COLORS.textSecondary,
-                  textTransform: 'uppercase',
-                  borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                  marginBottom: SPACING.xs,
-                }}
-              >
-                Shots
-              </div>
-              {filteredShots.length === 0 ? (
-                <div
-                  style={{
-                    padding: `${SPACING.sm}px ${SPACING.md}px`,
-                    ...TYPOGRAPHY.bodySmall,
-                    color: COLORS.textSecondary,
-                  }}
-                >
-                  No shots found.
-                </div>
-              ) : (
-                filteredShots.map((shot, i) => (
-                  <button
-                    key={shot}
-                    type="button"
-                    role="option"
-                    aria-selected={shotMenu.highlightIndex === i}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectShotFromMenu(shot);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: `${SPACING.sm}px ${SPACING.md}px`,
-                      border: 'none',
-                      background: shotMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
-                      textAlign: 'left',
-                      ...TYPOGRAPHY.bodySmall,
-                      color: COLORS.textPrimary,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {shot}
-                  </button>
-                ))
-              )}
-            </>
-          )}
-          {mentionMenu && (
-            <>
-              <div
-                style={{
-                  padding: `${SPACING.xs}px ${SPACING.md}px`,
-                  ...TYPOGRAPHY.label,
-                  color: COLORS.textSecondary,
-                  textTransform: 'uppercase',
-                  borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                  marginBottom: SPACING.xs,
-                }}
-              >
-                Mention
-              </div>
-              {filteredMentions.length === 0 ? (
-                <div
-                  style={{
-                    padding: `${SPACING.sm}px ${SPACING.md}px`,
-                    ...TYPOGRAPHY.bodySmall,
-                    color: COLORS.textSecondary,
-                  }}
-                >
-                  No profiles found.
-                </div>
-              ) : (
-                filteredMentions.map((p, i) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    role="option"
-                    aria-selected={mentionMenu.highlightIndex === i}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      selectMentionFromMenu(p.id);
-                    }}
-                    style={{
-                      display: 'block',
-                      width: '100%',
-                      padding: `${SPACING.sm}px ${SPACING.md}px`,
-                      border: 'none',
-                      background: mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
-                      textAlign: 'left',
-                      ...TYPOGRAPHY.bodySmall,
-                      color: COLORS.textPrimary,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    @{p.name}
-                  </button>
-                ))
-              )}
-            </>
-          )}
-        </div>
-      )}
-      <div style={{ display: 'flex', gap: SPACING.xs, marginTop: SPACING.xs, justifyContent: 'flex-end' }}>
-        <button
-          type="button"
-          onClick={onCancel}
-          style={{
-            padding: `${SPACING.xs}px ${SPACING.sm}px`,
-            borderRadius: RADIUS.sm,
-            border: `1px solid ${COLORS.backgroundLight}`,
-            background: 'none',
-            ...TYPOGRAPHY.label,
-            cursor: 'pointer',
-            color: COLORS.textSecondary,
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={() => onSave(draft)}
-          style={{
-            padding: `${SPACING.xs}px ${SPACING.sm}px`,
-            borderRadius: RADIUS.sm,
-            border: 'none',
-            backgroundColor: COLORS.primary,
-            color: '#fff',
-            ...TYPOGRAPHY.label,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  );
-};
-
 export interface TrainingSessionDetailProps {
   sessionId: string;
   onBack: () => void;
@@ -757,8 +353,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [exampleModalContext, setExampleModalContext] = useState<string | number | 'new' | null>(null);
   /** GIF attached to the pending new comment (before it is posted) */
   const [pendingNewCommentGif, setPendingNewCommentGif] = useState<string | null>(null);
-  /** When set, shows the lightweight "view example" modal */
-  const [viewExampleModal, setViewExampleModal] = useState<{ src: string; title: string } | null>(null);
+  /** When set, shows the lightweight "view example" modal. commentId is set when opened from a comment so admin can edit. */
+  const [viewExampleModal, setViewExampleModal] = useState<{ src: string; title: string; commentId?: number | string } | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
@@ -776,7 +372,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** Comment id to scroll to and highlight when its timestamp is reached or a timestamp dot is selected. */
   const [activeCommentId, setActiveCommentId] = useState<string | number | null>(null);
   const [activeCommentMenu, setActiveCommentMenu] = useState<string | number | null>(null);
+  /** When set, this comment is being edited; edit box shows and uses editDraft. */
   const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+  const editInputRef = useRef<HTMLDivElement>(null);
+  const pendingEditCursorRef = useRef<number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
@@ -988,6 +588,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         node = node.parentElement;
       }
       if (active && commentInputRef.current?.contains(active)) return true;
+      if (active && editInputRef.current?.contains(active)) return true;
       return false;
     };
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1404,13 +1005,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return base.filter((p) => p.name.toLowerCase().includes(q));
   }, [mentionMenu, taggableProfiles]);
 
-  const handleCommentInput = useCallback(() => {
-    const container = commentInputRef.current;
+  const handleCommentInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
     const sel = window.getSelection();
     if (!container || !sel || !container.contains(sel.anchorNode)) return;
     const { text, cursorOffset } = serializeContentEditable(container, sel);
-    setCommentDraft(text);
-    pendingCursorRef.current = cursorOffset;
+    const isEdit = editInputRef.current === container;
+    if (isEdit) {
+      setEditDraft(text);
+      pendingEditCursorRef.current = cursorOffset;
+    } else {
+      setCommentDraft(text);
+      pendingCursorRef.current = cursorOffset;
+    }
     const beforeCursor = text.slice(0, cursorOffset);
     const lastSlash = beforeCursor.lastIndexOf('/');
     const lastAt = beforeCursor.lastIndexOf('@');
@@ -1469,18 +1076,36 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [commentDraft]);
 
+  // Sync edit box contenteditable from editDraft when editing a comment.
+  useEffect(() => {
+    if (editingCommentId == null) return;
+    const container = editInputRef.current;
+    if (!container) return;
+    syncContentEditableFromDraft(container, editDraft);
+    if (pendingEditCursorRef.current != null) {
+      const offset = pendingEditCursorRef.current;
+      pendingEditCursorRef.current = null;
+      setContentEditableCursor(container, offset);
+    }
+  }, [editingCommentId, editDraft]);
+
   const handleCommentKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const container = e.currentTarget;
+      const isEdit = editInputRef.current === container;
+      const setDraft = isEdit ? setEditDraft : setCommentDraft;
+      const pendingRef = isEdit ? pendingEditCursorRef : pendingCursorRef;
+      const focusContainer = () => (container as HTMLDivElement).focus();
+
       if (e.key === '/' || e.key === '@') {
         e.preventDefault();
-        const container = commentInputRef.current;
         const sel = window.getSelection();
         if (!container || !sel || !container.contains(sel.anchorNode)) return;
         const { text, cursorOffset } = serializeContentEditable(container, sel);
         const char = e.key;
         const newText = text.slice(0, cursorOffset) + char + text.slice(cursorOffset);
-        setCommentDraft(newText);
-        pendingCursorRef.current = cursorOffset + 1;
+        setDraft(newText);
+        pendingRef.current = cursorOffset + 1;
         if (char === '/') {
           setShotMenu({
             query: '',
@@ -1494,9 +1119,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             highlightIndex: 0,
           });
         }
-        // Add extra offset so dropdown appears just below the typing line
         setInlineMenuTop(getCaretTopOffset(container) + 20);
-        commentInputRef.current?.focus();
+        focusContainer();
         return;
       }
 
@@ -1535,7 +1159,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         }
         if (e.key === 'Enter') {
           e.preventDefault();
-          const container = commentInputRef.current;
           const sel = window.getSelection();
           if (!container || !sel || !container.contains(sel.anchorNode)) return;
           const { text, cursorOffset } = serializeContentEditable(container, sel);
@@ -1545,10 +1168,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               const start = shotMenu.slashStart;
               const replacement = `[[shot:${shot}]] `;
               const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
-              setCommentDraft(nextDraft);
+              setDraft(nextDraft);
               setShotMenu(null);
-              pendingCursorRef.current = start + replacement.length;
-              commentInputRef.current?.focus();
+              pendingRef.current = start + replacement.length;
+              focusContainer();
             }
           } else if (mentionMenu && filteredMentions.length > 0) {
             const mention = filteredMentions[mentionMenu.highlightIndex];
@@ -1556,10 +1179,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               const start = mentionMenu.atStart;
               const marker = `[[mention:${mention.id}|${mention.name}]] `;
               const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
-              setCommentDraft(nextDraft);
+              setDraft(nextDraft);
               setMentionMenu(null);
-              pendingCursorRef.current = start + marker.length;
-              commentInputRef.current?.focus();
+              pendingRef.current = start + marker.length;
+              focusContainer();
               setSelectedMentionIds((prev) =>
                 prev.includes(mention.id) ? prev : [...prev, mention.id]
               );
@@ -1582,17 +1205,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const selectShotFromMenu = useCallback(
     (shot: string) => {
       if (!shotMenu) return;
-      const container = commentInputRef.current;
+      const container =
+        editInputRef.current?.contains(document.activeElement) ? editInputRef.current : commentInputRef.current;
       const sel = window.getSelection();
       if (!container || !sel || !container.contains(sel.anchorNode)) return;
       const { text, cursorOffset } = serializeContentEditable(container, sel);
       const start = shotMenu.slashStart;
       const replacement = `[[shot:${shot}]] `;
       const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
-      setCommentDraft(nextDraft);
+      const isEdit = container === editInputRef.current;
+      if (isEdit) {
+        setEditDraft(nextDraft);
+        pendingEditCursorRef.current = start + replacement.length;
+      } else {
+        setCommentDraft(nextDraft);
+        pendingCursorRef.current = start + replacement.length;
+      }
       setShotMenu(null);
-      pendingCursorRef.current = start + replacement.length;
-      commentInputRef.current?.focus();
+      (container as HTMLDivElement).focus();
       if (!mentionMenu) setInlineMenuTop(null);
     },
     [shotMenu, mentionMenu]
@@ -1603,17 +1233,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!mentionMenu) return;
       const mention = taggableProfiles.find((p) => p.id === mentionId);
       if (!mention) return;
-      const container = commentInputRef.current;
+      const container =
+        editInputRef.current?.contains(document.activeElement) ? editInputRef.current : commentInputRef.current;
       const sel = window.getSelection();
       if (!container || !sel || !container.contains(sel.anchorNode)) return;
       const { text, cursorOffset } = serializeContentEditable(container, sel);
       const start = mentionMenu.atStart;
       const marker = `[[mention:${mention.id}|${mention.name}]] `;
       const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
-      setCommentDraft(nextDraft);
+      const isEdit = container === editInputRef.current;
+      if (isEdit) {
+        setEditDraft(nextDraft);
+        pendingEditCursorRef.current = start + marker.length;
+      } else {
+        setCommentDraft(nextDraft);
+        pendingCursorRef.current = start + marker.length;
+      }
       setMentionMenu(null);
-      pendingCursorRef.current = start + marker.length;
-      commentInputRef.current?.focus();
+      (container as HTMLDivElement).focus();
       setSelectedMentionIds((prev) =>
         prev.includes(mention.id) ? prev : [...prev, mention.id]
       );
@@ -1641,6 +1278,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
       );
       setEditingCommentId(null);
+      setEditDraft('');
       return;
     }
     const supabase = createClient();
@@ -1650,6 +1288,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
       );
       setEditingCommentId(null);
+      setEditDraft('');
     }
   };
 
@@ -1724,30 +1363,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           {session.dateLabel}
         </h1>
-        {isDbSession && canAddVideoUrl ? (
-          <button
-            type="button"
-            onClick={() => setShowEditSession(true)}
-            style={{
-              width: 40,
-              height: 40,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              border: 'none',
-              background: 'none',
-              color: '#475569',
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-            aria-label="Edit session"
-          >
-            <IconPencil size={20} />
-          </button>
-        ) : (
-          <div style={{ width: 40, flexShrink: 0 }} />
-        )}
+        <div style={{ width: 40, flexShrink: 0 }} />
       </header>
       <div
         style={{
@@ -1980,15 +1596,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 visibleComments.map((comment) => {
                   const isCoach = comment.role === 'Coach';
                   const isActive = activeCommentId !== null && comment.id === activeCommentId;
+                  const canSeekToTimestamp =
+                    comment.timestampSeconds != null && editingCommentId !== comment.id;
 
                   return (
                     <div
                       key={comment.id}
                       data-comment-id={comment.id}
-                      role={comment.timestampSeconds != null ? 'button' : undefined}
-                      tabIndex={comment.timestampSeconds != null ? 0 : undefined}
+                      role={canSeekToTimestamp ? 'button' : undefined}
+                      tabIndex={canSeekToTimestamp ? 0 : undefined}
                       onClick={
-                        comment.timestampSeconds != null
+                        canSeekToTimestamp
                           ? () => {
                               setPendingSeekSeconds(comment.timestampSeconds!);
                               setActiveCommentId(comment.id);
@@ -1996,7 +1614,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           : undefined
                       }
                       onKeyDown={
-                        comment.timestampSeconds != null
+                        canSeekToTimestamp
                           ? (e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
@@ -2012,7 +1630,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         flexDirection: 'column',
                         gap: 0,
                         padding: `${SPACING.sm}px 0`,
-                        cursor: comment.timestampSeconds != null ? 'pointer' : 'default',
+                        cursor: canSeekToTimestamp ? 'pointer' : 'default',
                         backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
                         borderRadius: 8,
                         margin: isActive ? `0 -${SPACING.sm}px` : 0,
@@ -2081,7 +1699,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (gif) setViewExampleModal({ src: gif.src, title: gif.title });
+                                      if (gif) setViewExampleModal({ src: gif.src, title: gif.title, commentId: comment.id });
                                     }}
                                     style={{
                                       display: 'inline-flex',
@@ -2192,6 +1810,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               <button
                                 type="button"
                                 onClick={() => {
+                                  setEditDraft(comment.text);
                                   setEditingCommentId(comment.id);
                                   setActiveCommentMenu(null);
                                 }}
@@ -2234,13 +1853,182 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         </div>
                       </div>
                       {editingCommentId === comment.id ? (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <EditCommentInput
-                            initialDraft={comment.text}
-                            taggableProfiles={taggableProfiles}
-                            onSave={(newDraft) => handleEditComment(comment.id, newDraft)}
-                            onCancel={() => setEditingCommentId(null)}
+                        <div style={{ marginTop: SPACING.xs, position: 'relative' }}>
+                          <div
+                            ref={editingCommentId === comment.id ? editInputRef : undefined}
+                            contentEditable
+                            suppressContentEditableWarning
+                            role="textbox"
+                            aria-multiline="true"
+                            aria-label="Edit comment. Type / for shot commands or @ to tag people."
+                            onInput={handleCommentInput}
+                            onKeyDown={handleCommentKeyDown}
+                            onPaste={(e) => {
+                              e.preventDefault();
+                              const text = e.clipboardData.getData('text/plain');
+                              document.execCommand('insertText', false, text);
+                            }}
+                            style={{
+                              minHeight: 48,
+                              width: '100%',
+                              outline: 'none',
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                              padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.backgroundLight}`,
+                              backgroundColor: COLORS.cardBg,
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                            }}
                           />
+                          {shotMenu != null && (
+                            <div
+                              role="listbox"
+                              aria-label="Shot type"
+                              style={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                                marginTop: inlineMenuTop != null ? 0 : 4,
+                                maxHeight: 220,
+                                overflowY: 'auto',
+                                backgroundColor: COLORS.cardBg,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                borderRadius: RADIUS.sm,
+                                boxShadow: SHADOWS.light,
+                                zIndex: 20,
+                              }}
+                            >
+                              {filteredShots.length === 0 ? (
+                                <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                                  No matching shot
+                                </div>
+                              ) : (
+                                filteredShots.map((shot, i) => (
+                                  <button
+                                    key={shot}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={i === shotMenu.highlightIndex}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      selectShotFromMenu(shot);
+                                    }}
+                                    style={{
+                                      display: 'block',
+                                      width: '100%',
+                                      padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                      border: 'none',
+                                      background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
+                                      textAlign: 'left',
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textPrimary,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    {shot}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                          {mentionMenu != null && (
+                            <div
+                              role="listbox"
+                              aria-label="Mention person"
+                              style={{
+                                position: 'absolute',
+                                left: 0,
+                                right: 0,
+                                top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                                marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
+                                maxHeight: 220,
+                                overflowY: 'auto',
+                                backgroundColor: COLORS.cardBg,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                borderRadius: RADIUS.sm,
+                                boxShadow: SHADOWS.light,
+                                zIndex: 21,
+                              }}
+                            >
+                              {filteredMentions.length === 0 ? (
+                                <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                                  No students/coaches assigned to this session
+                                </div>
+                              ) : (
+                                filteredMentions.map((p, i) => (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={mentionMenu.highlightIndex === i}
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      selectMentionFromMenu(p.id);
+                                    }}
+                                    style={{
+                                      display: 'block',
+                                      width: '100%',
+                                      padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                      border: 'none',
+                                      background:
+                                        mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+                                      textAlign: 'left',
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textPrimary,
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    @{p.name}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.sm, justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingCommentId(null);
+                                setEditDraft('');
+                              }}
+                              style={{
+                                padding: `${SPACING.xs}px ${SPACING.md}px`,
+                                borderRadius: RADIUS.sm,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                backgroundColor: COLORS.cardBg,
+                                ...TYPOGRAPHY.label,
+                                color: COLORS.textSecondary,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditComment(comment.id, editDraft.trim());
+                                setEditDraft('');
+                              }}
+                              disabled={!editDraft.trim()}
+                              style={{
+                                padding: `${SPACING.xs}px ${SPACING.md}px`,
+                                borderRadius: RADIUS.sm,
+                                border: 'none',
+                                backgroundColor: REFERENCE_PRIMARY,
+                                color: COLORS.white,
+                                ...TYPOGRAPHY.label,
+                                fontWeight: 600,
+                                cursor: editDraft.trim() ? 'pointer' : 'not-allowed',
+                              }}
+                            >
+                              Save
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <p
@@ -2453,7 +2241,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     Type / for shot commands or @ to tag
                   </span>
                 )}
-                {shotMenu != null && (
+                {editingCommentId == null && shotMenu != null && (
                   <div
                     role="listbox"
                     aria-label="Shot type"
@@ -2505,7 +2293,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     )}
                   </div>
                 )}
-                {mentionMenu != null && (
+                {editingCommentId == null && mentionMenu != null && (
                   <div
                     role="listbox"
                     aria-label="Mention person"
@@ -2597,502 +2385,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           </div>
         </div>
       </div>
-      {/* Edit Session Modal */}
-      {showEditSession && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 60,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            padding: SPACING.md,
-          }}
-          onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label="Edit session"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 500,
-              backgroundColor: COLORS.white,
-              borderRadius: RADIUS.xl,
-              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
-              overflow: 'hidden',
-              maxHeight: '88vh',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            {/* Header */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: `${SPACING.lg}px ${SPACING.xl}px`,
-                borderBottom: `1px solid ${COLORS.backgroundLight}`,
-                flexShrink: 0,
-              }}
-            >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 17,
-                  fontWeight: 700,
-                  color: COLORS.textPrimary,
-                  letterSpacing: -0.3,
-                }}
-              >
-                Edit Session
-              </h2>
-              <button
-                type="button"
-                onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
-                style={{
-                  background: COLORS.backgroundLight,
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: 30,
-                  height: 30,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: COLORS.textSecondary,
-                  fontSize: 16,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Body */}
-            <div
-              style={{
-                flex: 1,
-                overflowY: 'auto',
-                padding: `${SPACING.xl}px`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: SPACING.lg,
-              }}
-            >
-              {editSessionLoading ? (
-                <p style={{ margin: 0, color: COLORS.textSecondary, fontSize: 14 }}>
-                  Loading session details…
-                </p>
-              ) : (
-                <>
-                  {/* Title */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
-                    <label
-                      htmlFor="edit-session-title"
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        color: COLORS.textSecondary,
-                      }}
-                    >
-                      Session Title
-                    </label>
-                    <input
-                      id="edit-session-title"
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      placeholder="e.g. Dink drills, doubles strategy…"
-                      style={{
-                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                        borderRadius: RADIUS.sm,
-                        border: `1.5px solid ${COLORS.backgroundLight}`,
-                        fontSize: 15,
-                        color: COLORS.textPrimary,
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        backgroundColor: COLORS.white,
-                        fontFamily: 'inherit',
-                      }}
-                    />
-                  </div>
-
-                  {/* Date */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
-                    <label
-                      htmlFor="edit-session-date"
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        color: COLORS.textSecondary,
-                      }}
-                    >
-                      Date
-                    </label>
-                    <input
-                      id="edit-session-date"
-                      type="date"
-                      value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
-                      style={{
-                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                        borderRadius: RADIUS.sm,
-                        border: `1.5px solid ${COLORS.backgroundLight}`,
-                        fontSize: 15,
-                        color: COLORS.textPrimary,
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        backgroundColor: COLORS.white,
-                        fontFamily: 'inherit',
-                      }}
-                    />
-                  </div>
-
-                  {/* Coach */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
-                    <label
-                      htmlFor="edit-session-coach"
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        color: COLORS.textSecondary,
-                      }}
-                    >
-                      Coach
-                    </label>
-                    <select
-                      id="edit-session-coach"
-                      value={editCoachId}
-                      onChange={(e) => setEditCoachId(e.target.value)}
-                      style={{
-                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                        borderRadius: RADIUS.sm,
-                        border: `1.5px solid ${COLORS.backgroundLight}`,
-                        fontSize: 15,
-                        color: editCoachId ? COLORS.textPrimary : COLORS.textMuted,
-                        outline: 'none',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        backgroundColor: COLORS.white,
-                        fontFamily: 'inherit',
-                        appearance: 'auto',
-                      }}
-                    >
-                      <option value="">Select a coach…</option>
-                      {MOCK_COACHES.map((coach) => (
-                        <option key={coach.id} value={coach.id}>
-                          {coach.name} — {coach.tier}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Session type (game / drill) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.xs }}>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        color: COLORS.textSecondary,
-                      }}
-                    >
-                      Session type
-                    </label>
-                    <div style={{ display: 'flex', gap: SPACING.sm }}>
-                      <label
-                        style={{
-                          flex: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: SPACING.xs,
-                          padding: SPACING.sm,
-                          borderRadius: RADIUS.sm,
-                          border: `2px solid ${editSessionType === 'game' ? COLORS.primary : COLORS.backgroundLight}`,
-                          backgroundColor: editSessionType === 'game' ? COLORS.primaryLight : COLORS.white,
-                          cursor: 'pointer',
-                          fontSize: 15,
-                          color: COLORS.textPrimary,
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="edit-session-type"
-                          value="game"
-                          checked={editSessionType === 'game'}
-                          onChange={() => setEditSessionType('game')}
-                          style={{ width: 18, height: 18, accentColor: COLORS.primary }}
-                        />
-                        Game
-                      </label>
-                      <label
-                        style={{
-                          flex: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: SPACING.xs,
-                          padding: SPACING.sm,
-                          borderRadius: RADIUS.sm,
-                          border: `2px solid ${editSessionType === 'drill' ? COLORS.primary : COLORS.backgroundLight}`,
-                          backgroundColor: editSessionType === 'drill' ? COLORS.primaryLight : COLORS.white,
-                          cursor: 'pointer',
-                          fontSize: 15,
-                          color: COLORS.textPrimary,
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="edit-session-type"
-                          value="drill"
-                          checked={editSessionType === 'drill'}
-                          onChange={() => setEditSessionType('drill')}
-                          style={{ width: 18, height: 18, accentColor: COLORS.primary }}
-                        />
-                        Drill
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Students */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: 0.5,
-                        color: COLORS.textSecondary,
-                      }}
-                    >
-                      Students
-                    </div>
-                    {availableStudents.length === 0 ? (
-                      <p style={{ margin: 0, fontSize: 14, color: COLORS.textMuted }}>
-                        No students found.
-                      </p>
-                    ) : (
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 2,
-                          maxHeight: 200,
-                          overflowY: 'auto',
-                          border: `1.5px solid ${COLORS.backgroundLight}`,
-                          borderRadius: RADIUS.sm,
-                          padding: `${SPACING.xs}px 0`,
-                        }}
-                      >
-                        {availableStudents.map((student) => {
-                          const checked = editStudentIds.includes(student.id);
-                          return (
-                            <label
-                              key={student.id}
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: SPACING.sm,
-                                padding: `${SPACING.sm}px ${SPACING.md}px`,
-                                cursor: 'pointer',
-                                backgroundColor: checked ? 'rgba(49, 203, 0, 0.06)' : 'transparent',
-                                transition: 'background-color 0.1s ease',
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => toggleEditStudent(student.id)}
-                                style={{ accentColor: COLORS.primary, width: 16, height: 16, flexShrink: 0 }}
-                              />
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 14, fontWeight: checked ? 600 : 400, color: COLORS.textPrimary }}>
-                                  {student.name}
-                                </div>
-                                {student.email && (
-                                  <div style={{ fontSize: 12, color: COLORS.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {student.email}
-                                  </div>
-                                )}
-                              </div>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {editStudentIds.length > 0 && (
-                      <div style={{ fontSize: 12, color: COLORS.textSecondary }}>
-                        {editStudentIds.length} student{editStudentIds.length !== 1 ? 's' : ''} selected
-                      </div>
-                    )}
-                  </div>
-
-                  {editSessionError && (
-                    <div
-                      style={{
-                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                        borderRadius: RADIUS.sm,
-                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
-                        border: '1px solid rgba(239, 68, 68, 0.25)',
-                        fontSize: 13,
-                        color: '#ef4444',
-                      }}
-                    >
-                      {editSessionError}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div
-              style={{
-                padding: `${SPACING.md}px ${SPACING.xl}px`,
-                borderTop: `1px solid ${COLORS.backgroundLight}`,
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: SPACING.sm,
-                flexWrap: 'wrap',
-              }}
-            >
-              {/* Delete section */}
-              {!showDeleteConfirm ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    console.log('[TrainingSessionDetail] Delete button clicked, showing confirmation');
-                    setShowDeleteConfirm(true);
-                  }}
-                  disabled={editSessionDeleting}
-                  style={{
-                    padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
-                    borderRadius: RADIUS.sm,
-                    border: '1px solid rgba(239, 68, 68, 0.35)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.06)',
-                    color: '#ef4444',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  Delete session
-                </button>
-              ) : (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: SPACING.xs,
-                    flexWrap: 'wrap',
-                  }}
-                >
-                  <span style={{ fontSize: 13, color: COLORS.textSecondary, fontWeight: 500 }}>
-                    Are you sure?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleDeleteSession}
-                    disabled={editSessionDeleting}
-                    style={{
-                      padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
-                      borderRadius: RADIUS.sm,
-                      border: 'none',
-                      backgroundColor: '#ef4444',
-                      color: '#fff',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      cursor: editSessionDeleting ? 'default' : 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {editSessionDeleting ? 'Deleting…' : 'Yes, delete'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      console.log('[TrainingSessionDetail] Cancel button clicked');
-                      setShowDeleteConfirm(false);
-                    }}
-                    style={{
-                      padding: `${SPACING.xs + 2}px ${SPACING.md}px`,
-                      borderRadius: RADIUS.sm,
-                      border: `1px solid ${COLORS.backgroundLight}`,
-                      backgroundColor: 'transparent',
-                      color: COLORS.textSecondary,
-                      fontSize: 13,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              )}
-
-              {/* Save / Cancel */}
-              <div style={{ display: 'flex', gap: SPACING.sm, marginLeft: 'auto' }}>
-                <button
-                  type="button"
-                  onClick={() => { setShowEditSession(false); setShowDeleteConfirm(false); }}
-                  style={{
-                    padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
-                    borderRadius: RADIUS.sm,
-                    border: `1px solid ${COLORS.backgroundLight}`,
-                    backgroundColor: 'transparent',
-                    color: COLORS.textSecondary,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveSessionDetails}
-                  disabled={editSessionSaving || editSessionLoading}
-                  style={{
-                    padding: `${SPACING.xs + 2}px ${SPACING.lg}px`,
-                    borderRadius: RADIUS.sm,
-                    border: 'none',
-                    backgroundColor: editSessionSaving || editSessionLoading ? COLORS.primaryLight : COLORS.primary,
-                    color: COLORS.textPrimary,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: editSessionSaving || editSessionLoading ? 'default' : 'pointer',
-                    fontFamily: 'inherit',
-                  }}
-                >
-                  {editSessionSaving ? 'Saving…' : 'Save changes'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Comment filter bottom sheet - above bottom nav so Apply Filters is visible */}
       <div
         aria-hidden={!isFilterSheetOpen}
@@ -3610,22 +2902,51 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               <div style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
                 {viewExampleModal.title}
               </div>
-              <button
-                type="button"
-                onClick={() => setViewExampleModal(null)}
-                style={{
-                  border: `1px solid ${COLORS.backgroundLight}`,
-                  backgroundColor: COLORS.white,
-                  color: COLORS.textSecondary,
-                  borderRadius: 999,
-                  padding: `${SPACING.xs}px ${SPACING.md}px`,
-                  cursor: 'pointer',
-                  ...TYPOGRAPHY.label,
-                  fontWeight: 600,
-                }}
-              >
-                Close
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.sm }}>
+                {isAdmin && viewExampleModal.commentId != null && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExampleModalContext(viewExampleModal.commentId!);
+                      setViewExampleModal(null);
+                      setIsExampleModalOpen(true);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      border: `1px solid ${REFERENCE_PRIMARY}40`,
+                      backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                      color: REFERENCE_PRIMARY,
+                      borderRadius: 999,
+                      padding: `${SPACING.xs}px ${SPACING.md}px`,
+                      cursor: 'pointer',
+                      ...TYPOGRAPHY.label,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <IconPencil size={14} />
+                    Edit GIF
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setViewExampleModal(null)}
+                  style={{
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: COLORS.white,
+                    color: COLORS.textSecondary,
+                    borderRadius: 999,
+                    padding: `${SPACING.xs}px ${SPACING.md}px`,
+                    cursor: 'pointer',
+                    ...TYPOGRAPHY.label,
+                    fontWeight: 600,
+                  }}
+                >
+                  Close
+                </button>
+              </div>
             </div>
             <img
               src={viewExampleModal.src}
