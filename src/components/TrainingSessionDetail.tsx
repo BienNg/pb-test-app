@@ -984,7 +984,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [activeCommentId]);
 
-  const handleAddComment = async () => {
+  const handleAddComment = useCallback(async () => {
     if (!commentDraft.trim()) return;
 
     const currentTime = currentVideoTime ?? 0;
@@ -1028,7 +1028,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setComments((prev) => [...prev, newComment]);
     setCommentDraft('');
     setPendingNewCommentGif(null);
-  };
+  }, [
+    commentDraft,
+    currentVideoTime,
+    includeTimestamp,
+    isDbSession,
+    pendingNewCommentGif,
+    selectedMentionIds,
+    sessionId,
+    user?.id,
+  ]);
 
   const filteredShots = useMemo(() => {
     if (!shotMenu) return [];

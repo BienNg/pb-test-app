@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS, SHADOWS } from '../styles/theme';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { LessonCard } from './Cards';
 import { Card } from './BaseComponents';
 import { createClient } from '@/lib/supabase/client';

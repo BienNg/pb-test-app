@@ -10,6 +10,7 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const showGoogleSignIn = false;
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -93,7 +94,7 @@ function LoginContent() {
     <div style={{ maxWidth: 360, margin: '4rem auto', padding: 24, fontFamily: 'system-ui' }}>
       <h1 style={{ marginBottom: 24 }}>Sign in</h1>
 
-      {false && (
+      {showGoogleSignIn ? (
         <>
           <div style={{ marginBottom: 24 }}>
             <button
@@ -143,7 +144,7 @@ function LoginContent() {
             <div style={{ flex: 1, height: 1, background: '#e0e0e0' }} />
           </div>
         </>
-      )}
+      ) : null}
 
       <form onSubmit={handleSignIn}>
         <div style={{ marginBottom: 16 }}>
