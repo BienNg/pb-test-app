@@ -888,10 +888,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   >([]);
   const editSessionLoadedRef = useRef(false);
 
+  // Player + comments: stacked when narrow (≤956px), side-by-side when wider (from screenshot breakpoint)
+  const PLAYER_COMMENTS_STACK_BREAKPOINT = 957;
   useEffect(() => {
     const updateLayout = () => {
       if (typeof window === 'undefined') return;
-      setIsNarrow(window.innerWidth < 768);
+      setIsNarrow(window.innerWidth < PLAYER_COMMENTS_STACK_BREAKPOINT);
       setIsDesktop(window.innerWidth >= 1024);
     };
 
