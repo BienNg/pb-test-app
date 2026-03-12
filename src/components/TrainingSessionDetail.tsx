@@ -1584,13 +1584,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       style={{
         backgroundColor: '#ffffff',
         minHeight: isDesktop ? 'auto' : '100vh',
+        ...(isNarrow ? {} : {
+          height: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+        }),
         width: '100%',
         margin: 0,
         boxSizing: 'border-box',
         boxShadow: '0 0 0 1px rgba(0,0,0,0.04)',
       }}
     >
-      {/* Header: back icon, center date, right icon — scrolls with content */}
+      {/* Header: back icon, center date, right icon — fixed at top on wide; scrolls with content on narrow */}
       <header
         style={{
           display: 'flex',
@@ -1601,6 +1608,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           borderBottom: '1px solid #f1f5f9',
           backgroundColor: '#ffffff',
           minWidth: 0,
+          ...(isNarrow ? {} : { flexShrink: 0 }),
         }}
       >
         <button
@@ -1668,6 +1676,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           padding: `0 clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px)`,
           width: '100%',
           boxSizing: 'border-box',
+          ...(isNarrow ? {} : {
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }),
         }}
       >
         {/* Main content */}
@@ -1677,12 +1692,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             gridTemplateColumns: isNarrow
               ? 'minmax(0, 1fr)'
               : 'minmax(0, 1fr) minmax(280px, 400px)',
+            ...(isNarrow ? {} : { gridTemplateRows: '1fr' }),
             gap: SPACING.sm,
             minWidth: 0,
+            ...(isNarrow ? {} : { flex: 1, minHeight: 0, overflow: 'hidden' }),
           }}
         >
           {/* Video + session info */}
-          <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              minWidth: 0,
+              ...(isNarrow ? {} : { overflow: 'hidden', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }),
+            }}
+          >
             {/* Sentinel: when this scrolls past viewport top (narrow only), we stick the video with position:fixed */}
             {isNarrow && (
               <div
@@ -1709,7 +1731,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   position: isNarrow && videoStickyBox ? ('fixed' as const) : ('sticky' as const),
                   top: 0,
                   zIndex: 2,
-                  width: isNarrow && videoStickyBox ? videoStickyBox.width : (isNarrow ? '100%' : '100%'),
+                  width: isNarrow && videoStickyBox ? videoStickyBox.width : '100%',
+                  maxWidth: '100%',
                   marginLeft: undefined,
                   marginRight: undefined,
                   left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
@@ -1718,9 +1741,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   background: '#ffffff',
                   marginBottom: SPACING.sm,
                   border: 'none',
+                  ...(isNarrow ? {} : { height: '100%', maxHeight: '100%', minHeight: 0 }),
                 }}
               >
-              <div style={{ position: 'relative', width: '100%' }}>
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  ...(isNarrow ? {} : { height: '100%', maxHeight: '100%', minHeight: 0 }),
+                }}
+              >
               {session && (
                 <VideoPlayer
                   videoUrl={session.videoUrl}
@@ -1771,8 +1801,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              maxHeight: 'none',
+              maxHeight: isNarrow ? 'none' : undefined,
               overflow: 'hidden',
+              ...(isNarrow ? {} : { minHeight: 0 }),
             }}
           >
             {/* Filter & Sort */}
@@ -1785,6 +1816,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 padding: `${SPACING.xs}px 0`,
                 gap: SPACING.xs,
                 minWidth: 0,
+                ...(isNarrow ? {} : { flexShrink: 0 }),
               }}
             >
               <button
@@ -1835,6 +1867,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               style={{
                 flex: 1,
                 minWidth: 0,
+                minHeight: 0,
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 paddingRight: SPACING.sm,
@@ -2167,6 +2200,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 padding: SPACING.sm,
                 backgroundColor: COLORS.cardBg,
                 border: `1px solid ${COLORS.backgroundLight}`,
+                ...(isNarrow ? {} : { flexShrink: 0 }),
               }}
             >
               <div

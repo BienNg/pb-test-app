@@ -332,8 +332,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         <div
           style={{
             width: '100%',
+            maxWidth: '100%',
             aspectRatio: '16 / 9',
             minHeight: 200,
+            ...(isSessionDetail ? { maxHeight: '100%' } : {}),
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -366,8 +368,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       <div
         style={{
           width: '100%',
+          maxWidth: '100%',
           aspectRatio: '16 / 9',
           minHeight: 200,
+          ...(isSessionDetail ? { maxHeight: '100%' } : {}),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -388,7 +392,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   }
 
   return (
-    <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        minWidth: 0,
+        ...(isSessionDetail
+          ? {
+              height: '100%',
+              minHeight: 0,
+              maxHeight: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }
+          : {}),
+      }}
+    >
+      <div
+        style={
+          isSessionDetail
+            ? { minHeight: 0, overflow: 'hidden' }
+            : undefined
+        }
+      >
       {isYoutube && youtubeVideoId ? (
         <>
           <div
@@ -399,7 +425,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               aspectRatio: '16 / 9',
               overflow: 'hidden',
               minWidth: 0,
-              ...(isSessionDetail ? { borderRadius: 12 } : {}),
+              ...(isSessionDetail ? { borderRadius: 12, maxHeight: '100%' } : {}),
             }}
           >
             <div
@@ -541,7 +567,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               maxWidth: '100%',
               aspectRatio: videoAspectRatio ?? '16 / 9',
               minWidth: 0,
-              ...(isSessionDetail ? { borderRadius: 12, overflow: 'hidden' } : {}),
+              ...(isSessionDetail ? { borderRadius: 12, overflow: 'hidden', maxHeight: '100%' } : {}),
             }}
           >
             <div
@@ -709,6 +735,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
         </>
       )}
+      </div>
 
       {videoDuration > 0 && !isSessionDetail && (
         <div
@@ -1098,7 +1125,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {videoDuration > 0 && isSessionDetail && (
         <div
           style={{
-            marginTop: SPACING.md,
+            flexShrink: 0,
+            marginTop: SPACING.sm,
             padding: SPACING.sm,
             backgroundColor: '#f8fafc',
             borderRadius: 12,

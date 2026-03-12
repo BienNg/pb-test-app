@@ -46,7 +46,7 @@ export const CoachApp: React.FC = () => {
   // When viewing a training session detail, show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <div style={{ height: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}

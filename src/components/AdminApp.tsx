@@ -427,7 +427,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When viewing a training session detail (from progress page), show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}

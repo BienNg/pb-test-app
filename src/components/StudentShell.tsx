@@ -44,13 +44,22 @@ export function StudentShell() {
   const renderContent = () => {
     if (activeTrainingSessionId != null) {
       return (
-        <TrainingSessionDetail
-          sessionId={activeTrainingSessionId}
-          onBack={() => setActiveTrainingSessionId(null)}
-          sessions={sessionsForStudent}
-          onSessionUpdated={reloadSessions}
-          onDeleteSession={async () => { await reloadSessions(); }}
-        />
+        <div
+          style={{
+            height: 'calc(100vh - 80px)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <TrainingSessionDetail
+            sessionId={activeTrainingSessionId}
+            onBack={() => setActiveTrainingSessionId(null)}
+            sessions={sessionsForStudent}
+            onSessionUpdated={reloadSessions}
+            onDeleteSession={async () => { await reloadSessions(); }}
+          />
+        </div>
       );
     }
     switch (activeTab) {
