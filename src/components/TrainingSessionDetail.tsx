@@ -275,13 +275,17 @@ function getCaretTopOffset(container: HTMLElement): number {
   return Math.max(0, offset);
 }
 
+import type { SessionCommentReply } from './MySessionsPage';
 import {
   fetchSessionComments,
+  fetchSessionCommentReplies,
   insertSessionComment,
+  insertSessionCommentReply,
   updateSessionComment,
   updateCommentExampleGif,
   deleteSessionComment,
   mapDbCommentToSessionComment,
+  mapDbReplyToSessionCommentReply,
   fetchSessionTaggableProfiles,
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
@@ -399,6 +403,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
     return [];
   });
+  const [repliesByCommentId, setRepliesByCommentId] = useState<Record<string, SessionCommentReply[]>>({});
+  const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState('');
+  const [postingReply, setPostingReply] = useState(false);
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
@@ -597,11 +605,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setCommentsLoading(true);
     Promise.all([
       isDbSession ? fetchSessionComments(supabase, sessionId) : Promise.resolve([]),
+      isDbSession ? fetchSessionCommentReplies(supabase, sessionId) : Promise.resolve([]),
       fetchSessionTaggableProfiles(supabase, sessionId),
     ])
-      .then(([rows, taggable]) => {
+      .then(([rows, replyRows, taggable]) => {
         if (Array.isArray(rows) && rows.length > 0) {
           setComments(rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null)));
+        }
+        if (Array.isArray(replyRows) && replyRows.length > 0) {
+          const mappedReplies = replyRows.map((r) => mapDbReplyToSessionCommentReply(r, user?.id ?? null));
+          const grouped: Record<string, SessionCommentReply[]> = {};
+          for (const reply of mappedReplies) {
+            const key = reply.parentCommentId;
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(reply);
+          }
+          setRepliesByCommentId(grouped);
+        } else {
+          setRepliesByCommentId({});
         }
         setTaggableProfiles(taggable);
       })
@@ -1036,6 +1057,46 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     sessionId,
     user?.id,
   ]);
+
+  const handleAddReply = useCallback(
+    async (parentIdRaw: string | number) => {
+      if (!replyDraft.trim()) return;
+      if (!isDbSession || !user?.id) return;
+      const parentId = String(parentIdRaw);
+
+      const supabase = createClient();
+      setPostingReply(true);
+      try {
+        const parentComment = comments.find((c) => String(c.id) === parentId);
+        const timestampSeconds = parentComment?.timestampSeconds ?? null;
+
+        const inserted = await insertSessionCommentReply(
+          supabase,
+          sessionId,
+          parentId,
+          user.id,
+          replyDraft.trim(),
+          timestampSeconds
+        );
+        if (inserted) {
+          const mapped = mapDbReplyToSessionCommentReply(inserted, user.id);
+          setRepliesByCommentId((prev) => {
+            const key = mapped.parentCommentId;
+            const existing = prev[key] ?? [];
+            return {
+              ...prev,
+              [key]: [...existing, mapped],
+            };
+          });
+          setReplyDraft('');
+          setReplyingToCommentId(null);
+        }
+      } finally {
+        setPostingReply(false);
+      }
+    },
+    [comments, isDbSession, replyDraft, sessionId, user?.id]
+  );
 
   const filteredShots = useMemo(() => {
     if (!shotMenu) return [];
@@ -1851,6 +1912,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               </button>
                             </>
                           )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isDbSession || !user?.id) return;
+                              setReplyingToCommentId(String(comment.id));
+                              setReplyDraft('');
+                            }}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '4px 10px',
+                              borderRadius: 999,
+                              border: '1px solid #d1e3db',
+                              backgroundColor: '#f4faf7',
+                              color: '#6a9a95',
+                              fontSize: 11,
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              marginLeft: 4,
+                            }}
+                          >
+                            Reply
+                          </button>
                           {comment.role === 'You' && (
                             <button
                               type="button"
@@ -2137,6 +2223,182 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             );
                           })}
                         </p>
+                      )}
+                      {repliesByCommentId[String(comment.id)] &&
+                        repliesByCommentId[String(comment.id)].map((reply) => {
+                          const canSeek =
+                            (reply.timestampSeconds ?? comment.timestampSeconds) != null && editingCommentId !== comment.id;
+                          const tsSeconds = (reply.timestampSeconds ?? comment.timestampSeconds) ?? null;
+                          const timestampLabel =
+                            tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
+                          return (
+                            <div
+                              key={reply.id}
+                              style={{
+                                marginTop: SPACING.sm,
+                                marginLeft: 40,
+                                borderRadius: RADIUS.md,
+                                borderLeft: '3px solid #8fb9a8',
+                                backgroundColor: '#f5faf8',
+                                padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  marginBottom: 4,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    ...TYPOGRAPHY.label,
+                                    fontSize: 11,
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase',
+                                    color: '#8fb9a8',
+                                  }}
+                                >
+                                  FRAME DETAIL
+                                  {timestampLabel && (
+                                    <span style={{ color: '#9ca3af', marginLeft: 4 }}>[{timestampLabel}]</span>
+                                  )}
+                                </div>
+                                {canSeek && tsSeconds != null && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPendingSeekSeconds(tsSeconds);
+                                      setActiveCommentId(comment.id);
+                                    }}
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 6,
+                                      border: 'none',
+                                      background: 'transparent',
+                                      color: '#8fb9a8',
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      textTransform: 'uppercase',
+                                    }}
+                                  >
+                                    <IconPlay size={12} />
+                                    View frame
+                                  </button>
+                                )}
+                              </div>
+                              <p
+                                style={{
+                                  ...TYPOGRAPHY.bodySmall,
+                                  margin: 0,
+                                  color: COLORS.textPrimary,
+                                }}
+                              >
+                                {reply.text}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      {replyingToCommentId === String(comment.id) && (
+                        <div
+                          style={{
+                            marginTop: SPACING.sm,
+                            marginLeft: 40,
+                            borderRadius: RADIUS.md,
+                            borderLeft: '3px solid #8fb9a8',
+                            backgroundColor: '#f5faf8',
+                            padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              marginBottom: 4,
+                            }}
+                          >
+                            <div
+                              style={{
+                                ...TYPOGRAPHY.label,
+                                fontSize: 11,
+                                letterSpacing: '0.08em',
+                                textTransform: 'uppercase',
+                                color: '#8fb9a8',
+                              }}
+                            >
+                              FRAME DETAIL
+                              {comment.timestampSeconds != null && (
+                                <span style={{ color: '#9ca3af', marginLeft: 4 }}>
+                                  [{formatTimestamp(comment.timestampSeconds)}]
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleAddReply(comment.id);
+                                }}
+                                disabled={postingReply || !replyDraft.trim()}
+                                style={{
+                                  padding: '4px 10px',
+                                  borderRadius: 999,
+                                  border: 'none',
+                                  backgroundColor: postingReply || !replyDraft.trim() ? '#d1e3db' : '#8fb9a8',
+                                  color: '#ffffff',
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  cursor: postingReply || !replyDraft.trim() ? 'default' : 'pointer',
+                                }}
+                              >
+                                Post reply
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReplyingToCommentId(null);
+                                  setReplyDraft('');
+                                }}
+                                style={{
+                                  padding: '4px 8px',
+                                  borderRadius: 999,
+                                  border: 'none',
+                                  backgroundColor: 'transparent',
+                                  color: COLORS.textSecondary,
+                                  fontSize: 11,
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                          <textarea
+                            value={replyDraft}
+                            onChange={(e) => setReplyDraft(e.target.value)}
+                            rows={3}
+                            placeholder="Notice the contact point is 6 inches too far back here, causing the pop-up. Try to meet the ball in front of your lead foot."
+                            style={{
+                              width: '100%',
+                              resize: 'vertical',
+                              borderRadius: RADIUS.sm,
+                              border: `1px solid ${COLORS.backgroundLight}`,
+                              padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                              ...TYPOGRAPHY.bodySmall,
+                              color: COLORS.textPrimary,
+                              backgroundColor: COLORS.cardBg,
+                            }}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>

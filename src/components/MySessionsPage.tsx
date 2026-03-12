@@ -53,6 +53,14 @@ export interface SessionComment {
   exampleGif?: string;
 }
 
+/** A reply to a session comment (stored as a subcomment in the DB). */
+export interface SessionCommentReply extends Omit<SessionComment, 'id'> {
+  /** Database id for the reply (always a UUID string). */
+  id: string;
+  /** Parent comment this reply belongs to. */
+  parentCommentId: string;
+}
+
 export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   title,
   onBack,

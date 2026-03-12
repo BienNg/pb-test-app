@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SessionComment } from '@/components/MySessionsPage';
+import type { SessionComment, SessionCommentReply } from '@/components/MySessionsPage';
 import { MOCK_COACHES } from '@/data/mockCoaches';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -14,9 +14,24 @@ export type SessionCommentRow = {
   created_at: string;
 };
 
+export type SessionCommentReplyRow = {
+  id: string;
+  session_id: string;
+  parent_comment_id: string;
+  author_id: string;
+  text: string;
+  timestamp_seconds: number | null;
+  example_gif: string | null;
+  created_at: string;
+};
+
 export type SessionCommentWithAuthor = SessionCommentRow & {
   author?: { id: string; full_name: string | null; role: string | null } | null;
   mentions?: { profile_id: string; full_name: string | null }[];
+};
+
+export type SessionCommentReplyWithAuthor = SessionCommentReplyRow & {
+  author?: { id: string; full_name: string | null; role: string | null } | null;
 };
 
 /** Format created_at to relative time for display */
@@ -53,6 +68,27 @@ export function mapDbCommentToSessionComment(
       id: m.profile_id,
       name: m.full_name?.trim() || 'Unknown',
     })),
+  };
+}
+
+/** Map DB reply row + author to SessionCommentReply (id + parentCommentId). */
+export function mapDbReplyToSessionCommentReply(
+  row: SessionCommentReplyWithAuthor,
+  currentUserId: string | null
+): SessionCommentReply {
+  const authorName = row.author?.full_name?.trim() || 'Unknown';
+  const role = row.author?.role === 'coach' ? 'Coach' : currentUserId === row.author_id ? 'You' : (row.author?.role ?? 'Student');
+  const displayRole = role === 'Coach' ? 'Coach' : role === 'You' ? 'You' : role;
+  return {
+    id: row.id,
+    parentCommentId: row.parent_comment_id,
+    author: authorName,
+    role: displayRole as 'Coach' | 'You',
+    createdAt: formatRelativeTime(row.created_at),
+    createdAtIso: row.created_at,
+    text: row.text,
+    timestampSeconds: row.timestamp_seconds ?? undefined,
+    exampleGif: row.example_gif ?? undefined,
   };
 }
 
@@ -152,6 +188,61 @@ export async function fetchSessionComments(
   }));
 }
 
+/** Fetch all replies (subcomments) for a session. Returns [] on error. */
+export async function fetchSessionCommentReplies(
+  supabase: SupabaseClient | null,
+  sessionId: string
+): Promise<SessionCommentReplyWithAuthor[]> {
+  if (!supabase) return [];
+  const { data: replies, error } = await supabase
+    .from('session_comment_replies')
+    .select(`
+      id,
+      session_id,
+      parent_comment_id,
+      author_id,
+      text,
+      timestamp_seconds,
+      example_gif,
+      created_at
+    `)
+    .eq('session_id', sessionId)
+    .order('created_at', { ascending: true });
+  if (error || !replies) return [];
+  const rows = replies as SessionCommentReplyRow[];
+  if (rows.length === 0) return [];
+
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const validAuthorIds = authorIds.filter((id) => UUID_REGEX.test(id));
+
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) {
+    for (const p of profiles) profileMap.set(p.id, p);
+  }
+  for (const id of authorIds) {
+    if (!profileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find((c) => c.id === id);
+      if (mockCoach) {
+        profileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+      }
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    author: profileMap.get(r.author_id) ?? null,
+  }));
+}
+
 /** Insert a comment and optional mentions. Returns the new comment row or null on error. */
 export async function insertSessionComment(
   supabase: SupabaseClient | null,
@@ -219,6 +310,62 @@ export async function insertSessionComment(
     ...row,
     author: profileMap.get(row.author_id) ?? null,
     mentions,
+  };
+}
+
+/** Insert a reply (subcomment) for a comment. Returns the new reply row or null on error. */
+export async function insertSessionCommentReply(
+  supabase: SupabaseClient | null,
+  sessionId: string,
+  parentCommentId: string,
+  authorId: string,
+  text: string,
+  timestampSeconds: number | null
+): Promise<SessionCommentReplyWithAuthor | null> {
+  if (!supabase) return null;
+  const { data: inserted, error } = await supabase
+    .from('session_comment_replies')
+    .insert({
+      session_id: sessionId,
+      parent_comment_id: parentCommentId,
+      author_id: authorId,
+      text,
+      timestamp_seconds: timestampSeconds,
+    })
+    .select('id, session_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at')
+    .single();
+  if (error || !inserted) return null;
+
+  const row = inserted as SessionCommentReplyRow;
+
+  const authorIds = [row.author_id];
+  const validAuthorIds = authorIds.filter((id) => UUID_REGEX.test(id));
+
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) {
+    for (const p of profiles) profileMap.set(p.id, p);
+  }
+  for (const id of authorIds) {
+    if (!profileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find((c) => c.id === id);
+      if (mockCoach) {
+        profileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+      }
+    }
+  }
+
+  return {
+    ...row,
+    author: profileMap.get(row.author_id) ?? null,
   };
 }
 
