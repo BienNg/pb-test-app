@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+<div class="flex items-center p-4 justify-between">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h1 class="text-xl font-bold leading-tight tracking-tight flex-1 text-center">Library</h1>
+<div class="flex w-10 items-center justify-end">
+<button class="flex items-center justify-center text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined">search</span>
+</button>
+</div>
+</div>
+<!-- Categories / Tags -->
+<div class="flex gap-3 px-4 pb-4 overflow-x-auto no-scrollbar">
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-primary px-5 text-white shadow-sm">
+<p class="text-sm font-medium">All Lessons</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300">
+<p class="text-sm font-medium">Technique</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300">
+<p class="text-sm font-medium">Strategy</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300">
+<p class="text-sm font-medium">Fitness</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300">
+<p class="text-sm font-medium">Mindset</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800 px-5 text-slate-700 dark:text-slate-300">
+<p class="text-sm font-medium">Tournaments</p>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 py-2 space-y-6">
+<div>
+<h2 class="text-lg font-bold mb-4">Recent Lessons</h2>
+<div class="space-y-4">
+<!-- Video Card 1 -->
+<div class="group relative flex flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="relative w-full aspect-video bg-cover bg-center" data-alt="Professional athlete performing a defensive block move" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBAvPeLiRjAvNxw3-G3kLIUM-d9_bacs4yJcqQ-1e3lI80BfJukn5w3gACkLvwn9egljn6uTTwaaFUdiDRtSPV84GgyJ2xIBiLXXSsPifFAsQalLXdvfu3j5SQrptnLI6cF9Zb_MSFalJnk0mOT_pCu6I5c4eL6qGXqc7R7R52DRy-9b2mV06AI6maiSxiDE-JUnyNar-SwOfALuy8SVXcW8a0D6e5cqdbV_mPRl0cQ1ef5YiZc9dEARW4Fo-FTkR00ln0ERCk0km8U");'>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+<div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-md">
+                            5:20
+                        </div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="size-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined fill-1">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Block</h3>
+<span class="material-symbols-outlined text-slate-400 text-sm">more_vert</span>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-xs">fitness_center</span>
+<span>Technique</span>
+<span class="size-1 rounded-full bg-slate-300"></span>
+<span>Intermediate</span>
+</div>
+<button class="mt-3 w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-lg transition-colors text-sm">
+                            Watch Now
+                        </button>
+</div>
+</div>
+<!-- Video Card 2 -->
+<div class="group relative flex flex-col overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="relative w-full aspect-video bg-cover bg-center" data-alt="Close up of a tennis player hitting a backhand counter" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDcLu6P1T-LPZdxnst_MR8xCPFrId_YajeYlmsXYyiL0AugdKI7zkdeizOCkvei9NGcvQ5Wh83cV3xgrcBc1566yOz4avzpsAYL9AuZJB_Mv2N1CY4iGUTla46jyoKFy-v1a6I0kFPMts0Oh3yk11WRO4CUJEu4ZVpmMopEbEbZQYK35eekQPYhiNvRnkJH9XD4Mr1HEkgSOiuZSoGVimXdQ_VEbIaMf8-IRCtwQ9lirGbk__Kw0ouLa8fiQyfDL_u5JHZ_oSrinwfY");'>
+<div class="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+<div class="absolute bottom-3 right-3 bg-black/60 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-md">
+                            8:45
+                        </div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="size-12 rounded-full bg-primary flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined fill-1">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4 flex flex-col gap-1">
+<div class="flex justify-between items-start">
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Two Handed Backhand Counter</h3>
+<span class="material-symbols-outlined text-slate-400 text-sm">more_vert</span>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-xs">strategy</span>
+<span>Strategy</span>
+<span class="size-1 rounded-full bg-slate-300"></span>
+<span>Advanced</span>
+</div>
+<button class="mt-3 w-full py-2 bg-primary/10 hover:bg-primary/20 text-primary font-bold rounded-lg transition-colors text-sm">
+                            Watch Now
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Explore -->
+<div>
+<h2 class="text-lg font-bold mb-4">Recommended for You</h2>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-4">
+<div class="min-w-[160px] flex flex-col gap-2">
+<div class="aspect-square rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden relative" data-alt="Abstract fitness pattern">
+<img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNbWouzpm-Y6XK-m-mXI910fn5rbFuqNDrTqwwtd2JEU0aL7Nf0ska73EuakoA4rjij7NfVaiAHbmnUFHkW9p6weKhI3Tf4aoIPJrarlrl417DXb8JeK7AEJXz5ESN3XDtjogb69I1vDs3SCX9nxHgO8CDna4NqfMFmuBCcehE9DhA7Tts_ZBWMFExqyFC7L7TGz6T7esYjSyIJB42F-zHhAg-tjB_MXvOCYNn_46zuAokdOeauwkAz719HooJyu0PjGhMvpeVDqhp"/>
+<div class="absolute bottom-2 left-2 px-2 py-0.5 bg-black/40 text-white text-[10px] rounded">12:00</div>
+</div>
+<p class="text-sm font-semibold truncate">Footwork Basics</p>
+</div>
+<div class="min-w-[160px] flex flex-col gap-2">
+<div class="aspect-square rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden relative" data-alt="Abstract yoga and mindset image">
+<img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFF7gJqh6AYGPn2vZOcCgjPlU38Xgk-roitBTArfQ7fRX0A7zNRTbTgj_DtgwdqrtaMW3MyfTKSv_LratAa4co5eK15j2lOA3C-egsZBF-y5ruu5uOzM9lkTUhniC-YsvoynS7ArcY94dP1ZzfdCup5kM_cYtTfBYVCVY12kFYnNxmqYklcpTQWadfEmIH9sBDSAHK_EQF1RWuCijxB0KS5b1ufI_JmBOngMwxqBtNSqafdtHuDwSkB1SMaZ6zzQCc6WS70gWK8UBd"/>
+<div class="absolute bottom-2 left-2 px-2 py-0.5 bg-black/40 text-white text-[10px] rounded">15:30</div>
+</div>
+<p class="text-sm font-semibold truncate">Breathing Control</p>
+</div>
+<div class="min-w-[160px] flex flex-col gap-2">
+<div class="aspect-square rounded-xl bg-slate-200 dark:bg-slate-800 overflow-hidden relative" data-alt="Healthy lifestyle pattern">
+<img alt="" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0rC21GsmrUGoezd2Ef0H55eehHrHfJpv22Dl6DmgGSjzNh9xiVNtwhC17TkLT5530iHhHrTgxotePbMYCQGi6k8yHlAe83tCYaTPb5D7tCHc5nSM4QVW2W5zC8ZIKJ6sN2X-5u_N0wIe4wdw0_rWe0MqAhPiiUikO1HjW2Y83R9MYUDST5ddasma1roXuScbBUX3z-wRyUW-mi6SN2vbTFehpSlqABAdNPY6XJNScrrTDmwC7Q4oOmkzUVpEQV7h2wqY37f3SHrAD"/>
+<div class="absolute bottom-2 left-2 px-2 py-0.5 bg-black/40 text-white text-[10px] rounded">10:15</div>
+</div>
+<p class="text-sm font-semibold truncate">Core Strength</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="sticky bottom-0 w-full border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 pb-6 pt-2">
+<div class="flex justify-between items-center max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-medium">My Progress</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">menu_book</span>
+<span class="text-[10px] font-bold">Library</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-[10px] font-medium">Sessions</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .fill-1 {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</body></html>

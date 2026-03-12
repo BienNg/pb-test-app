@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Side Navigation -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-8">
+<div class="bg-primary rounded-lg p-2 text-white">
+<span class="material-symbols-outlined block">sports_tennis</span>
+</div>
+<h1 class="font-display font-bold text-xl tracking-tight">Pickleball Pro</h1>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-sm font-medium">Home</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="text-sm font-medium">Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">track_changes</span>
+<span class="text-sm font-medium">Programs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-sm font-medium">Coaches</span>
+</a>
+<div class="my-4 border-t border-slate-100 dark:border-slate-800"></div>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+<img class="size-10 rounded-full" data-alt="User profile avatar of a smiling man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvyWbnv-MPY5FuAee3kI0gbBjZTviz1KcHIrh-O4S5i7E9_HL6X7_8ACRxbnTXv6jde-ZqQRGFGkbLVN-HSRHaSWL-5dD7q_37yafY8S80To2jIQf4Cl-9_7VH1FxrCcXcqmT2NFk676hN7n1-oDOSA8bPyywJZen57syYtyTXSXkLqLIskiRDVyqV08HMCGpfgYsNcyw4wnD8i6eNhdb9Y50vcJpbihYnylsVFwqgpL6AWaSp_1PX0YaR-VKxYm5D_UmhE1A2C3-e"/>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">Alex Johnson</p>
+<p class="text-xs text-slate-500 truncate">Premium Member</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+<!-- Header -->
+<header class="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between">
+<div class="relative max-w-md w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/50 transition-all" placeholder="Search lessons, drills, or techniques..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="relative p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 border-2 border-white dark:border-slate-900 rounded-full"></span>
+</button>
+<button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-full text-sm font-bold shadow-sm shadow-primary/20 hover:brightness-105 transition-all">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+                        New Lesson
+                    </button>
+</div>
+</header>
+<!-- Page Title & Filters -->
+<div class="p-8">
+<div class="mb-8">
+<h2 class="text-3xl font-black text-slate-900 dark:text-slate-50 mb-2">Pickleball Training Library</h2>
+<p class="text-slate-500 dark:text-slate-400">Master your game with professional drills and advanced techniques curated by experts.</p>
+</div>
+<!-- Filter Chips -->
+<div class="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar">
+<button class="px-5 py-2 rounded-full bg-primary text-white text-sm font-medium whitespace-nowrap">All Lessons</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Technique</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Drills</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Strategy</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Footwork</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Fitness</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Defense</button>
+<button class="px-5 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary text-slate-600 dark:text-slate-300 text-sm font-medium whitespace-nowrap transition-colors">Offense</button>
+</div>
+<!-- Video Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-4">
+<!-- Card 1 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Close up of a pickleball player practicing block technique on court" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBBSXwB659ItQEjn3SxW_vIsz56VsIrG67kQaAC4HrSDFBMzNwRQXSIZFr-HukhxSnY7j11h56NS83Se4dfQnKN-HSaiVgkrrWDdvG8D9EuOQ8hDOMT9vqivpHhO7c8wzlN9dyfl2rK0CzDhW6poGI21ye2dLPUTRLHAGdkbO1E6kAT8ZqZpo3zQPOB5QwzFusjH_9T5yrBDJb2C6-etTSDlAXEdkDDTofd9ciju7uktY3DedPpvlOF90jerFNm3xbR5f2wXsQvEbjT");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">12:30</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Technique</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Block Technique &amp; Defensive Positioning</h3>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Athlete demonstrating a two handed backhand counter in pickleball" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC9QmmJzDt2L3zWxFK4TC9ykgzVXCtfpXl5Di_8r07xUx-OqkVP6-kYO9aRZsYBBGF7XobEH1RejWFccw1UBlPCmJhYDVwBiAFyvwwHU-2qYXAwXuauqPd_gPzlH4hiVcH_MP8C_8pCTfvst9W-70iC3lFLgZsgVvPIqOx-8FD1x3Rq06DkcM2MUD27PdMv_7mZPqtfOIAkKBcN1XBM0fLqFFBe_nPkdlRy2a0cp_JKDiWulEzi0c-OGgog9dPuSa_ak32RZVjukbGm");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">15:45</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Defense</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Two Handed Backhand Counter Mastery</h3>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Two players engaging in a soft dink battle at the kitchen line" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDZZtDobK6sEu8ChDnnYjEt3O2nC5lDM5xL8Kyo_VJsyooqO-AAPVEVcPHzl_eCNV2wmcKqmicf8cM_FPKOQULhqb-xfibT1O-7RdGCr-MbRRf88vl1CHoNzqiN1vmSotri2IF8tS4oAKb0gw3T5Tn8Pjy3iL7Mq4awjA7w_bPZoVqEj4owdaVtuwW47YtYjTbSjALpb-72wtqa70Cn2Pk2LHrbRPbjqDY5cRLUesbbuR2BIogI0v_PQJx0EAHftG4man88ivTSVIKX");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">08:20</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Strategy</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Dinking Strategy: Winning the Kitchen</h3>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Action shot of a player hitting a precise third shot drop" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBHZq-GGGfrFb1CIbBlty5ejg4INZPgWlEcRY228NcHdErJ7l90_ZbQQMmgg1T4ZzLnsUT_B-gXVicnLGBR7xJYvdW5QRAwlKbkESUZMbIrFYes8U9J2lwoD0BrlVstR7tdybuHSADib9VUxZOt0uPYWhyaVLheuAwcgIf1hs4lMdbNApw0X_P2we3LJLkKNgmClG83e8v-ydlDMOsbOasTN83scZdBFZNO8heItYkHqG2b0qVIHzv46xMvuhob-yRX8HziiuNunSh_");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">11:10</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Offense</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Perfecting the Third Shot Drop</h3>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Player practicing quick volley drills against a wall" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCbmtIRN2stzJmWW88tLvUk3zXx1beQdoV0BgBjat8iEvoiVfKclk3ONIiftFYT0usC5iRz4GW6--qW-Kk68yQRRQOZAYH4gx_UtUwH8NrtBNS40cOje24o5cs-s-eSrYXmF64IDb8AWynnXT8-hvo-Aqd81xqR924lDsOGhDhKi0R2CGuKU4OqUOkHJMUS1WKaDg9NlWrtbEDd9qQ9gYo59AO4xO5fuQcUMDm2phPPBxsI4SEyPDK52-RyO3kSAs3a4yG3H-FPsiZ5");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">09:55</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Drills</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Fast Hands: Volley Speed Training</h3>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Close up of a pickleball serve motion and ball contact" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCRWt_Fr9azcGP1NAAjulZgj4GDJgPaJ8GYkqFUjeE5OO-eHIeRonhTwEG8zAK1SrGtWGKlhu7hx0or7IX3BSLscbfcN1zEPp7KApjz1bRbFOegF16wVPNxIuZqb73bPhbthkTEzwnDgdxob010ctLNTbVY-NLQFdiLngcB21MhT9UQKBBA_VR7lb_bp2g9ej42AQ2WkxVkjRwrnBHaHjfKmxe17wsNpkXP9e0F6i_4lhycUM4rmKPVOejZrF3p-0usVaC7kjxUUqAD");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">07:40</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Technique</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Serve Placement and Power Optimization</h3>
+</div>
+</div>
+<!-- Card 7 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Footwork patterns demonstrated on a pickleball court surface" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCQcTybHb7AWANRZjRvafLWZ3t3XSjMjwzIdfY5vMSqxIJFBMIB5OlgycHDhNemjr2RE8T9Nr-K6t-ucI6YXEzy8CbMm0-tXZGglLI1TQkdOR6YMG7eJcEzg7kHqVrJ34eCvEKeVwamv-slHEKfryrt8n_PInPleRhErY7VH4THi5IkCMJnOOj61x4P2lfXTQ_JeESMiwB8wK3qHFS0KX_WIs2dVoDFR_iL8q2PrEIC-xketmdAtxSaRe4LiqdX10rsVdbITZfBGfTq");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">14:20</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Footwork</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">The Split Step &amp; Lateral Movement Drills</h3>
+</div>
+</div>
+<!-- Card 8 -->
+<div class="group flex flex-col bg-white dark:bg-slate-900 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all cursor-pointer">
+<div class="relative aspect-video overflow-hidden">
+<div class="w-full h-full bg-slate-200 dark:bg-slate-800 bg-center bg-cover transition-transform group-hover:scale-105" data-alt="Athlete performing conditioning exercises specifically for pickleball players" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCcAUN5AS7qW-QZrd0v0MRkWI3_ixiQ9QBrGmZ-thRuYr805OhQRfbDXbaj6YFOyernJ8QHhan0gTUGRLtVfuMeZWmZ9vNUeTpCTIyU9RLlVou7nhJCwoWCxJZG1abz1jiPyvmBsC68if23yUx6KQP3Ad_V7dE98aP18XdpH7vE_zP4zX7d-jHZjL40nhc2zUnrAam4UBdSGq6vpvO1TbwSgq6dOQtRPEkoujgPBDwGLnrRZe-WuBFqHGnYznlQHpvLQr5_9LF7E0Z1");'></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded font-medium">22:05</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/90 p-3 rounded-full text-primary">
+<span class="material-symbols-outlined block" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary mb-2">Fitness</span>
+<h3 class="font-bold text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">Injury Prevention: Full Body Warmup</h3>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

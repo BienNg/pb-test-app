@@ -7,6 +7,7 @@ export const COLORS = {
   // Background — white app base
   background: '#FFFFFF',
   backgroundLight: '#F5F5F5',
+  backgroundLibrary: '#f6f8f8',
   
   // Cards & Surfaces
   white: '#FFFFFF',
@@ -20,6 +21,11 @@ export const COLORS = {
   // Primary (add button green) – main accent across the app
   primary: '#31cb00',
   primaryLight: 'rgba(49, 203, 0, 0.25)',
+
+  // Library tab (reference design) – sage green
+  libraryPrimary: '#8FB9A8',
+  libraryPrimaryLight: 'rgba(143, 185, 168, 0.1)',
+  libraryPrimaryLightHover: 'rgba(143, 185, 168, 0.2)',
 
   // Accents
   lavender: '#D6C9FF',

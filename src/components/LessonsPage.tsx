@@ -1,10 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
-import { Card, Button } from './BaseComponents';
+import { COLORS, SPACING, TYPOGRAPHY, RADIUS, BREAKPOINTS } from '../styles/theme';
+import { Button } from './BaseComponents';
 import { LessonCard } from './Cards';
+import { IconSearch } from './Icons';
 import { LessonView } from './LessonView';
 import { getYoutubeVideoId } from '../lib/youtube';
 import { createClient } from '@/lib/supabase/client';
+
+function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width: ${BREAKPOINTS.tablet - 1}px)`);
+    const handler = () => setIsMobile(mq.matches);
+    handler();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isMobile;
+}
 
 interface FilterOption {
   id: string;
@@ -237,10 +250,12 @@ export interface LessonsPageProps {
 
 export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const isMobile = useIsMobile();
 
   const categories = CATEGORIES;
 
@@ -334,13 +349,19 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
     setLessons((prev) => [newLesson, ...prev]);
   };
 
-  const filteredLessons =
-    selectedCategory === 'all'
-      ? lessons
-      : lessons.filter(
-          (lesson) =>
-            lesson.category.toLowerCase() === selectedCategory.toLowerCase()
-        );
+  const filteredLessons = lessons
+    .filter((lesson) => {
+      const matchCategory =
+        selectedCategory === 'all' ||
+        lesson.category.toLowerCase() === selectedCategory.toLowerCase();
+      if (!matchCategory) return false;
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.trim().toLowerCase();
+      return (
+        lesson.title.toLowerCase().includes(q) ||
+        lesson.category.toLowerCase().includes(q)
+      );
+    });
 
   const currentIndex = selectedLesson
     ? filteredLessons.findIndex((l) => l.id === selectedLesson.id)
@@ -364,44 +385,132 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
     );
   }
 
+  const contentPadding = isMobile ? SPACING.lg : 32;
+  const headerPadding = isMobile ? SPACING.lg : 32;
+
   return (
     <div
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: COLORS.backgroundLibrary,
         minHeight: '100vh',
-        padding: `${SPACING.md}px`,
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden',
       }}
     >
+      {/* Sticky header: search (desktop) + Add Video */}
+      <header
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          background: 'rgba(255,255,255,0.9)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: `1px solid ${COLORS.textMuted}20`,
+          padding: `${headerPadding}px ${contentPadding}px`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: SPACING.lg,
+          flexWrap: 'wrap',
+        }}
+      >
+        {!isMobile && (
+          <div style={{ flex: '1 1 320px', maxWidth: 400 }}>
+            <div
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <IconSearch
+                size={18}
+                style={{
+                  position: 'absolute',
+                  left: 14,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: COLORS.textMuted,
+                  pointerEvents: 'none',
+                }}
+              />
+              <input
+                type="search"
+                placeholder="Search lessons, drills, or techniques..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px 10px 42px',
+                  borderRadius: 9999,
+                  border: 'none',
+                  background: '#f1f5f9',
+                  fontSize: 14,
+                  color: COLORS.textPrimary,
+                  outline: 'none',
+                }}
+              />
+            </div>
+          </div>
+        )}
+        {isMobile && <div style={{ flex: 1 }} />}
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              borderRadius: 9999,
+              border: 'none',
+              background: COLORS.libraryPrimary,
+              color: '#fff',
+              fontSize: 14,
+              fontWeight: 700,
+              boxShadow: `0 1px 3px ${COLORS.libraryPrimary}33`,
+              cursor: 'pointer',
+            }}
+          >
+            Add Video
+          </button>
+        )}
+      </header>
+
       <div
         style={{
-          maxWidth: '1400px',
+          maxWidth: 1400,
           margin: '0 auto',
           width: '100%',
           boxSizing: 'border-box',
+          padding: `0 ${contentPadding}px ${contentPadding}px`,
         }}
       >
-        {/* Header - on top */}
-        <div style={{ marginBottom: SPACING.xxl, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: SPACING.lg }}>
-          <div>
-            <h1
-              style={{
-                ...TYPOGRAPHY.h1,
-                color: COLORS.textPrimary,
-                margin: 0,
-                marginBottom: SPACING.md,
-              }}
-            >
-              Pickleball Training Library
-            </h1>
-          </div>
-          {isAdmin && (
-            <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
-              Add Video
-            </Button>
-          )}
+        {/* Page title & subtitle */}
+        <div style={{ marginBottom: 32, marginTop: 32 }}>
+          <h1
+            style={{
+              fontSize: isMobile ? 24 : 30,
+              fontWeight: 800,
+              color: COLORS.textPrimary,
+              margin: 0,
+              marginBottom: SPACING.sm,
+            }}
+          >
+            Pickleball Training Library
+          </h1>
+          <p
+            style={{
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.textSecondary,
+              margin: 0,
+            }}
+          >
+            Master your game with professional drills and advanced techniques curated by experts.
+          </p>
         </div>
 
         {loadError && (
@@ -424,73 +533,190 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
           />
         )}
 
-        {/* Filter Buttons */}
-        <div style={{ marginBottom: SPACING.xxl }}>
-          <Card padding={SPACING.lg}>
-            <div
-              style={{
-                display: 'flex',
-                gap: SPACING.md,
-                flexWrap: 'wrap',
-              }}
-            >
-              {categories.map((cat) => (
-                <Button
-                  key={cat.id}
-                  variant={selectedCategory === cat.id ? 'primary' : 'secondary'}
-                  size="sm"
-                  onClick={() => setSelectedCategory(cat.id)}
-                >
-                  {cat.label}
-                </Button>
-              ))}
-            </div>
-          </Card>
-        </div>
-
-        {/* Lessons Grid */}
+        {/* Filter chips - pill style, horizontal scroll */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-            gap: `${SPACING.lg}px`,
-            marginBottom: SPACING.xxl,
+            display: 'flex',
+            gap: 12,
+            overflowX: 'auto',
+            paddingBottom: SPACING.lg,
+            marginBottom: SPACING.lg,
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           }}
+          className="library-filter-chips"
         >
-          {filteredLessons.map((lesson) => (
-            <LessonCard
-              key={lesson.id}
-              title={lesson.title}
-              category={lesson.category}
-              duration={lesson.duration}
-              thumbnail={lesson.thumbnail}
-              videoUrl={lesson.videoUrl}
-              progress={lesson.progress}
-              isVOD={lesson.isVOD}
-              isCompleted={lesson.isCompleted}
-              onClick={() => setSelectedLesson(lesson)}
-            />
-          ))}
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setSelectedCategory(cat.id)}
+                style={{
+                  flexShrink: 0,
+                  padding: '8px 20px',
+                  borderRadius: 9999,
+                  border: isActive ? 'none' : '1px solid #e2e8f0',
+                  background: isActive ? COLORS.libraryPrimary : COLORS.white,
+                  color: isActive ? '#fff' : '#475569',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                }}
+              >
+                {cat.label}
+              </button>
+            );
+          })}
         </div>
 
-        {filteredLessons.length === 0 && (
+        {isMobile ? (
+          <>
+            <h2 style={{ ...TYPOGRAPHY.h3, margin: '0 0 16px', color: COLORS.textPrimary }}>
+              Recent Lessons
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+              {filteredLessons.map((lesson) => (
+                <LessonCard
+                  key={lesson.id}
+                  title={lesson.title}
+                  category={lesson.category}
+                  duration={lesson.duration}
+                  thumbnail={lesson.thumbnail}
+                  videoUrl={lesson.videoUrl}
+                  progress={lesson.progress}
+                  isVOD={lesson.isVOD}
+                  isCompleted={lesson.isCompleted}
+                  onClick={() => setSelectedLesson(lesson)}
+                  variant="list"
+                />
+              ))}
+            </div>
+            {filteredLessons.length > 0 && (
+              <>
+                <h2 style={{ ...TYPOGRAPHY.h3, margin: '0 0 16px', color: COLORS.textPrimary }}>
+                  Recommended for You
+                </h2>
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 16,
+                    overflowX: 'auto',
+                    paddingBottom: 16,
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                  }}
+                  className="library-filter-chips"
+                >
+                  {filteredLessons.slice(0, 8).map((lesson) => {
+                    const thumbId = lesson.videoUrl ? getYoutubeVideoId(lesson.videoUrl) : null;
+                    return (
+                    <div
+                      key={`rec-${lesson.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedLesson(lesson)}
+                      onKeyDown={(e) => e.key === 'Enter' && setSelectedLesson(lesson)}
+                      style={{
+                        minWidth: 160,
+                        flexShrink: 0,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          aspectRatio: '1',
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                          background: '#e2e8f0',
+                          position: 'relative',
+                        }}
+                      >
+                        {thumbId && (
+                          <img
+                            src={`https://img.youtube.com/vi/${thumbId}/mqdefault.jpg`}
+                            alt=""
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        )}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 8,
+                            left: 8,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: 'rgba(0,0,0,0.5)',
+                            color: '#fff',
+                            fontSize: 10,
+                            fontWeight: 500,
+                          }}
+                        >
+                          {lesson.duration || '0:00'}
+                        </div>
+                      </div>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: COLORS.textPrimary,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {lesson.title}
+                      </p>
+                    </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
+        ) : (
           <div
             style={{
-              textAlign: 'center',
-              padding: SPACING.xxl,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+              gap: 24,
+              marginBottom: SPACING.xxl,
             }}
           >
-            <p
-              style={{
-                ...TYPOGRAPHY.body,
-                color: COLORS.textSecondary,
-              }}
-            >
-              No lessons found in this category. Try selecting a different filter.
+            {filteredLessons.map((lesson) => (
+              <LessonCard
+                key={lesson.id}
+                title={lesson.title}
+                category={lesson.category}
+                duration={lesson.duration}
+                thumbnail={lesson.thumbnail}
+                videoUrl={lesson.videoUrl}
+                progress={lesson.progress}
+                isVOD={lesson.isVOD}
+                isCompleted={lesson.isCompleted}
+                onClick={() => setSelectedLesson(lesson)}
+                variant="grid"
+              />
+            ))}
+          </div>
+        )}
+
+        {filteredLessons.length === 0 && (
+          <div style={{ textAlign: 'center', padding: SPACING.xxl }}>
+            <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary }}>
+              No lessons found. Try a different filter or search.
             </p>
           </div>
         )}
       </div>
+      <style>{`
+        .library-filter-chips::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 };

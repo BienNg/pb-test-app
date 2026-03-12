@@ -115,6 +115,8 @@ interface LessonCardProps {
   /** Unique shot names from comments for this session (displayed as pills). */
   shots?: string[];
   dateLabel?: string;
+  /** 'grid' = desktop library (play on hover, pill category); 'list' = mobile (Watch Now button) */
+  variant?: 'grid' | 'list';
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
@@ -128,6 +130,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   onClick,
   shots,
   dateLabel,
+  variant = 'grid',
 }) => {
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
   const displayDuration = useMemo(() => {
@@ -137,208 +140,273 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     return duration;
   }, [duration]);
 
+  const isList = variant === 'list';
+  const useLibraryColors = variant === 'grid' || variant === 'list';
+  const accent = useLibraryColors ? COLORS.libraryPrimary : COLORS.primary;
+  const accentLight = useLibraryColors ? COLORS.libraryPrimaryLight : COLORS.primaryLight;
+
   return (
-  <div
-    onClick={onClick}
-    style={{
-      backgroundColor: '#FFFFFF',
-      borderRadius: '16px',
-      overflow: 'hidden',
-      boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-      border: '1px solid #e1e9e7',
-      cursor: onClick ? 'pointer' : 'default',
-      transition: 'transform 0.2s, box-shadow 0.2s',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-    }}
-  >
-    {/* Thumbnail */}
     <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      className={isList ? undefined : 'lesson-card-grid'}
       style={{
-        width: '100%',
-        aspectRatio: '16/9',
-        backgroundColor: '#000000',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
+        backgroundColor: COLORS.white,
+        borderRadius: 12,
         overflow: 'hidden',
+        boxShadow: isList ? SHADOWS.light : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+        border: `1px solid ${isList ? '#e2e8f0' : '#e1e9e7'}`,
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
       }}
     >
-      {thumbnailUrl ? (
-        <img
-          src={thumbnailUrl}
-          alt=""
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-          }}
-        />
-      ) : null}
-      {/* Duration badge - bottom right, reference style */}
+      {/* Thumbnail */}
       <div
+        className="lesson-card-thumb"
         style={{
-          position: 'absolute',
-          bottom: 12,
-          right: 12,
-          padding: '4px 8px',
-          borderRadius: 8,
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          backdropFilter: 'blur(4px)',
-          color: '#FFFFFF',
-          fontSize: 12,
-          fontWeight: 500,
-          lineHeight: 1.2,
-        }}
-      >
-        {displayDuration}
-      </div>
-      {/* Play icon overlay */}
-      <div
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: '50%',
-          border: '2px solid rgba(255, 255, 255, 0.85)',
+          width: '100%',
+          aspectRatio: '16/9',
+          backgroundColor: '#e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.35)',
-          color: '#FFFFFF',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <IconPlay size={32} />
-      </div>
-      {isCompleted && (
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+        ) : null}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            backgroundColor: 'rgba(0,0,0,0.2)',
+            opacity: isList ? 1 : 0,
+            transition: 'opacity 0.2s',
+          }}
+          className="lesson-card-thumb-overlay"
+          aria-hidden
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 12,
+            right: 12,
+            padding: '4px 8px',
+            borderRadius: 6,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)',
+            color: '#FFFFFF',
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          {displayDuration}
+        </div>
+        {/* Play icon - grid: white circle + primary icon (ref); list: primary circle + white icon */}
+        <div
+          className="lesson-card-play"
+          style={{
+            width: isList ? 48 : 56,
+            height: isList ? 48 : 56,
+            borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#FFFFFF',
+            backgroundColor: useLibraryColors && !isList ? 'rgba(255,255,255,0.9)' : accent,
+            color: useLibraryColors && !isList ? accent : COLORS.white,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            opacity: isList ? 0 : 1,
+            transition: 'opacity 0.2s',
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
           }}
         >
-          <IconCheck size={40} />
+          <IconPlay size={isList ? 24 : 28} />
         </div>
-      )}
-    </div>
-
-    {/* Content */}
-    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            color: '#8FB9A8',
-            textTransform: 'uppercase',
-            marginBottom: 2,
-          }}>
-            {category}
-          </div>
-          <h3 style={{
-            fontSize: 18,
-            fontWeight: 700,
-            color: '#2d3a38',
-            margin: 0,
-            marginTop: 2,
-            marginBottom: 4,
-          }}>
-            {title}
-          </h3>
-          {dateLabel && (
-            <p style={{
-              fontSize: 14,
-              color: '#618986',
-              margin: 0,
-            }}>
-              {dateLabel}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom Section */}
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* Progress Bar */}
-        {progress > 0 && (
-          <div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: 4,
-            }}>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: '#618986',
-              }}>
-                Progress
-              </span>
-              <span style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: '#2d3a38',
-              }}>
-                {progress}%
-              </span>
-            </div>
-            <div style={{
-              width: '100%',
-              height: '6px',
-              backgroundColor: '#e1e9e7',
-              borderRadius: 4,
-              overflow: 'hidden',
-            }}>
-              <div
-                style={{
-                  width: `${progress}%`,
-                  height: '100%',
-                  backgroundColor: '#8FB9A8',
-                  transition: 'width 0.3s ease',
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Shots pills from comments */}
-        {shots && shots.length > 0 && (
+        {isCompleted && (
           <div
             style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(0, 0, 0, 0.4)',
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              paddingTop: progress > 0 ? 4 : 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: COLORS.white,
             }}
           >
-            {shots.map((name) => (
-              <span key={name} style={{
-                padding: '4px 12px',
-                backgroundColor: '#f6f8f8',
-                color: '#618986',
-                fontSize: 12,
-                fontWeight: 500,
-                borderRadius: 8,
-                border: `1px solid #e1e9e7`,
-              }}>
-                {name}
-              </span>
-            ))}
+            <IconCheck size={40} />
           </div>
         )}
       </div>
+
+      {/* Content */}
+      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 8px',
+                borderRadius: 4,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                backgroundColor: accentLight,
+                color: accent,
+                marginBottom: 6,
+              }}
+            >
+              {category}
+            </span>
+            <h3
+              style={{
+                fontSize: isList ? 18 : 16,
+                fontWeight: 700,
+                color: COLORS.textPrimary,
+                margin: 0,
+                lineHeight: 1.3,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {title}
+            </h3>
+            {dateLabel && (
+              <p style={{ fontSize: 14, color: COLORS.textSecondary, margin: '4px 0 0' }}>
+                {dateLabel}
+              </p>
+            )}
+          </div>
+          {isList && (
+            <span
+              style={{
+                color: COLORS.textMuted,
+                fontSize: 18,
+                flexShrink: 0,
+              }}
+              onClick={(e) => e.stopPropagation()}
+              role="button"
+              aria-label="More options"
+            >
+              ⋮
+            </span>
+          )}
+        </div>
+
+        {isList && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: COLORS.textSecondary }}>
+            <span>{category}</span>
+            <span style={{ width: 4, height: 4, borderRadius: '50%', backgroundColor: COLORS.textMuted }} />
+            <span>Intermediate</span>
+          </div>
+        )}
+
+        {isList && onClick && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClick();
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 16px',
+              marginTop: 4,
+              borderRadius: 8,
+              border: 'none',
+              backgroundColor: accentLight,
+              color: accent,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Watch Now
+          </button>
+        )}
+
+        {/* Progress & shots - only when not list variant */}
+        {!isList && (progress > 0 || (shots && shots.length > 0)) && (
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {progress > 0 && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: COLORS.textSecondary }}>Progress</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: COLORS.textPrimary }}>{progress}%</span>
+                </div>
+                <div
+                  style={{
+                    width: '100%',
+                    height: 6,
+                    backgroundColor: '#e1e9e7',
+                    borderRadius: 4,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${progress}%`,
+                      height: '100%',
+                      backgroundColor: accent,
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            {shots && shots.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {shots.map((name) => (
+                  <span
+                    key={name}
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: COLORS.backgroundLibrary || '#f6f8f8',
+                      color: COLORS.textSecondary,
+                      fontSize: 12,
+                      fontWeight: 500,
+                      borderRadius: 8,
+                      border: `1px solid #e1e9e7`,
+                    }}
+                  >
+                    {name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <style>{`
+        .lesson-card-grid:hover { box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+        .lesson-card-grid:hover .lesson-card-play { opacity: 1; }
+        .lesson-card-grid:hover .lesson-card-thumb-overlay { opacity: 0; }
+        .lesson-card-thumb:hover .lesson-card-play { opacity: 1; }
+        .lesson-card-thumb:hover .lesson-card-thumb-overlay { opacity: 0; }
+      `}</style>
     </div>
-  </div>
   );
 };
 
