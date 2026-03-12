@@ -457,13 +457,46 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   useEffect(() => {
     if (!isExampleModalOpen) return;
-    setSelectedExampleKey(null);
+    // Pre-select the currently attached GIF (if any) so "Edit GIF" opens with the
+    // existing selection highlighted.
+    const currentGifFileName =
+      exampleModalContext === 'new'
+        ? pendingNewCommentGif
+        : (() => {
+            const c = comments.find((x) => x.id === exampleModalContext);
+            return c?.exampleGif ?? null;
+          })();
+
+    if (currentGifFileName) {
+      const currentKey =
+        shotExampleGifs.find((g) => g.key === `./${currentGifFileName}` || g.key === currentGifFileName)?.key ??
+        null;
+      setSelectedExampleKey(currentKey);
+    } else {
+      setSelectedExampleKey(null);
+    }
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsExampleModalOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isExampleModalOpen]);
+  }, [isExampleModalOpen, exampleModalContext, pendingNewCommentGif, comments, shotExampleGifs]);
+
+  const clearExampleGifForCurrentContext = async () => {
+    if (exampleModalContext === 'new') {
+      setPendingNewCommentGif(null);
+      return;
+    }
+    const commentId = exampleModalContext;
+    if (commentId == null) return;
+
+    setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, exampleGif: undefined } : c)));
+
+    if (isDbSession && typeof commentId === 'string') {
+      const supabase = createClient();
+      await updateCommentExampleGif(supabase, commentId, null);
+    }
+  };
 
   const handleAddExample = async () => {
     if (!selectedExampleKey) return;
@@ -1205,8 +1238,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           return;
         }
       }
+
+      // When no inline menus are open: Enter posts the comment (Shift+Enter inserts newline).
+      if (!isEdit && e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!postingComment) {
+          void handleAddComment();
+        }
+      }
     },
-    [shotMenu, mentionMenu, filteredShots, filteredMentions]
+    [shotMenu, mentionMenu, filteredShots, filteredMentions, postingComment, handleAddComment]
   );
 
   const selectShotFromMenu = useCallback(
@@ -1568,6 +1609,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 minHeight: 0,
                 overflowY: 'auto',
                 overflowX: 'hidden',
+                paddingLeft: SPACING.sm,
                 paddingRight: SPACING.sm,
                 paddingBottom: SPACING.xxl + SPACING.lg,
               }}
@@ -1633,13 +1675,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         display: 'flex',
                         flexDirection: 'column',
                         gap: 0,
-                        padding: `${SPACING.sm}px 0`,
+                        padding: `${SPACING.sm}px ${SPACING.sm}px`,
                         cursor: canSeekToTimestamp ? 'pointer' : 'default',
                         backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
                         borderRadius: 8,
-                        margin: isActive ? `0 -${SPACING.sm}px` : 0,
-                        paddingLeft: isActive ? SPACING.sm : 0,
-                        paddingRight: isActive ? SPACING.sm : 0,
+                        margin: isActive ? `0 -${SPACING.sm}px 0 0` : 0,
                       }}
                     >
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -2825,7 +2865,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 <button
                   key={g.key}
                   type="button"
-                  onClick={() => setSelectedExampleKey(g.key)}
+                  onClick={() => {
+                    // Toggle behavior: clicking the selected gif deselects it and removes it
+                    // from the underlying comment.
+                    if (selectedExampleKey === g.key) {
+                      setSelectedExampleKey(null);
+                      void clearExampleGifForCurrentContext();
+                      return;
+                    }
+                    setSelectedExampleKey(g.key);
+                  }}
                   style={{
                     borderRadius: RADIUS.lg,
                     border:
