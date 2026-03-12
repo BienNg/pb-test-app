@@ -245,9 +245,11 @@ function AddVideoModal({ onClose, onAdd }: AddVideoModalProps) {
 
 export interface LessonsPageProps {
   isAdmin?: boolean;
+  /** Called when user enters or leaves lesson detail view (for shell to hide nav, etc.) */
+  onLessonViewChange?: (isViewing: boolean) => void;
 }
 
-export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => {
+export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false, onLessonViewChange }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -255,6 +257,10 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    onLessonViewChange?.(selectedLesson != null);
+  }, [selectedLesson, onLessonViewChange]);
 
   const categories = CATEGORIES;
 

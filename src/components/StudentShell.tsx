@@ -16,6 +16,7 @@ export function StudentShell() {
   const [activeTab, setActiveTab] = useState<TabId>('progress');
   const [progressSelectedSegment, setProgressSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
@@ -43,6 +44,7 @@ export function StudentShell() {
   const showProgress = activeTab === 'progress';
   const showLibrary = activeTab === 'library';
   const showSessionOverlay = showProgress && activeTrainingSessionId != null;
+  const hideBottomNav = showSessionOverlay || viewingLessonDetail;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
@@ -78,7 +80,7 @@ export function StudentShell() {
       style={{
         width: '100%',
         minHeight: '100vh',
-        paddingBottom: 80,
+        paddingBottom: hideBottomNav ? 0 : 80,
         boxSizing: 'border-box',
         position: 'relative',
         backgroundColor: '#f6f8f8',
@@ -103,12 +105,12 @@ export function StudentShell() {
       <div
         style={{
           display: showLibrary ? 'block' : 'none',
-          height: 'calc(100vh - 80px)',
+          height: hideBottomNav && viewingLessonDetail ? '100vh' : 'calc(100vh - 80px)',
           overflow: 'auto',
         }}
         aria-hidden={!showLibrary}
       >
-        <LessonsPage />
+        <LessonsPage onLessonViewChange={setViewingLessonDetail} />
       </div>
       {/* Keep session detail mounted when a session is open so video position is preserved; hide when on another tab and pause video */}
       {activeTrainingSessionId != null && (
@@ -118,7 +120,7 @@ export function StudentShell() {
             top: 0,
             left: 0,
             right: 0,
-            height: 'calc(100vh - 80px)',
+            height: showSessionOverlay ? '100vh' : 'calc(100vh - 80px)',
             overflow: 'hidden',
             display: showSessionOverlay ? 'flex' : 'none',
             flexDirection: 'column',
@@ -137,7 +139,8 @@ export function StudentShell() {
         </div>
       )}
 
-      <nav
+      {!hideBottomNav && (
+        <nav
           style={{
             position: 'fixed',
             left: 0,
@@ -229,6 +232,7 @@ export function StudentShell() {
             </div>
           </div>
         </nav>
+      )}
     </main>
   );
 }
