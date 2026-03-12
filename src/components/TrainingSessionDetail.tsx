@@ -402,7 +402,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
-  const [editSessionLoading, setEditSessionLoading] = useState(false);
+  const [_editSessionLoading, setEditSessionLoading] = useState(false);
   const [editSessionSaving, setEditSessionSaving] = useState(false);
   const [editSessionDeleting, setEditSessionDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -757,14 +757,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     void load();
   }, [isDbSession, showEditSession, sessionId, session]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for edit-session UI
   const toggleEditStudent = useCallback((id: string) => {
     setEditStudentIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   }, []);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for edit-session UI
   const handleSaveSessionDetails = useCallback(async () => {
     if (!isDbSession) return;
     const supabase = createClient();
@@ -814,7 +812,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [isDbSession, editDate, editCoachId, editSessionType, editTitle, editStudentIds, sessionId, onSessionUpdated]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reserved for edit-session UI
   const handleDeleteSession = useCallback(async () => {
     if (!isDbSession) {
       setEditSessionError('This session cannot be deleted.');
