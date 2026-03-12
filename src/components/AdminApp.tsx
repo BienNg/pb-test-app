@@ -6,7 +6,7 @@ import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
-import { MyProgressPage, type TrainingSession } from './MyProgressPage';
+import { MySessionsPage, type TrainingSession } from './MySessionsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionCountsForStudentIds } from '@/lib/studentSessions';
@@ -440,12 +440,12 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
     );
   }
 
-  // When viewing a student's progress, show same view as coach (MyProgressPage with Your Sessions from DB)
+  // When viewing a student's sessions, show the same sessions page with DB-backed sessions
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-        <MyProgressPage
-          title={`${selectedStudent.name}'s Progress`}
+        <MySessionsPage
+          title={`${selectedStudent.name}'s Sessions`}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
@@ -474,7 +474,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
         <div style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textSecondary }}>Loading students…</div>
       ) : (
         <CoachStudentsPage
-          title="Student Progress"
+          title="Student Sessions"
           students={students}
           onSelectStudent={setSelectedStudent}
           showMySessionsTab={false}

@@ -5,10 +5,10 @@ import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
-import { MyProgressPage } from './MyProgressPage';
+import { MySessionsPage } from './MySessionsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
-import type { TrainingSession } from './MyProgressPage';
+import type { TrainingSession } from './MySessionsPage';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 
@@ -62,8 +62,8 @@ export const CoachApp: React.FC = () => {
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-        <MyProgressPage
-          title={`${selectedStudent.name}'s Progress`}
+        <MySessionsPage
+          title={`${selectedStudent.name}'s Sessions`}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}

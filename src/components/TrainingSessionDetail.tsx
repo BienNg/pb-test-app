@@ -11,7 +11,7 @@ import {
   IconUser,
   IconX,
 } from './Icons';
-import type { SessionComment, TrainingSession } from './MyProgressPage';
+import type { SessionComment, TrainingSession } from './MySessionsPage';
 import { createClient } from '@/lib/supabase/client';
 
 declare const require: {

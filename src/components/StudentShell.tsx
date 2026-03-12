@@ -3,18 +3,18 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
-import { MyProgressPage, type TrainingSession } from './MyProgressPage';
+import { MySessionsPage, type TrainingSession } from './MySessionsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { useAuth } from './providers/AuthProvider';
 
-type TabId = 'progress' | 'library';
+type TabId = 'sessions' | 'library';
 
 export function StudentShell() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>('progress');
-  const [progressSelectedSegment, setProgressSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
+  const [activeTab, setActiveTab] = useState<TabId>('sessions');
+  const [sessionsSelectedSegment, setSessionsSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -41,15 +41,15 @@ export function StudentShell() {
     void reloadSessions();
   }, [reloadSessions]);
 
-  const showProgress = activeTab === 'progress';
+  const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
-  const showSessionOverlay = showProgress && activeTrainingSessionId != null;
+  const showSessionOverlay = showSessions && activeTrainingSessionId != null;
   const hideBottomNav = showSessionOverlay || viewingLessonDetail;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
-      id: 'progress',
-      label: 'My Progress',
+      id: 'sessions',
+      label: 'My Sessions',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -89,15 +89,15 @@ export function StudentShell() {
       {/* Keep all tab content mounted so state (scroll, segment, etc.) is preserved when switching tabs */}
       <div
         style={{
-          display: showProgress && !showSessionOverlay ? 'block' : 'none',
+          display: showSessions && !showSessionOverlay ? 'block' : 'none',
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
         }}
-        aria-hidden={!showProgress}
+        aria-hidden={!showSessions}
       >
-        <MyProgressPage
-          selectedSegment={progressSelectedSegment}
-          onSelectedSegmentChange={setProgressSelectedSegment}
+        <MySessionsPage
+          selectedSegment={sessionsSelectedSegment}
+          onSelectedSegmentChange={setSessionsSelectedSegment}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
         />

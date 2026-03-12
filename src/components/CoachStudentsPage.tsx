@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { IconUser, IconChevronRight, IconSearch, IconChevronDown } from './Icons';
 import { LessonCard } from './Cards';
-import type { TrainingSession } from './MyProgressPage';
+import type { TrainingSession } from './MySessionsPage';
 
 export type StudentLevel = 'newbie' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
@@ -131,7 +131,7 @@ export const StudentCard: React.FC<StudentCardProps> = ({ student, onClick }) =>
 };
 
 interface CoachStudentsPageProps {
-  /** Page title (e.g. "Student Progress" or "All Students") */
+  /** Page title (e.g. "Student Sessions" or "All Students") */
   title?: string;
   /** Students to display. Pass from parent (e.g. coach mock list or admin Supabase list). */
   students?: StudentInfo[];
@@ -148,7 +148,7 @@ interface CoachStudentsPageProps {
 type SortField = 'name' | 'lessons' | 'lastActive' | 'level';
 
 export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
-  title = 'Student Progress',
+  title = 'Student Sessions',
   students = MOCK_STUDENTS,
   onSelectStudent,
   onOpenSession,

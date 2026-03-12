@@ -9,8 +9,8 @@ import { parseCommentTextWithShots } from './TrainingSessionDetail';
 import { IconUser } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 
-export interface MyProgressPageProps {
-  /** Override page title (e.g. "Alex's Progress" when coach views a student) */
+export interface MySessionsPageProps {
+  /** Override page title (e.g. "Alex's Sessions" when coach views a student) */
   title?: string;
   /** When set, show a back button (e.g. in coach view) */
   onBack?: () => void;
@@ -53,7 +53,7 @@ export interface SessionComment {
   exampleGif?: string;
 }
 
-export const MyProgressPage: React.FC<MyProgressPageProps> = ({
+export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   title,
   onBack,
   selectedSegment: selectedSegmentProp,
@@ -174,7 +174,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                 margin: 0,
               }}
             >
-              {title ?? 'My Progress'}
+              {title ?? 'My Sessions'}
             </h1>
             <div style={{ position: 'relative', flexShrink: 0 }} ref={profileMenuRef}>
               <button
@@ -306,10 +306,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               }}
             >
               {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  id={`session-${session.id}`}
-                >
+                <div key={session.id} id={`session-${session.id}`}>
                   <LessonCard
                     title={session.title || session.focus || 'Training Session'}
                     dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
@@ -319,9 +316,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                     shots={shotsBySession[session.id]}
                     isVOD
                     onClick={() =>
-                      onOpenSession
-                        ? onOpenSession(session.id)
-                        : console.log(`Open video for training session ${session.id}`)
+                      onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
                     }
                   />
                 </div>
@@ -344,7 +339,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                 boxShadow: SHADOWS.md,
               }}
             >
-              {/* Dark overlay for better contrast */}
               <div
                 style={{
                   position: 'absolute',
@@ -355,24 +349,8 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   backgroundColor: 'rgba(0, 0, 0, 0.15)',
                 }}
               />
-              
-              {/* Background blur effect */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Crect width=\'100\' height=\'100\' fill=\'%23D6C9FF\'/%3E%3C/svg%3E")',
-                  opacity: 0.2,
-                  filter: 'blur(20px)',
-                }}
-              />
-              
-              {/* Content */}
+
               <div style={{ position: 'relative', zIndex: 1 }}>
-                {/* Avatar */}
                 <div
                   style={{
                     width: 80,
@@ -392,7 +370,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   BN
                 </div>
 
-                {/* Name */}
                 <h2
                   style={{
                     ...TYPOGRAPHY.h2,
@@ -406,7 +383,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   BIEN
                 </h2>
 
-                {/* DUPR Metrics */}
                 <div
                   style={{
                     display: 'grid',
@@ -416,9 +392,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   }}
                 >
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
-                      DUPR
-                    </div>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>DUPR</div>
                     <div
                       style={{
                         display: 'flex',
@@ -428,20 +402,14 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                         marginBottom: SPACING.xs,
                       }}
                     >
-                      <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, fontWeight: 700 }}>
-                        NR
-                      </span>
+                      <span style={{ ...TYPOGRAPHY.h3, color: COLORS.white, fontWeight: 700 }}>NR</span>
                       <span style={{ color: COLORS.white, fontSize: '16px' }}>+</span>
                     </div>
-                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>
-                      Not Rated
-                    </div>
+                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>Not Rated</div>
                   </div>
 
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
-                      Your DUPR Goal
-                    </div>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>Your DUPR Goal</div>
                     <div
                       style={{
                         ...TYPOGRAPHY.h3,
@@ -452,15 +420,11 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                     >
                       NR
                     </div>
-                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>
-                      Not Rated
-                    </div>
+                    <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.white, opacity: 0.9 }}>Not Rated</div>
                   </div>
 
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>
-                      DUPR Coach
-                    </div>
+                    <div style={{ ...TYPOGRAPHY.label, color: COLORS.white, opacity: 0.8, marginBottom: SPACING.xs }}>DUPR Coach</div>
                     <div
                       style={{
                         ...TYPOGRAPHY.h3,
@@ -474,13 +438,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: SPACING.md,
-                  }}
-                >
+                <div style={{ display: 'flex', gap: SPACING.md }}>
                   <button
                     type="button"
                     onClick={() => console.log('Subscribe clicked')}
@@ -521,7 +479,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               </div>
             </div>
 
-            {/* DUPR Skills Section */}
             <div>
               <h2
                 style={{
@@ -535,7 +492,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
               >
                 DUPR SKILLS
               </h2>
-              
+
               <p
                 style={{
                   ...TYPOGRAPHY.body,
@@ -547,7 +504,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                 See below your scores for your game areas. Your coach has rated each area on a DUPR scale of 2 to 8.
               </p>
 
-              {/* Skill Cards Grid */}
               <div
                 style={{
                   display: 'grid',
