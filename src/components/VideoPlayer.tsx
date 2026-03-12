@@ -1319,11 +1319,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 });
 
 function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
+  const size = 'clamp(32px, 9vw, 40px)';
   return {
-    flex: '1 1 auto',
-    minWidth: 28,
-    maxWidth: 40,
-    aspectRatio: 1,
+    width: size,
+    height: size,
+    minWidth: size,
+    minHeight: size,
     flexShrink: 0,
     borderRadius: '50%',
     border: '1px solid #e2e8f0',
@@ -1341,11 +1342,12 @@ function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
 }
 
 function sessionDetailPlayPauseBtn(accentColor: string): React.CSSProperties {
+  const size = 'clamp(32px, 9vw, 40px)';
   return {
-    flex: '1 1 auto',
-    minWidth: 36,
-    maxWidth: 48,
-    aspectRatio: 1,
+    width: size,
+    height: size,
+    minWidth: size,
+    minHeight: size,
     flexShrink: 0,
     borderRadius: '50%',
     border: `1px solid ${accentColor}`,
