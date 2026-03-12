@@ -285,7 +285,7 @@ import {
   fetchSessionTaggableProfiles,
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
-import { VideoPlayer, type VideoPlayerMarker } from './VideoPlayer';
+import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
 
 const EditCommentInput: React.FC<{
   initialDraft: string;
@@ -735,6 +735,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [isDesktop, setIsDesktop] = useState(false);
   const commentInputRef = useRef<HTMLDivElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
+  const videoPlayerRef = useRef<VideoPlayerHandle>(null);
   const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
   const videoStickySentinelRef = useRef<HTMLDivElement>(null);
   const videoStickySpacerRef = useRef<HTMLDivElement>(null);
@@ -968,6 +969,81 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       })
       .finally(() => setCommentsLoading(false));
   }, [isDbSession, sessionId, user?.id]);
+
+  // Video player keyboard shortcuts when comment section / any edit box is not focused
+  useEffect(() => {
+    if (!session?.videoUrl?.trim()) return;
+    const isTypingInInput = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const tag = active?.nodeName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return true;
+      let node: Node | null = e.target as Node | null;
+      while (node && node instanceof HTMLElement) {
+        if (node.isContentEditable) return true;
+        node = node.parentElement;
+      }
+      node = active;
+      while (node && node instanceof HTMLElement) {
+        if (node.isContentEditable) return true;
+        node = node.parentElement;
+      }
+      if (active && commentInputRef.current?.contains(active)) return true;
+      return false;
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isTypingInInput(e)) return;
+      const key = e.key;
+      const player = videoPlayerRef.current;
+      if (!player) return;
+      if (key === ' ') {
+        e.preventDefault();
+        player.playPause();
+        return;
+      }
+      if (key === 'q' || key === 'Q') {
+        e.preventDefault();
+        player.skipBy(-1);
+        return;
+      }
+      if (key === 'w' || key === 'W') {
+        e.preventDefault();
+        player.skipBy(1);
+        return;
+      }
+      if (key === 'a' || key === 'A') {
+        e.preventDefault();
+        player.skipBy(-5);
+        return;
+      }
+      if (key === 's' || key === 'S') {
+        e.preventDefault();
+        player.skipBy(5);
+        return;
+      }
+      if (key === 'y' || key === 'Y') {
+        e.preventDefault();
+        player.skipBy(-10);
+        return;
+      }
+      if (key === 'x' || key === 'X') {
+        e.preventDefault();
+        player.skipBy(10);
+        return;
+      }
+      if (key === 'ArrowLeft') {
+        e.preventDefault();
+        player.skipBy(-1 / 30);
+        return;
+      }
+      if (key === 'ArrowRight') {
+        e.preventDefault();
+        player.skipBy(1 / 30);
+        return;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [session?.id, session?.videoUrl]);
 
   // Lazy-load session details and student list for admin editing
   useEffect(() => {
@@ -1755,6 +1831,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               >
               {session && (
                 <VideoPlayer
+                  ref={videoPlayerRef}
                   videoUrl={session.videoUrl}
                   videoKey={session.id}
                   variant="sessionDetail"
@@ -1921,11 +1998,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       onKeyDown={
                         comment.timestampSeconds != null
                           ? (e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
+                              if (e.key === 'Enter') {
                                 e.preventDefault();
                                 setPendingSeekSeconds(comment.timestampSeconds!);
                                 setActiveCommentId(comment.id);
                               }
+                              if (e.key === ' ') e.preventDefault();
                             }
                           : undefined
                       }
@@ -2054,6 +2132,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   setPendingSeekSeconds(comment.timestampSeconds!);
                                   setActiveCommentId(comment.id);
                                 }}
+                                onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -2288,6 +2367,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <button
                       type="button"
                       onClick={() => setIncludeTimestamp(false)}
+                      onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       style={{
                         padding: `${SPACING.xs}px ${SPACING.sm}px`,
                         borderRadius: RADIUS.sm - 2,
@@ -2305,6 +2385,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     <button
                       type="button"
                       onClick={() => setIncludeTimestamp(true)}
+                      onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
                       style={{
                         display: 'inline-flex',
                         alignItems: 'center',

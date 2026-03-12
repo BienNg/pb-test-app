@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import {
   IconPause,
@@ -94,22 +94,30 @@ export interface VideoPlayerProps {
   accentColor?: string;
 }
 
+export interface VideoPlayerHandle {
+  playPause: () => void;
+  skipBy: (deltaSeconds: number) => void;
+}
+
 /** Reusable video player with Frame.io-style timeline, skip controls, and optional markers. */
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({
-  videoUrl,
-  videoKey,
-  markers = [],
-  onMarkerClick,
-  onTimeUpdate,
-  onActiveMarkerChange,
-  seekToSeconds,
-  onSeekHandled,
-  canRequestAddUrl,
-  onRequestAddUrl,
-  pauseRequested,
-  variant = 'default',
-  accentColor = COLORS.primary,
-}) => {
+export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(function VideoPlayer(
+  {
+    videoUrl,
+    videoKey,
+    markers = [],
+    onMarkerClick,
+    onTimeUpdate,
+    onActiveMarkerChange,
+    seekToSeconds,
+    onSeekHandled,
+    canRequestAddUrl,
+    onRequestAddUrl,
+    pauseRequested,
+    variant = 'default',
+    accentColor = COLORS.primary,
+  },
+  ref
+) {
   const isSessionDetail = variant === 'sessionDetail';
   const youtubeVideoId = getYoutubeVideoId(videoUrl || undefined);
   const isYoutube = !!youtubeVideoId;
@@ -124,6 +132,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
+  const [skipIndicator, setSkipIndicator] = useState<{ label: string; side: 'left' | 'right' } | null>(null);
+  const [skipIndicatorFadeOut, setSkipIndicatorFadeOut] = useState(false);
+  const skipIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipIndicatorFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Responsive: on small screens, skip buttons fill full width (no maxWidth cap)
   const [skipButtonsFillWidth, setSkipButtonsFillWidth] = useState(false);
@@ -282,9 +294,36 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       const now = getNow();
       const next = Math.max(0, Math.min(dur, now + deltaSeconds));
       seekTo(next);
+      if (deltaSeconds !== 0) {
+        const abs = Math.abs(deltaSeconds);
+        const isFrame = abs < 0.1;
+        const label = isFrame ? '1fr' : `${Math.round(abs)}s`;
+        const displayLabel = deltaSeconds < 0 ? `−${label}` : `+${label}`;
+        if (skipIndicatorTimeoutRef.current) clearTimeout(skipIndicatorTimeoutRef.current);
+        if (skipIndicatorFadeTimeoutRef.current) clearTimeout(skipIndicatorFadeTimeoutRef.current);
+        setSkipIndicatorFadeOut(false);
+        setSkipIndicator({ label: displayLabel, side: deltaSeconds < 0 ? 'left' : 'right' });
+        skipIndicatorFadeTimeoutRef.current = setTimeout(() => setSkipIndicatorFadeOut(true), 550);
+        skipIndicatorTimeoutRef.current = setTimeout(() => {
+          setSkipIndicator(null);
+          setSkipIndicatorFadeOut(false);
+          skipIndicatorTimeoutRef.current = null;
+          skipIndicatorFadeTimeoutRef.current = null;
+        }, 850);
+      }
     },
     [isYoutube, videoDuration, seekTo]
   );
+
+  useImperativeHandle(ref, () => ({
+    playPause: handlePlayPause,
+    skipBy,
+  }), [handlePlayPause, skipBy]);
+
+  useEffect(() => () => {
+    if (skipIndicatorTimeoutRef.current) clearTimeout(skipIndicatorTimeoutRef.current);
+    if (skipIndicatorFadeTimeoutRef.current) clearTimeout(skipIndicatorFadeTimeoutRef.current);
+  }, []);
 
   const sortedMarkerTimes = useMemo(
     () => [...new Set(markers.map((m) => m.time))].sort((a, b) => a - b),
@@ -462,6 +501,33 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
               aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
             >
             </div>
+            {skipIndicator && (
+              <div
+                aria-live="polite"
+                aria-atomic="true"
+                style={{
+                  position: 'absolute',
+                  ...(skipIndicator.side === 'left'
+                    ? { left: 'clamp(12px, 3vw, 24px)' }
+                    : { right: 'clamp(12px, 3vw, 24px)' }),
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 3,
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(0,0,0,0.5)',
+                  color: '#fff',
+                  fontSize: 'clamp(14px, 2.5vw, 18px)',
+                  fontWeight: 700,
+                  transition: 'opacity 0.25s ease',
+                  opacity: skipIndicatorFadeOut ? 0 : 1,
+                  pointerEvents: 'none',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                }}
+              >
+                {skipIndicator.label}
+              </div>
+            )}
             {isSessionDetail && videoDuration > 0 && (
               <div
                 style={{
@@ -606,6 +672,33 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
                 </div>
               )}
             </div>
+            {skipIndicator && (
+              <div
+                aria-live="polite"
+                aria-atomic="true"
+                style={{
+                  position: 'absolute',
+                  ...(skipIndicator.side === 'left'
+                    ? { left: 'clamp(12px, 3vw, 24px)' }
+                    : { right: 'clamp(12px, 3vw, 24px)' }),
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  zIndex: 3,
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  background: 'rgba(0,0,0,0.5)',
+                  color: '#fff',
+                  fontSize: 'clamp(14px, 2.5vw, 18px)',
+                  fontWeight: 700,
+                  transition: 'opacity 0.25s ease',
+                  opacity: skipIndicatorFadeOut ? 0 : 1,
+                  pointerEvents: 'none',
+                  textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                }}
+              >
+                {skipIndicator.label}
+              </div>
+            )}
             <video
               key={videoKey}
               ref={videoRef}
@@ -1175,7 +1268,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
     </div>
   );
-};
+});
 
 function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
   return {
