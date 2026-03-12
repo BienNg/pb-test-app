@@ -249,9 +249,9 @@ export interface LessonsPageProps {
   onLessonViewChange?: (isViewing: boolean) => void;
 }
 
-export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false, onLessonViewChange }) => {
+export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin: _isAdmin = false, onLessonViewChange }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, _setSearchQuery] = useState('');
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);

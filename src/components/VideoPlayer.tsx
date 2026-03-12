@@ -352,7 +352,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
         seekTo(pct * videoDuration);
       };
 
-      const nativeEvent = event.nativeEvent as any;
+      const nativeEvent = event.nativeEvent as MouseEvent | TouchEvent;
       let startClientX = 0;
       if ('clientX' in nativeEvent && typeof nativeEvent.clientX === 'number') {
         startClientX = nativeEvent.clientX;
@@ -368,18 +368,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
       const handleUp = (ev: MouseEvent | TouchEvent) => {
         ev.preventDefault();
-        window.removeEventListener('mousemove', handleMove as any);
-        window.removeEventListener('mouseup', handleUp as any);
-        window.removeEventListener('touchmove', handleMove as any);
-        window.removeEventListener('touchend', handleUp as any);
-        window.removeEventListener('touchcancel', handleUp as any);
+        window.removeEventListener('mousemove', handleMove as EventListener);
+        window.removeEventListener('mouseup', handleUp as EventListener);
+        window.removeEventListener('touchmove', handleMove as EventListener);
+        window.removeEventListener('touchend', handleUp as EventListener);
+        window.removeEventListener('touchcancel', handleUp as EventListener);
       };
 
-      window.addEventListener('mousemove', handleMove as any);
-      window.addEventListener('mouseup', handleUp as any);
-      window.addEventListener('touchmove', handleMove as any, { passive: false });
-      window.addEventListener('touchend', handleUp as any);
-      window.addEventListener('touchcancel', handleUp as any);
+      window.addEventListener('mousemove', handleMove as EventListener);
+      window.addEventListener('mouseup', handleUp as EventListener);
+      window.addEventListener('touchmove', handleMove as EventListener, { passive: false });
+      window.addEventListener('touchend', handleUp as EventListener);
+      window.addEventListener('touchcancel', handleUp as EventListener);
     },
     [seekTo, videoDuration]
   );

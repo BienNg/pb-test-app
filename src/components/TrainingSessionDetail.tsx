@@ -1388,7 +1388,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               ? 'minmax(0, 1fr)'
               : 'minmax(0, 1fr) minmax(280px, 400px)',
             gridTemplateRows: isNarrow ? 'auto 1fr' : '1fr',
-            gap: SPACING.sm,
+            gap: isNarrow ? SPACING.sm : SPACING.lg,
             minWidth: 0,
             flex: 1,
             minHeight: 0,
@@ -1399,7 +1399,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           <div
             style={{
               minWidth: 0,
-              ...(isNarrow ? {} : { overflow: 'hidden', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }),
+              ...(isNarrow ? {} : { overflow: 'hidden', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }),
             }}
           >
             {/* Sentinel: when this scrolls past viewport top (narrow only), we stick the video with position:fixed */}
@@ -1436,16 +1436,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   borderRadius: 12,
                   overflow: 'hidden',
                   background: '#ffffff',
-                  marginBottom: SPACING.sm,
+                  marginBottom: isNarrow ? SPACING.sm : 0,
                   border: 'none',
-                  ...(isNarrow ? {} : { height: '100%', maxHeight: '100%', minHeight: 0 }),
+                  ...(isNarrow ? {} : { maxHeight: '100%' }),
                 }}
               >
               <div
                 style={{
                   position: 'relative',
                   width: '100%',
-                  ...(isNarrow ? {} : { height: '100%', maxHeight: '100%', minHeight: 0 }),
+                  ...(isNarrow ? {} : { maxHeight: '100%' }),
                 }}
               >
               {session && (
