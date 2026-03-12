@@ -1873,7 +1873,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 paddingRight: SPACING.sm,
-                marginBottom: SPACING.md,
               }}
             >
               {commentsLoading ? (
@@ -2194,7 +2193,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   );
                 })
               )}
-            </div>
 
             <div
               style={{
@@ -2202,7 +2200,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 padding: SPACING.sm,
                 backgroundColor: COLORS.cardBg,
                 border: `1px solid ${COLORS.backgroundLight}`,
-                ...(isNarrow ? {} : { flexShrink: 0 }),
+                marginTop: SPACING.md,
+                flexShrink: 0,
               }}
             >
               <div
@@ -2510,6 +2509,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   {postingComment ? 'Posting…' : 'Post'}
                 </button>
               </div>
+            </div>
             </div>
           </div>
         </div>
