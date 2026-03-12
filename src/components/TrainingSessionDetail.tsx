@@ -297,6 +297,8 @@ export interface TrainingSessionDetailProps {
   onSessionUpdated?: () => Promise<void> | void;
   /** Optional callback invoked after a session is deleted. Typically navigates away. */
   onDeleteSession?: (sessionId: string) => Promise<void> | void;
+  /** When false, the video is paused (e.g. user switched to another tab). Default true. */
+  isTabVisible?: boolean;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
@@ -306,6 +308,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onSaveVideoUrl,
   onSessionUpdated,
   onDeleteSession,
+  isTabVisible = true,
 }) => {
   const { user } = useAuth();
   const sessionList = sessionsProp ?? [];
@@ -1455,7 +1458,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   videoKey={session.id}
                   variant="sessionDetail"
                   accentColor={REFERENCE_PRIMARY}
-                  pauseRequested={anyModalOpen}
+                  pauseRequested={anyModalOpen || !isTabVisible}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)

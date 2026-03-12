@@ -110,7 +110,8 @@ export function StudentShell() {
       >
         <LessonsPage />
       </div>
-      {showSessionOverlay && (
+      {/* Keep session detail mounted when a session is open so video position is preserved; hide when on another tab and pause video */}
+      {activeTrainingSessionId != null && (
         <div
           style={{
             position: 'fixed',
@@ -119,18 +120,19 @@ export function StudentShell() {
             right: 0,
             height: 'calc(100vh - 80px)',
             overflow: 'hidden',
-            display: 'flex',
+            display: showSessionOverlay ? 'flex' : 'none',
             flexDirection: 'column',
             backgroundColor: '#f6f8f8',
             zIndex: 50,
           }}
         >
           <TrainingSessionDetail
-            sessionId={activeTrainingSessionId!}
+            sessionId={activeTrainingSessionId}
             onBack={() => setActiveTrainingSessionId(null)}
             sessions={sessionsForStudent}
             onSessionUpdated={reloadSessions}
             onDeleteSession={async () => { await reloadSessions(); }}
+            isTabVisible={showSessionOverlay}
           />
         </div>
       )}
