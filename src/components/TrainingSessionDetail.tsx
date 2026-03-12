@@ -1308,7 +1308,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         backgroundColor: '#ffffff',
         minHeight: isDesktop ? 'auto' : '100vh',
         height: '100%',
-        minHeight: 0,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
@@ -1569,6 +1568,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 paddingRight: SPACING.sm,
+                paddingBottom: SPACING.xxl + SPACING.lg,
               }}
             >
               {commentsLoading ? (
