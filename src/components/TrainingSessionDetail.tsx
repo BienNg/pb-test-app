@@ -35,6 +35,7 @@ export const SHOT_LIST = [
   'Jump Smash', 'Lob', 'Offensive Lob', 'Defensive Lob', 'Topspin Lob', 'Backspin Lob',
   'Block', 'Counter', 'Erne', 'Bert', 'ATP', 'Tweener', 'Flick', 'Speed-Up', 'Fake Speed-Up',
   'Chicken Wing', 'Pancake Shot',
+  'Footwork', 'Shot Selection', 'Positioning',
 ] as const;
 
 // [[shot:Serve]] or [[mention:userId|Full Name]]
