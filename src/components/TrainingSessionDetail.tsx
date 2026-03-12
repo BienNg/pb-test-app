@@ -1931,7 +1931,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       }
                       style={{
                         display: 'flex',
-                        gap: 12,
+                        flexDirection: 'column',
+                        gap: 0,
                         padding: `${SPACING.sm}px 0`,
                         cursor: comment.timestampSeconds != null ? 'pointer' : 'default',
                         backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
@@ -1941,22 +1942,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         paddingRight: isActive ? SPACING.sm : 0,
                       }}
                     >
-                      <div
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: '50%',
-                          backgroundColor: `${REFERENCE_PRIMARY}33`,
-                          flexShrink: 0,
-                          overflow: 'hidden',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 18,
-                        }}
-                      >
-                        {isCoach ? '🎓' : '🙂'}
-                      </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div
                         style={{
@@ -1969,6 +1954,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: '50%',
+                              backgroundColor: `${REFERENCE_PRIMARY}33`,
+                              flexShrink: 0,
+                              overflow: 'hidden',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 16,
+                            }}
+                          >
+                            {isCoach ? '🎓' : '🙂'}
+                          </div>
                           <span
                             style={{
                               fontSize: 14,
@@ -1977,6 +1978,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap',
+                              minWidth: 0,
                             }}
                           >
                             {comment.author}
