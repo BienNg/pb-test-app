@@ -20,7 +20,6 @@ export function StudentShell() {
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   const handleTabClick = (tabId: TabId) => {
-    setActiveTrainingSessionId(null);
     setActiveTab(tabId);
   };
 
@@ -41,50 +40,9 @@ export function StudentShell() {
     void reloadSessions();
   }, [reloadSessions]);
 
-  const renderContent = () => {
-    if (activeTrainingSessionId != null) {
-      return (
-        <div
-          style={{
-            height: 'calc(100vh - 80px)',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <TrainingSessionDetail
-            sessionId={activeTrainingSessionId}
-            onBack={() => setActiveTrainingSessionId(null)}
-            sessions={sessionsForStudent}
-            onSessionUpdated={reloadSessions}
-            onDeleteSession={async () => { await reloadSessions(); }}
-          />
-        </div>
-      );
-    }
-    switch (activeTab) {
-      case 'progress':
-        return (
-          <MyProgressPage
-            selectedSegment={progressSelectedSegment}
-            onSelectedSegmentChange={setProgressSelectedSegment}
-            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
-            sessions={loadingSessions ? [] : sessionsForStudent}
-          />
-        );
-      case 'library':
-        return <LessonsPage />;
-      default:
-        return (
-          <MyProgressPage
-            selectedSegment={progressSelectedSegment}
-            onSelectedSegmentChange={setProgressSelectedSegment}
-            onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
-            sessions={loadingSessions ? [] : sessionsForStudent}
-          />
-        );
-    }
-  };
+  const showProgress = activeTab === 'progress';
+  const showLibrary = activeTab === 'library';
+  const showSessionOverlay = showProgress && activeTrainingSessionId != null;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
@@ -126,7 +84,56 @@ export function StudentShell() {
         backgroundColor: '#f6f8f8',
       }}
     >
-      {renderContent()}
+      {/* Keep all tab content mounted so state (scroll, segment, etc.) is preserved when switching tabs */}
+      <div
+        style={{
+          display: showProgress && !showSessionOverlay ? 'block' : 'none',
+          height: 'calc(100vh - 80px)',
+          overflow: 'auto',
+        }}
+        aria-hidden={!showProgress}
+      >
+        <MyProgressPage
+          selectedSegment={progressSelectedSegment}
+          onSelectedSegmentChange={setProgressSelectedSegment}
+          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          sessions={loadingSessions ? [] : sessionsForStudent}
+        />
+      </div>
+      <div
+        style={{
+          display: showLibrary ? 'block' : 'none',
+          height: 'calc(100vh - 80px)',
+          overflow: 'auto',
+        }}
+        aria-hidden={!showLibrary}
+      >
+        <LessonsPage />
+      </div>
+      {showSessionOverlay && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 'calc(100vh - 80px)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: '#f6f8f8',
+            zIndex: 50,
+          }}
+        >
+          <TrainingSessionDetail
+            sessionId={activeTrainingSessionId!}
+            onBack={() => setActiveTrainingSessionId(null)}
+            sessions={sessionsForStudent}
+            onSessionUpdated={reloadSessions}
+            onDeleteSession={async () => { await reloadSessions(); }}
+          />
+        </div>
+      )}
 
       <nav
           style={{
