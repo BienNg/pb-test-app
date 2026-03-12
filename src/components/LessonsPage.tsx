@@ -502,7 +502,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
                   key={lesson.id}
                   title={lesson.title}
                   category={lesson.category}
-                  duration={lesson.duration}
                   thumbnail={lesson.thumbnail}
                   videoUrl={lesson.videoUrl}
                   progress={lesson.progress}
@@ -528,7 +527,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
                 key={lesson.id}
                 title={lesson.title}
                 category={lesson.category}
-                duration={lesson.duration}
                 thumbnail={lesson.thumbnail}
                 videoUrl={lesson.videoUrl}
                 progress={lesson.progress}

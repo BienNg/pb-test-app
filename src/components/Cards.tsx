@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
@@ -93,19 +93,9 @@ function getThumbnailUrl(thumbnail?: string, videoUrl?: string): string | null {
   return null;
 }
 
-/** Generate a random duration label between 7 and 25 minutes (mm:ss). */
-function getRandomDurationLabel(minMinutes = 7, maxMinutes = 25): string {
-  const minutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
-  const seconds = Math.floor(Math.random() * 60);
-  const mm = String(minutes);
-  const ss = String(seconds).padStart(2, '0');
-  return `${mm}:${ss}`;
-}
-
 interface LessonCardProps {
   title: string;
   category: string;
-  duration: string;
   thumbnail?: string;
   videoUrl?: string;
   progress?: number;
@@ -122,7 +112,6 @@ interface LessonCardProps {
 export const LessonCard: React.FC<LessonCardProps> = ({
   title,
   category,
-  duration,
   thumbnail,
   videoUrl,
   progress = 0,
@@ -133,12 +122,6 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   variant = 'grid',
 }) => {
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
-  const displayDuration = useMemo(() => {
-    if (!duration || duration === '—' || duration === '0:00') {
-      return getRandomDurationLabel();
-    }
-    return duration;
-  }, [duration]);
 
   const isList = variant === 'list';
   const useLibraryColors = variant === 'grid' || variant === 'list';
@@ -202,22 +185,6 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           className="lesson-card-thumb-overlay"
           aria-hidden
         />
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 12,
-            right: 12,
-            padding: '4px 8px',
-            borderRadius: 6,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            backdropFilter: 'blur(4px)',
-            color: '#FFFFFF',
-            fontSize: 12,
-            fontWeight: 500,
-          }}
-        >
-          {displayDuration}
-        </div>
         {/* Play icon - grid: white circle + primary icon (ref); list: primary circle + white icon */}
         <div
           className="lesson-card-play"
@@ -347,9 +314,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({
           </button>
         )}
 
-        {/* Progress & shots - only when not list variant */}
+        {/* Progress & shots - only when not list variant; flow right below date, do not stick to bottom */}
         {!isList && (progress > 0 || (shots && shots.length > 0)) && (
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {progress > 0 && (
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>

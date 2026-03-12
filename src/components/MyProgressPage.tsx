@@ -314,7 +314,6 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
                     title={session.title || session.focus || 'Training Session'}
                     dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
                     category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
-                    duration={session.duration}
                     thumbnail={session.thumbnail}
                     videoUrl={session.videoUrl}
                     shots={shotsBySession[session.id]}
