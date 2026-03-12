@@ -118,8 +118,7 @@ export const MyProgressPage: React.FC<MyProgressPageProps> = ({
     <div
       style={{
         backgroundColor: '#f6f8f8',
-        minHeight: '100vh',
-        padding: '24px 24px 128px 24px',
+        padding: '24px',
         width: '100%',
         boxSizing: 'border-box',
         overflowX: 'hidden',

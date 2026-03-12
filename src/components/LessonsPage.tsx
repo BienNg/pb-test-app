@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Button } from './BaseComponents';
 import { LessonCard } from './Cards';
-import { IconSearch } from './Icons';
 import { LessonView } from './LessonView';
 import { getYoutubeVideoId } from '../lib/youtube';
 import { createClient } from '@/lib/supabase/client';
@@ -386,7 +385,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
   }
 
   const contentPadding = isMobile ? SPACING.lg : 32;
-  const headerPadding = isMobile ? SPACING.lg : 32;
 
   return (
     <div
@@ -398,88 +396,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
         overflowX: 'hidden',
       }}
     >
-      {/* Sticky header: search (desktop) + Add Video */}
-      <header
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          background: 'rgba(255,255,255,0.9)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          borderBottom: `1px solid ${COLORS.textMuted}20`,
-          padding: `${headerPadding}px ${contentPadding}px`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: SPACING.lg,
-          flexWrap: 'wrap',
-        }}
-      >
-        {!isMobile && (
-          <div style={{ flex: '1 1 320px', maxWidth: 400 }}>
-            <div
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              <IconSearch
-                size={18}
-                style={{
-                  position: 'absolute',
-                  left: 14,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: COLORS.textMuted,
-                  pointerEvents: 'none',
-                }}
-              />
-              <input
-                type="search"
-                placeholder="Search lessons, drills, or techniques..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px 10px 42px',
-                  borderRadius: 9999,
-                  border: 'none',
-                  background: '#f1f5f9',
-                  fontSize: 14,
-                  color: COLORS.textPrimary,
-                  outline: 'none',
-                }}
-              />
-            </div>
-          </div>
-        )}
-        {isMobile && <div style={{ flex: 1 }} />}
-        {isAdmin && (
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 16px',
-              borderRadius: 9999,
-              border: 'none',
-              background: COLORS.libraryPrimary,
-              color: '#fff',
-              fontSize: 14,
-              fontWeight: 700,
-              boxShadow: `0 1px 3px ${COLORS.libraryPrimary}33`,
-              cursor: 'pointer',
-            }}
-          >
-            Add Video
-          </button>
-        )}
-      </header>
-
       <div
         style={{
           maxWidth: 1400,
@@ -533,7 +449,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
           />
         )}
 
-        {/* Filter chips - pill style, horizontal scroll */}
+        {/* Filter chips - pill style, horizontal scroll, edge to edge */}
         <div
           style={{
             display: 'flex',
@@ -541,6 +457,10 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
             overflowX: 'auto',
             paddingBottom: SPACING.lg,
             marginBottom: SPACING.lg,
+            marginLeft: -contentPadding,
+            marginRight: -contentPadding,
+            paddingLeft: contentPadding,
+            paddingRight: contentPadding,
             scrollbarWidth: 'none',
             msOverflowStyle: 'none',
           }}
@@ -593,91 +513,6 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin = false }) => 
                 />
               ))}
             </div>
-            {filteredLessons.length > 0 && (
-              <>
-                <h2 style={{ ...TYPOGRAPHY.h3, margin: '0 0 16px', color: COLORS.textPrimary }}>
-                  Recommended for You
-                </h2>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 16,
-                    overflowX: 'auto',
-                    paddingBottom: 16,
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                  }}
-                  className="library-filter-chips"
-                >
-                  {filteredLessons.slice(0, 8).map((lesson) => {
-                    const thumbId = lesson.videoUrl ? getYoutubeVideoId(lesson.videoUrl) : null;
-                    return (
-                    <div
-                      key={`rec-${lesson.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setSelectedLesson(lesson)}
-                      onKeyDown={(e) => e.key === 'Enter' && setSelectedLesson(lesson)}
-                      style={{
-                        minWidth: 160,
-                        flexShrink: 0,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 8,
-                      }}
-                    >
-                      <div
-                        style={{
-                          aspectRatio: '1',
-                          borderRadius: 12,
-                          overflow: 'hidden',
-                          background: '#e2e8f0',
-                          position: 'relative',
-                        }}
-                      >
-                        {thumbId && (
-                          <img
-                            src={`https://img.youtube.com/vi/${thumbId}/mqdefault.jpg`}
-                            alt=""
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        )}
-                        <div
-                          style={{
-                            position: 'absolute',
-                            bottom: 8,
-                            left: 8,
-                            padding: '2px 6px',
-                            borderRadius: 4,
-                            background: 'rgba(0,0,0,0.5)',
-                            color: '#fff',
-                            fontSize: 10,
-                            fontWeight: 500,
-                          }}
-                        >
-                          {lesson.duration || '0:00'}
-                        </div>
-                      </div>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: COLORS.textPrimary,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {lesson.title}
-                      </p>
-                    </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
           </>
         ) : (
           <div
