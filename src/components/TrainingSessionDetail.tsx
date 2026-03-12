@@ -286,6 +286,7 @@ import {
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
+import { MOCK_COACHES } from '../data/mockCoaches';
 
 export interface TrainingSessionDetailProps {
   sessionId: string;
@@ -401,11 +402,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
-  const [, setEditSessionLoading] = useState(false);
-  const [, setEditSessionSaving] = useState(false);
-  const [, setEditSessionDeleting] = useState(false);
+  const [editSessionLoading, setEditSessionLoading] = useState(false);
+  const [editSessionSaving, setEditSessionSaving] = useState(false);
+  const [editSessionDeleting, setEditSessionDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [, setEditSessionError] = useState<string | null>(null);
+  const [editSessionError, setEditSessionError] = useState<string | null>(null);
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
   const [editCoachId, setEditCoachId] = useState<string>('');
@@ -521,7 +522,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   };
   const [editSessionType, setEditSessionType] = useState<'game' | 'drill' | ''>('');
   const [editStudentIds, setEditStudentIds] = useState<string[]>([]);
-  const [, setAvailableStudents] = useState<
+  const [availableStudents, setAvailableStudents] = useState<
     { id: string; name: string; email: string }[]
   >([]);
   const editSessionLoadedRef = useRef(false);
@@ -1417,7 +1418,37 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           {session.dateLabel}
         </h1>
-        <div style={{ width: 40, flexShrink: 0 }} />
+        <div
+          style={{
+            width: 40,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+          }}
+        >
+          {isAdmin && isDbSession && (
+            <button
+              type="button"
+              onClick={() => setShowEditSession(true)}
+              aria-label="Edit session"
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: COLORS.textSecondary,
+              }}
+            >
+              <IconPencil size={18} />
+            </button>
+          )}
+        </div>
       </header>
       <div
         style={{
@@ -2786,6 +2817,474 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {isAdmin && isDbSession && showEditSession && (
+        <div
+          role="presentation"
+          onClick={() => {
+            if (!editSessionSaving && !editSessionDeleting) {
+              setShowEditSession(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1150,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Edit session details"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(560px, 100%)',
+              maxHeight: 'min(80vh, 720px)',
+              overflow: 'auto',
+              backgroundColor: COLORS.white,
+              borderRadius: RADIUS.xl,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+              padding: SPACING.xl,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SPACING.lg,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: SPACING.md,
+              }}
+            >
+              <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
+                Edit session
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!editSessionSaving && !editSessionDeleting) {
+                    setShowEditSession(false);
+                  }
+                }}
+                aria-label="Close edit session"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: COLORS.backgroundLight,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: editSessionSaving || editSessionDeleting ? 'not-allowed' : 'pointer',
+                  color: COLORS.textSecondary,
+                }}
+                disabled={editSessionSaving || editSessionDeleting}
+              >
+                <IconX size={18} />
+              </button>
+            </div>
+
+            {editSessionError && (
+              <div
+                style={{
+                  padding: SPACING.sm,
+                  borderRadius: RADIUS.md,
+                  backgroundColor: 'rgba(248,113,113,0.12)',
+                  color: '#b91c1c',
+                  ...TYPOGRAPHY.bodySmall,
+                }}
+              >
+                {editSessionError}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+              <div>
+                <label
+                  htmlFor="edit-session-date"
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Date
+                </label>
+                <input
+                  id="edit-session-date"
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-session-title"
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Title
+                </label>
+                <input
+                  id="edit-session-title"
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Optional session title"
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="edit-session-coach"
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Coach
+                </label>
+                <select
+                  id="edit-session-coach"
+                  value={editCoachId}
+                  onChange={(e) => setEditCoachId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: SPACING.sm,
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    ...TYPOGRAPHY.body,
+                    color: COLORS.textPrimary,
+                    backgroundColor: COLORS.white,
+                  }}
+                >
+                  <option value="">No coach assigned</option>
+                  {MOCK_COACHES.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Session type
+                </span>
+                <div style={{ display: 'flex', gap: SPACING.sm }}>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: SPACING.xs,
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${
+                        editSessionType === 'game' ? COLORS.primary : COLORS.backgroundLight
+                      }`,
+                      backgroundColor:
+                        editSessionType === 'game' ? COLORS.primaryLight : COLORS.white,
+                      cursor: 'pointer',
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="edit-session-type"
+                      value="game"
+                      checked={editSessionType === 'game'}
+                      onChange={() => setEditSessionType('game')}
+                      style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                    />
+                    Game
+                  </label>
+                  <label
+                    style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: SPACING.xs,
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${
+                        editSessionType === 'drill' ? COLORS.primary : COLORS.backgroundLight
+                      }`,
+                      backgroundColor:
+                        editSessionType === 'drill' ? COLORS.primaryLight : COLORS.white,
+                      cursor: 'pointer',
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textPrimary,
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="edit-session-type"
+                      value="drill"
+                      checked={editSessionType === 'drill'}
+                      onChange={() => setEditSessionType('drill')}
+                      style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                    />
+                    Drill
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <span
+                  style={{
+                    display: 'block',
+                    ...TYPOGRAPHY.label,
+                    color: COLORS.textSecondary,
+                    marginBottom: SPACING.xs,
+                  }}
+                >
+                  Students
+                </span>
+                <div
+                  style={{
+                    maxHeight: 180,
+                    overflow: 'auto',
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    padding: SPACING.xs,
+                  }}
+                >
+                  {availableStudents.length === 0 && (
+                    <div
+                      style={{
+                        padding: SPACING.sm,
+                        ...TYPOGRAPHY.bodySmall,
+                        color: COLORS.textSecondary,
+                      }}
+                    >
+                      No students found for this session.
+                    </div>
+                  )}
+                  {availableStudents.map((s) => (
+                    <label
+                      key={s.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: SPACING.sm,
+                        padding: SPACING.sm,
+                        borderRadius: RADIUS.sm,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editStudentIds.includes(s.id)}
+                        onChange={() => toggleEditStudent(s.id)}
+                        style={{ width: 18, height: 18, accentColor: COLORS.primary }}
+                      />
+                      <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary }}>
+                        {s.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: SPACING.md,
+                marginTop: SPACING.md,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={editSessionSaving || editSessionDeleting}
+                style={{
+                  padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                  borderRadius: 999,
+                  border: '1px solid rgba(248,113,113,0.5)',
+                  backgroundColor: 'rgba(248,113,113,0.08)',
+                  color: '#b91c1c',
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: editSessionSaving || editSessionDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Delete session
+              </button>
+              <div style={{ display: 'flex', gap: SPACING.sm }}>
+                <button
+                  type="button"
+                  onClick={() => setShowEditSession(false)}
+                  disabled={editSessionSaving || editSessionDeleting}
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                    borderRadius: 999,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: COLORS.white,
+                    color: COLORS.textSecondary,
+                    ...TYPOGRAPHY.bodySmall,
+                    fontWeight: 600,
+                    cursor: editSessionSaving || editSessionDeleting ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveSessionDetails}
+                  disabled={editSessionSaving || editSessionDeleting}
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                    borderRadius: 999,
+                    border: 'none',
+                    backgroundColor: COLORS.primary,
+                    color: COLORS.textPrimary,
+                    ...TYPOGRAPHY.bodySmall,
+                    fontWeight: 700,
+                    cursor: editSessionSaving || editSessionDeleting ? 'not-allowed' : 'pointer',
+                    opacity: editSessionSaving || editSessionDeleting ? 0.7 : 1,
+                    boxShadow: '0 4px 12px rgba(49,203,0,0.4)',
+                  }}
+                >
+                  {editSessionSaving ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAdmin && isDbSession && showDeleteConfirm && (
+        <div
+          role="presentation"
+          onClick={() => setShowDeleteConfirm(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1250,
+            backgroundColor: 'rgba(0,0,0,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Confirm delete session"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: RADIUS.xl,
+              boxShadow: '0 16px 48px rgba(0,0,0,0.25)',
+              padding: SPACING.xl,
+              width: 'min(420px, 100%)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: SPACING.md,
+            }}
+          >
+            <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
+              Delete session?
+            </h3>
+            <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
+              This will permanently remove the session and its links to students. Comments on the
+              video will remain.
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: SPACING.sm,
+                marginTop: SPACING.sm,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={editSessionDeleting}
+                style={{
+                  padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                  borderRadius: 999,
+                  border: `1px solid ${COLORS.backgroundLight}`,
+                  backgroundColor: COLORS.white,
+                  color: COLORS.textSecondary,
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: editSessionDeleting ? 'not-allowed' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteSession}
+                disabled={editSessionDeleting}
+                style={{
+                  padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                  borderRadius: 999,
+                  border: 'none',
+                  backgroundColor: '#ef4444',
+                  color: '#ffffff',
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 700,
+                  cursor: editSessionDeleting ? 'not-allowed' : 'pointer',
+                  opacity: editSessionDeleting ? 0.8 : 1,
+                  boxShadow: '0 4px 12px rgba(239,68,68,0.4)',
+                }}
+              >
+                {editSessionDeleting ? 'Deleting…' : 'Delete session'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isExampleModalOpen && (
         <div

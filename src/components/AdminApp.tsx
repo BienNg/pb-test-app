@@ -148,7 +148,7 @@ function AdminOverviewPage({
   return (
     <div
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: COLORS.backgroundLibrary,
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -427,7 +427,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When viewing a training session detail (from progress page), show full-screen overlay
   if (activeTrainingSessionId != null) {
     return (
-      <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
+      <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: COLORS.backgroundLibrary }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => setActiveTrainingSessionId(null)}
@@ -443,7 +443,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   // When viewing a student's sessions, show the same sessions page with DB-backed sessions
   if (selectedStudent) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: COLORS.backgroundLibrary }}>
         <MySessionsPage
           title={`${selectedStudent.name}'s Sessions`}
           onBack={() => setSelectedStudent(null)}
@@ -457,7 +457,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: COLORS.backgroundLibrary,
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
@@ -488,7 +488,7 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
   return (
     <div
       style={{
-        backgroundColor: '#ffffff',
+        backgroundColor: COLORS.backgroundLibrary,
         minHeight: '100vh',
         padding: isDesktop ? SPACING.xl : SPACING.md,
         width: '100%',
