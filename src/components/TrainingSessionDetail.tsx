@@ -2473,7 +2473,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       View frame
                                     </button>
                                   )}
-                                  {isOwnReply && (
+                                  {isAdmin && (
                                     <button
                                       type="button"
                                       onClick={(e) => {
