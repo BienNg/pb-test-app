@@ -75,19 +75,23 @@ export async function fetchFirstSessionDateForStudentIds(
     .in('student_id', studentIds);
   
   if (error || !data) return {};
-  
+
   const rows = data as Array<{
     student_id: string;
     session_id: string;
-    sessions: { date: string };
+    sessions: { date: string } | { date: string }[];
   }>;
-  
+
   const firstDates: Record<string, string> = {};
-  
+
   for (const row of rows) {
     const studentId = row.student_id;
-    const sessionDate = row.sessions.date;
-    
+    const sessionDate = Array.isArray(row.sessions)
+      ? row.sessions[0]?.date
+      : row.sessions.date;
+
+    if (!sessionDate) continue;
+
     if (!firstDates[studentId] || sessionDate < firstDates[studentId]) {
       firstDates[studentId] = sessionDate;
     }
