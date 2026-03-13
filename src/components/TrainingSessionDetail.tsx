@@ -387,6 +387,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const editInputRef = useRef<HTMLDivElement>(null);
   const pendingEditCursorRef = useRef<number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
     if (sessionsProp != null) return [];
@@ -407,6 +408,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
   const [postingReply, setPostingReply] = useState(false);
+
+  // Auto-grow reply textarea with content
+  useEffect(() => {
+    const el = replyTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(56, el.scrollHeight)}px`;
+  }, [replyDraft, replyingToCommentId]);
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
@@ -2226,8 +2235,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       )}
                       {repliesByCommentId[String(comment.id)] &&
                         repliesByCommentId[String(comment.id)].map((reply) => {
-                          const canSeek =
-                            (reply.timestampSeconds ?? comment.timestampSeconds) != null && editingCommentId !== comment.id;
+                          const canSeek = false;
                           const tsSeconds = (reply.timestampSeconds ?? comment.timestampSeconds) ?? null;
                           const timestampLabel =
                             tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
@@ -2236,12 +2244,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               key={reply.id}
                               style={{
                                 marginTop: SPACING.sm,
-                                marginLeft: 40,
+                                marginLeft: 24,
                                 borderRadius: RADIUS.md,
+                                borderTopLeftRadius: 0,
+                                borderBottomLeftRadius: 0,
                                 borderLeft: '3px solid #8fb9a8',
-                                backgroundColor: '#f5faf8',
+                                backgroundColor: COLORS.cardBg,
                                 padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
                               }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <div
                                 style={{
@@ -2307,10 +2318,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         <div
                           style={{
                             marginTop: SPACING.sm,
-                            marginLeft: 40,
+                            marginLeft: 24,
                             borderRadius: RADIUS.md,
+                            borderTopLeftRadius: 0,
+                            borderBottomLeftRadius: 0,
                             borderLeft: '3px solid #8fb9a8',
-                            backgroundColor: '#f5faf8',
+                            backgroundColor: COLORS.cardBg,
                             padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
                           }}
                           onClick={(e) => e.stopPropagation()}
@@ -2333,63 +2346,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               }}
                             >
                               FRAME DETAIL
-                              {comment.timestampSeconds != null && (
-                                <span style={{ color: '#9ca3af', marginLeft: 4 }}>
-                                  [{formatTimestamp(comment.timestampSeconds)}]
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleAddReply(comment.id);
-                                }}
-                                disabled={postingReply || !replyDraft.trim()}
-                                style={{
-                                  padding: '4px 10px',
-                                  borderRadius: 999,
-                                  border: 'none',
-                                  backgroundColor: postingReply || !replyDraft.trim() ? '#d1e3db' : '#8fb9a8',
-                                  color: '#ffffff',
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  cursor: postingReply || !replyDraft.trim() ? 'default' : 'pointer',
-                                }}
-                              >
-                                Post reply
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setReplyingToCommentId(null);
-                                  setReplyDraft('');
-                                }}
-                                style={{
-                                  padding: '4px 8px',
-                                  borderRadius: 999,
-                                  border: 'none',
-                                  backgroundColor: 'transparent',
-                                  color: COLORS.textSecondary,
-                                  fontSize: 11,
-                                  fontWeight: 500,
-                                  cursor: 'pointer',
-                                }}
-                              >
-                                Cancel
-                              </button>
+                              <span style={{ color: '#9ca3af', marginLeft: 4 }}>
+                                [{formatTimestamp(currentVideoTime)}]
+                              </span>
                             </div>
                           </div>
                           <textarea
+                            ref={replyTextareaRef}
                             value={replyDraft}
                             onChange={(e) => setReplyDraft(e.target.value)}
-                            rows={3}
-                            placeholder="Notice the contact point is 6 inches too far back here, causing the pop-up. Try to meet the ball in front of your lead foot."
+                            placeholder="Add a comment to the frame"
                             style={{
                               width: '100%',
-                              resize: 'vertical',
+                              minHeight: 56,
+                              resize: 'none',
+                              overflow: 'hidden',
                               borderRadius: RADIUS.sm,
                               border: `1px solid ${COLORS.backgroundLight}`,
                               padding: `${SPACING.xs}px ${SPACING.sm}px`,
@@ -2398,6 +2369,55 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               backgroundColor: COLORS.cardBg,
                             }}
                           />
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'flex-end',
+                              gap: 8,
+                              marginTop: SPACING.xs,
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleAddReply(comment.id);
+                              }}
+                              disabled={postingReply || !replyDraft.trim()}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 999,
+                                border: 'none',
+                                backgroundColor: postingReply || !replyDraft.trim() ? '#d1e3db' : '#8fb9a8',
+                                color: '#ffffff',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: postingReply || !replyDraft.trim() ? 'default' : 'pointer',
+                              }}
+                            >
+                              Post reply
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReplyingToCommentId(null);
+                                setReplyDraft('');
+                              }}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: 999,
+                                border: 'none',
+                                backgroundColor: 'transparent',
+                                color: COLORS.textSecondary,
+                                fontSize: 11,
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
