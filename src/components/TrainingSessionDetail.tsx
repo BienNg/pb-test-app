@@ -1584,6 +1584,77 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [mentionMenu, taggableProfiles]
   );
 
+  interface ExampleGifButtonProps {
+    gifFileName: string | null;
+    shotExampleGifs: { key: string; src: string; title: string }[];
+    onClick: (gif: { src: string; title: string }) => void;
+    stopPropagation?: boolean;
+    style?: React.CSSProperties;
+  }
+
+  const ExampleGifButton: React.FC<ExampleGifButtonProps> = ({
+    gifFileName,
+    shotExampleGifs,
+    onClick,
+    stopPropagation = false,
+    style,
+  }) => {
+    if (!gifFileName) return null;
+    const gif = shotExampleGifs.find(
+      (g) => g.key === `./${gifFileName}` || g.key === gifFileName
+    );
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          if (stopPropagation) e.stopPropagation();
+          if (gif) {
+            onClick({ src: gif.src, title: gif.title });
+          }
+        }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: `${SPACING.xs}px ${SPACING.sm}px`,
+          borderRadius: RADIUS.sm,
+          border: `1px solid ${REFERENCE_PRIMARY}40`,
+          backgroundColor: `${REFERENCE_PRIMARY}1A`,
+          color: REFERENCE_PRIMARY,
+          ...TYPOGRAPHY.label,
+          fontWeight: 600,
+          cursor: 'pointer',
+          ...(style ?? {}),
+        }}
+      >
+        Show example
+      </button>
+    );
+  };
+
+  interface FrameDetailCardProps {
+    children: React.ReactNode;
+    onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  }
+
+  const FrameDetailCard: React.FC<FrameDetailCardProps> = ({ children, onClick }) => (
+    <div
+      style={{
+        marginTop: SPACING.sm,
+        marginLeft: 24,
+        borderRadius: RADIUS.md,
+        borderTopLeftRadius: 0,
+        borderBottomLeftRadius: 0,
+        borderLeft: '3px solid #8fb9a8',
+        backgroundColor: COLORS.cardBg,
+        padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
+      }}
+      onClick={onClick}
+    >
+      {children}
+    </div>
+  );
+
   interface ShotSuggestionsDropdownProps {
     shotMenu: { query: string; slashStart: number; highlightIndex: number };
     filteredShots: string[];
@@ -2205,33 +2276,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         >
                           {comment.timestampSeconds != null && (
                             <>
-                              {comment.exampleGif ? (() => {
-                                const gif = shotExampleGifs.find((g) => g.key === `./${comment.exampleGif}` || g.key === comment.exampleGif);
-                                return (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (gif) setViewExampleModal({ src: gif.src, title: gif.title, commentId: comment.id });
-                                    }}
-                                    style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                                      borderRadius: RADIUS.sm,
-                                      border: `1px solid ${REFERENCE_PRIMARY}40`,
-                                      backgroundColor: `${REFERENCE_PRIMARY}1A`,
-                                      color: REFERENCE_PRIMARY,
-                                      ...TYPOGRAPHY.label,
-                                      fontWeight: 600,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    Show example
-                                  </button>
-                                );
-                              })() : isAdmin ? (
+                              {comment.exampleGif ? (
+                                <ExampleGifButton
+                                  gifFileName={comment.exampleGif}
+                                  shotExampleGifs={shotExampleGifs}
+                                  stopPropagation
+                                  onClick={(gif) =>
+                                    setViewExampleModal({
+                                      src: gif.src,
+                                      title: gif.title,
+                                      commentId: comment.id,
+                                    })
+                                  }
+                                />
+                              ) : isAdmin ? (
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -2536,18 +2594,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           const isEditing = editingReplyId === reply.id;
                           const isMenuOpen = activeReplyMenuId === reply.id;
                           return (
-                            <div
+                            <FrameDetailCard
                               key={reply.id}
-                              style={{
-                                marginTop: SPACING.sm,
-                                marginLeft: 24,
-                                borderRadius: RADIUS.md,
-                                borderTopLeftRadius: 0,
-                                borderBottomLeftRadius: 0,
-                                borderLeft: '3px solid #8fb9a8',
-                                backgroundColor: COLORS.cardBg,
-                                padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
-                              }}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (canSeek && tsSeconds != null) {
@@ -2792,23 +2840,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   })}
                                 </p>
                               )}
-                            </div>
+                            </FrameDetailCard>
                           );
                         })}
                       {replyingToCommentId === String(comment.id) && (
-                        <div
-                          style={{
-                            marginTop: SPACING.sm,
-                            marginLeft: 24,
-                            borderRadius: RADIUS.md,
-                            borderTopLeftRadius: 0,
-                            borderBottomLeftRadius: 0,
-                            borderLeft: '3px solid #8fb9a8',
-                            backgroundColor: COLORS.cardBg,
-                            padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <FrameDetailCard onClick={(e) => e.stopPropagation()}>
                           <div
                             style={{
                               display: 'flex',
@@ -2936,7 +2972,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               Cancel
                             </button>
                           </div>
-                        </div>
+                        </FrameDetailCard>
                       )}
                     </div>
                   </div>
@@ -2975,54 +3011,45 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   Comment
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: SPACING.xs }}>
-                  {isAdmin && (pendingNewCommentGif ? (() => {
-                    const gif = shotExampleGifs.find((g) => g.key === `./${pendingNewCommentGif}` || g.key === pendingNewCommentGif);
-                    return (
-                      <button
-                        type="button"
-                        onClick={() => { if (gif) setViewExampleModal({ src: gif.src, title: gif.title }); }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                          borderRadius: RADIUS.sm,
-                          border: `1px solid ${REFERENCE_PRIMARY}40`,
-                          backgroundColor: `${REFERENCE_PRIMARY}1A`,
-                          color: REFERENCE_PRIMARY,
-                          ...TYPOGRAPHY.label,
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                        }}
-                      >
-                        Show example
-                      </button>
-                    );
-                  })() : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExampleModalContext('new');
-                        setIsExampleModalOpen(true);
-                      }}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                        borderRadius: RADIUS.sm,
-                        border: `1px solid ${COLORS.backgroundLight}`,
-                        backgroundColor: COLORS.cardBg,
-                        color: COLORS.textSecondary,
-                        ...TYPOGRAPHY.label,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      +example
-                    </button>
-                  ))}
+                  {isAdmin && (
+                    <>
+                      <ExampleGifButton
+                        gifFileName={pendingNewCommentGif}
+                        shotExampleGifs={shotExampleGifs}
+                        style={{ flexShrink: 0 }}
+                        onClick={(gif) =>
+                          setViewExampleModal({
+                            src: gif.src,
+                            title: gif.title,
+                          })
+                        }
+                      />
+                      {!pendingNewCommentGif && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExampleModalContext('new');
+                            setIsExampleModalOpen(true);
+                          }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                            borderRadius: RADIUS.sm,
+                            border: `1px solid ${COLORS.backgroundLight}`,
+                            backgroundColor: COLORS.cardBg,
+                            color: COLORS.textSecondary,
+                            ...TYPOGRAPHY.label,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                        >
+                          +example
+                        </button>
+                      )}
+                    </>
+                  )}
                   <div
                     role="group"
                     aria-label="Comment timestamp"
