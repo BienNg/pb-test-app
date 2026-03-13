@@ -289,7 +289,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [sortAsc, setSortAsc] = useState(true);
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isMobile, setIsMobile] = useState(false);
   const showStudentsOnly = !showMySessionsTab;
 
@@ -648,42 +648,40 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                     </button>
                   ))}
                 </div>
-                {viewMode !== 'table' && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('grid')}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(143, 185, 168, 0.2)',
-                        background: viewMode === 'grid' ? '#E1EDEA' : 'white',
-                        color: COLORS.textPrimary,
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Grid
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setViewMode('table')}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(143, 185, 168, 0.2)',
-                        background: viewMode === 'table' ? '#E1EDEA' : 'white',
-                        color: COLORS.textPrimary,
-                        cursor: 'pointer',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Table
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('table')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(143, 185, 168, 0.2)',
+                      background: viewMode === 'table' ? '#E1EDEA' : 'white',
+                      color: COLORS.textPrimary,
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Table
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('grid')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(143, 185, 168, 0.2)',
+                      background: viewMode === 'grid' ? '#E1EDEA' : 'white',
+                      color: COLORS.textPrimary,
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Grid
+                  </button>
+                </div>
               </div>
             )}
 
