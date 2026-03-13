@@ -155,13 +155,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   useEffect(() => { onPlayPropRef.current = onPlayProp; });
 
   const [frameDetailCirclePosition, setFrameDetailCirclePosition] = useState({ x: 50, y: 50 });
-  const [frameDetailCircleRadiusX, setFrameDetailCircleRadiusX] = useState(14);
-  const [frameDetailCircleRadiusY, setFrameDetailCircleRadiusY] = useState(14);
+  // radiusX and radiusY are stored as percentages of the overlay's width/height
+  const [frameDetailCircleRadiusX, setFrameDetailCircleRadiusX] = useState(5);
+  const [frameDetailCircleRadiusY, setFrameDetailCircleRadiusY] = useState(5);
   const [isDraggingFrameCircle, setIsDraggingFrameCircle] = useState(false);
   const [isResizingFrameCircle, setIsResizingFrameCircle] = useState(false);
 
-  const FRAME_ELLIPSE_RADIUS_MIN = 10;
-  const FRAME_ELLIPSE_RADIUS_MAX = 72;
+  const FRAME_ELLIPSE_RADIUS_MIN = 3;
+  const FRAME_ELLIPSE_RADIUS_MAX = 30;
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -221,8 +222,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       setFrameDetailCircleRadiusY(frameDetailMarkerInitial.radiusY);
     } else {
       setFrameDetailCirclePosition({ x: 50, y: 50 });
-      setFrameDetailCircleRadiusX(14);
-      setFrameDetailCircleRadiusY(14);
+      setFrameDetailCircleRadiusX(5);
+      setFrameDetailCircleRadiusY(5);
     }
   }, [showFrameDetailReplyOverlay, frameDetailMarkerInitial]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -259,7 +260,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const rect = frameDetailOverlayRef.current.getBoundingClientRect();
     const centerX = rect.left + (frameDetailCirclePosition.x / 100) * rect.width;
     const radiusX = Math.round(
-      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientX - centerX)))
+      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, (Math.abs(e.clientX - centerX) / rect.width) * 100))
     );
     setFrameDetailCircleRadiusX(radiusX);
   }, [isResizingFrameCircle, frameDetailCirclePosition.x]);
@@ -270,7 +271,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const rect = frameDetailOverlayRef.current.getBoundingClientRect();
     const centerY = rect.top + (frameDetailCirclePosition.y / 100) * rect.height;
     const radiusY = Math.round(
-      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientY - centerY)))
+      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, (Math.abs(e.clientY - centerY) / rect.height) * 100))
     );
     setFrameDetailCircleRadiusY(radiusY);
   }, [isResizingFrameCircle, frameDetailCirclePosition.y]);
@@ -842,8 +843,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     left: `${frameDetailCirclePosition.x}%`,
                     top: `${frameDetailCirclePosition.y}%`,
                     transform: 'translate(-50%, -50%)',
-                    width: frameDetailCircleRadiusX * 2,
-                    height: frameDetailCircleRadiusY * 2,
+                    width: `${frameDetailCircleRadiusX * 2}%`,
+                    height: `${frameDetailCircleRadiusY * 2}%`,
                     borderRadius: '50%',
                     backgroundColor: 'transparent',
                     border: '3px solid #e11',
@@ -863,7 +864,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       aria-label="Resize marker width"
                       style={{
                         position: 'absolute',
-                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}px)`,
+                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}%)`,
                         top: `${frameDetailCirclePosition.y}%`,
                         transform: 'translate(-50%, -50%)',
                         width: 14,
@@ -886,7 +887,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       style={{
                         position: 'absolute',
                         left: `${frameDetailCirclePosition.x}%`,
-                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}px)`,
+                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}%)`,
                         transform: 'translate(-50%, -50%)',
                         width: 14,
                         height: 14,
@@ -1131,8 +1132,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     left: `${frameDetailCirclePosition.x}%`,
                     top: `${frameDetailCirclePosition.y}%`,
                     transform: 'translate(-50%, -50%)',
-                    width: frameDetailCircleRadiusX * 2,
-                    height: frameDetailCircleRadiusY * 2,
+                    width: `${frameDetailCircleRadiusX * 2}%`,
+                    height: `${frameDetailCircleRadiusY * 2}%`,
                     borderRadius: '50%',
                     backgroundColor: 'transparent',
                     border: '3px solid #e11',
@@ -1152,7 +1153,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       aria-label="Resize marker width"
                       style={{
                         position: 'absolute',
-                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}px)`,
+                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}%)`,
                         top: `${frameDetailCirclePosition.y}%`,
                         transform: 'translate(-50%, -50%)',
                         width: 14,
@@ -1175,7 +1176,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       style={{
                         position: 'absolute',
                         left: `${frameDetailCirclePosition.x}%`,
-                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}px)`,
+                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}%)`,
                         transform: 'translate(-50%, -50%)',
                         width: 14,
                         height: 14,
