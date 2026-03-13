@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Directory - Visual &amp; Compact</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecda",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                        "sage": {
+                            50: "#f2f7f6",
+                            100: "#e1edea",
+                            200: "#c4dbd6",
+                            300: "#9bc1b9",
+                            400: "#70a198",
+                            500: "#55877f",
+                            600: "#436d67",
+                            700: "#385854",
+                            800: "#304845",
+                            900: "#2b3e3b",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Lexend"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 border-r border-sage-200 dark:border-sage-800 bg-white dark:bg-background-dark hidden md:flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="size-10 bg-primary/20 rounded-xl flex items-center justify-center text-sage-600">
+<span class="material-symbols-outlined text-2xl">auto_stories</span>
+</div>
+<div>
+<h1 class="font-bold text-lg leading-tight">EduManager</h1>
+<p class="text-xs text-sage-500 font-medium">Visual Dashboard</p>
+</div>
+</div>
+<nav class="mt-4 flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2.5 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 bg-primary/10 text-sage-700 dark:text-primary rounded-lg" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-semibold">Students</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="text-sm font-medium">Roadmaps</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-sm font-medium">Resources</span>
+</a>
+</nav>
+<div class="p-4 border-t border-sage-200 dark:border-sage-800">
+<div class="flex items-center gap-3 p-2 bg-sage-50 dark:bg-sage-900 rounded-xl">
+<div class="size-10 rounded-full bg-sage-200 dark:bg-sage-800 flex-shrink-0 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Admin profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIp_F6KVecIV6HyxN6-t5NC-mhCWKF0CJ-dHPJ55z_7uxjnFOy39FQlTczbKjx5s4SNMeZEvA8GerxksEEqH5Yjv9GiVLZibadSfmbCsuCCEDRc9VRNa5rE4f11U-oUzut2VOpOky9wti9cY7FbRllAv7ny5fUN-eTD0O3_zXr3oPGp4YoqpQLD3IpR7R2dBNiRu21S8DU_MV-1GuY_r_H2XOc0QCVNzAA3Zustqm8huLlQaVNGW4zAsq4NjydI5uKxeXe84XlV6Z4"/>
+</div>
+<div class="min-w-0">
+<p class="text-sm font-bold truncate">Sarah J.</p>
+<p class="text-[10px] text-sage-500 uppercase tracking-wider font-bold">Administrator</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- Top Navigation -->
+<header class="h-16 flex-shrink-0 bg-white dark:bg-background-dark border-b border-sage-200 dark:border-sage-800 flex items-center justify-between px-8">
+<div class="flex-1 max-w-xl">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sage-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-sage-50 dark:bg-sage-900 border-none rounded-lg focus:ring-2 focus:ring-primary/50 text-sm transition-all" placeholder="Search students, skills or roadmaps..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4 ml-4">
+<button class="p-2 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-primary rounded-full"></span>
+</button>
+<button class="p-2 text-sage-500 hover:bg-sage-50 dark:hover:bg-sage-900 rounded-lg transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-px bg-sage-200 dark:border-sage-800 mx-2"></div>
+<button class="bg-sage-600 hover:bg-sage-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">person_add</span>
+<span>Add Student</span>
+</button>
+</div>
+</header>
+<!-- View Controls & Content -->
+<div class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-8">
+<div class="flex flex-col gap-6 max-w-7xl mx-auto">
+<!-- Header and Filter Chips -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl font-black tracking-tight">Student Directory</h2>
+<p class="text-sage-500 mt-1">Real-time learning progress and skill tracking.</p>
+</div>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-1.5 rounded-full bg-sage-600 text-white text-sm font-medium">All</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-sage-900 border border-sage-200 dark:border-sage-800 text-sage-600 dark:text-sage-300 text-sm font-medium hover:bg-sage-50 dark:hover:bg-sage-800 transition-colors">Newbie</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-sage-900 border border-sage-200 dark:border-sage-800 text-sage-600 dark:text-sage-300 text-sm font-medium hover:bg-sage-50 dark:hover:bg-sage-800 transition-colors">Beginner</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-sage-900 border border-sage-200 dark:border-sage-800 text-sage-600 dark:text-sage-300 text-sm font-medium hover:bg-sage-50 dark:hover:bg-sage-800 transition-colors">Intermediate</button>
+<button class="px-4 py-1.5 rounded-full bg-white dark:bg-sage-900 border border-sage-200 dark:border-sage-800 text-sage-600 dark:text-sage-300 text-sm font-medium hover:bg-sage-50 dark:hover:bg-sage-800 transition-colors">Advanced</button>
+</div>
+</div>
+<!-- Student Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Card 1 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Alex Johnson" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBm2qTCuobchqw6T35-I5KiKqKuImrs9VD-qjf7vZ5VTHYWT088BstZWxYClUheM4LvBUZCUQHTuxQQZcrkwOURxO0W3daN5LOX-4KL1Sz56LilzJvGwvmuCI1OhYOrnmT5865P5nQrcAEkN5CK5FFMIUi9_h6B7It7DqKDOb5yva3GPHFhDKB5i12D0OT7MV83DHyp2eq3p4wR-1tMnpYhYkSTFp1a0O5rT1oHgdYvZSI6Emzm9RpHvYw4Gvp-V6gei_qngQpxOBJJ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Alex Johnson</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Oct 2023</p>
+</div>
+<span class="px-2 py-1 bg-sage-100 dark:bg-sage-800 text-sage-600 dark:text-sage-300 rounded text-[10px] font-bold uppercase tracking-wider italic">Intermediate</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">72%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 72%"></div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Sam Smith" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5AftAUstnsmfxM_tK5IRk_95d3ml2LjX5w2VXBbZXIE1QAIg6i0eBShnko8AbyY7pd0rJe1IOm6dnWjNV-9bTBiqyoXjzGPPG4as1keG21XR1OOtx_DILIvIrBv_vTB96PY06eyl50BLobCWx-AmcxUFjJwW-Xas7OPrKJzya_eVlv1snk0dm54qudaWbgDpdE-Pe-kc4XlT2BAo13JerWuCmUNFKuysnXSQFzsfX4IuTbAK46a1LLsgLx7sLsIs0WrwLMdo-xRGj"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Sam Smith</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Nov 2023</p>
+</div>
+<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded text-[10px] font-bold uppercase tracking-wider italic">Newbie</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">15%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 15%"></div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Jordan Lee" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr-CCRaGo3umvkd8Jm5LSWM-eWsfPv5gif6rJVWhhg7E-9nB2cOJ8P4fc_Ip5WPYG-CKHZ99KPQPQe5lhuhEbNgfqW_JbRaGR_hJkvtkjGnqPiPECG7ptY8Lcr0GIJUsHcA0-52LGqiJmkimIn7FzvJj7nGUl8I9gaiTw-8FW4jW7_RnXBOW5nA7boh8mB5UG4iVBdKG-H1HPiGTyUtZU7GmlyFNxdLtx4-TOFMnz6ayAfrfTFJ21tXc8afUjBxq9O-8rjlyEBHdef"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Jordan Lee</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Sep 2023</p>
+</div>
+<span class="px-2 py-1 bg-primary/20 text-sage-700 dark:text-primary rounded text-[10px] font-bold uppercase tracking-wider italic">Advanced</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">94%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 94%"></div>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Casey Wong" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8_AQAEncsAvmOgrS4UOfWP6Jbbg68_MjPDi7oNPpfiCK_LnGg-k6SSFG10fTBuQVMxn0jFogZLvi6vp9qeJWzcYhrOznChQcrhJMApMoeoCwfYDyob2Fcx0nlZlMhsxqVzyJxYPQX22auQHxrf_GmjkVxIa93x-m1yiLDRxL05QqDhroGbvtqZ1Wgc7JZwDYwAKHaR_Mf-aRaTeX18hB-SZt32ikkcdKt6cf4nbJXzZQDNu6VWT8mv1HQucRSHk1fb40V2bg2thHh"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Casey Wong</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Jan 2024</p>
+</div>
+<span class="px-2 py-1 bg-sage-100 dark:bg-sage-800 text-sage-600 dark:text-sage-300 rounded text-[10px] font-bold uppercase tracking-wider italic">Beginner</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">42%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Riley Davis" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJ73tYho6yQ6CdPS8c_VnXQtKX7uNdRvsbOm4zt_gwPtAGkAPjEsVC1tWIsb6rWKshIsvo5BtmmfiTB23F39A1CV74cJgCFHZPbp5BxIGKmo_OaQ46KwxwS7MOF-GXIQD7obCoewI6bedfSL4EaINy04oSAfRCYP-J9oGbbIiQiIfwHjEHJnAYM4fquAlpkfF-U0bS-1OR5rAmK_Pd4FTuHUZoOMZYPmV9GxggbKwtiWFugFfZunqj37Oc1SkcvAfOlZ5FHA0Z3Fsc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Riley Davis</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Dec 2023</p>
+</div>
+<span class="px-2 py-1 bg-primary/20 text-sage-700 dark:text-primary rounded text-[10px] font-bold uppercase tracking-wider italic">Advanced</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">88%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Taylor Reed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtrGyPYwxsKY2zCwJctXKC3CDyFvF_hgTEkpHuo4Mc9VmOI8PpRHzFoxE5YrGSrJiBH7tKkdDMU3oMOor4a37DU_DaMl154XgFrlVBpY75bJy06-gGWal-W5ta3ajoWabwN0y10H0N1Dvo1qFWZB1bpHMFxaWofEg4_BSckQd-AOcJSPL4KcXOyxR1Gw7I9sl415GBXtPOB4KD5qScuVgcUtxHxyoQhBHHrzAP8hfxt5dBL7F25UmB55HuIiFJiWshteuL3Q-OoZvX"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Taylor Reed</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Feb 2024</p>
+</div>
+<span class="px-2 py-1 bg-sage-100 dark:bg-sage-800 text-sage-600 dark:text-sage-300 rounded text-[10px] font-bold uppercase tracking-wider italic">Beginner</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">30%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 30%"></div>
+</div>
+</div>
+</div>
+<!-- Card 7 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Morgan Price" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBOb6_FEdECEkXGVTd8wOvfIsJ0V9RqDuU6GWZ_GhyvrqluToTKX2UOtr74vXJfojrM5A2uStwC1Dlv2xTuFGMf7TjIVyJ1znHsn2VdcxfkHtPfRWU2k54yU5nGWyoBZsV0biH34LjNLCAj14X6cqv6MKjkV6_7zziqIMBVh21eaXzlrj4fzpUSACcLCJnaoJA0GoRf0j9WIuqTG1PuQq_IN-7qZYZt8YFqClDrRVzx81-hRB4H8YimnplArqt5VueDfUcYYm0I7uB3"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Morgan Price</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Jan 2024</p>
+</div>
+<span class="px-2 py-1 bg-sage-100 dark:bg-sage-800 text-sage-600 dark:text-sage-300 rounded text-[10px] font-bold uppercase tracking-wider italic">Intermediate</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">55%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 55%"></div>
+</div>
+</div>
+</div>
+<!-- Card 8 -->
+<div class="bg-white dark:bg-background-dark rounded-xl border border-sage-200 dark:border-sage-800 p-5 flex flex-col gap-4 hover:shadow-lg transition-shadow">
+<div class="relative group aspect-[4/3] w-full rounded-lg overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of student Avery Quinn" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ2i9xZKrLhCQ8MIqkpfhKU2zmza8bgLhQp7aDTyqiTtB-UK3Y_lJRBVfuaWNhaNh8fsndr3jXcr7s-IpZtWgNIIY-ktX95Y9kIbnTcL7wSKNHcnj1iitd6fptnVIg75mC5Dl2sP6g0GDBUvoEghEqrJrQBHZgYTxAGfxwXWsGXAr8a8ZauEZjSYCbA4Geyx_EIT4qBBIqHY7BIF7d1o6jND15VnKQERx9cTIg3Te8B-FHuxAsGxg0EpNoD0j4iMj3aGwmbWIC_PJt"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+<button class="w-full py-2 bg-white/20 backdrop-blur-md text-white rounded-lg text-xs font-bold uppercase tracking-widest">View Profile</button>
+</div>
+</div>
+<div class="flex items-start justify-between">
+<div>
+<h3 class="font-bold text-lg text-slate-900 dark:text-slate-100">Avery Quinn</h3>
+<p class="text-xs text-sage-500 font-medium">Joined Oct 2023</p>
+</div>
+<span class="px-2 py-1 bg-sage-100 dark:bg-sage-800 text-sage-600 dark:text-sage-300 rounded text-[10px] font-bold uppercase tracking-wider italic">Intermediate</span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between items-center text-xs font-semibold">
+<span class="text-sage-500">Learning Roadmap</span>
+<span class="text-primary">60%</span>
+</div>
+<div class="h-2 w-full bg-sage-100 dark:bg-sage-900 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

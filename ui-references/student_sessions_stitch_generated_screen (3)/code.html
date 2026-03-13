@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Student Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                        "sage": {
+                            50: "#f2f7f5",
+                            100: "#e5efeb",
+                            200: "#cce0d8",
+                            300: "#a6c7bb",
+                            400: "#8fb9a8",
+                            500: "#71a18d",
+                            600: "#588171",
+                        }
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Lexend', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100">
+<div class="relative flex min-h-screen w-full flex-col bg-white dark:bg-background-dark overflow-x-hidden max-w-md mx-auto shadow-2xl">
+<!-- Header -->
+<div class="flex items-center bg-white dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10 border-b border-sage-100 dark:border-slate-800">
+<div class="text-slate-900 dark:text-slate-100 flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-sage-50 dark:hover:bg-slate-800 cursor-pointer">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center">Students</h2>
+<div class="flex size-10 items-center justify-end">
+<button class="flex cursor-pointer items-center justify-center rounded-full hover:bg-sage-50 dark:hover:bg-slate-800 p-2">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Search Bar -->
+<div class="px-4 py-4 bg-white dark:bg-background-dark">
+<label class="flex flex-col min-w-40 h-12 w-full">
+<div class="flex w-full flex-1 items-stretch rounded-xl h-full shadow-sm">
+<div class="text-sage-400 flex border-none bg-sage-50 dark:bg-slate-800 items-center justify-center pl-4 rounded-l-xl">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-sage-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-0 h-full placeholder:text-sage-400 px-4 rounded-r-xl pl-2 text-base font-normal leading-normal" placeholder="Search students by name..." value=""/>
+</div>
+</label>
+</div>
+<!-- Category Filters -->
+<div class="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar bg-white dark:bg-background-dark">
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary text-white px-5 cursor-pointer">
+<p class="text-sm font-semibold">All</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-sage-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-5 border border-sage-100 dark:border-slate-700 cursor-pointer">
+<p class="text-sm font-medium">Newbie</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-sage-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-5 border border-sage-100 dark:border-slate-700 cursor-pointer">
+<p class="text-sm font-medium">Beginner</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-sage-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-5 border border-sage-100 dark:border-slate-700 cursor-pointer">
+<p class="text-sm font-medium">Intermediate</p>
+</div>
+<div class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-sage-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-5 border border-sage-100 dark:border-slate-700 cursor-pointer">
+<p class="text-sm font-medium">Advanced</p>
+</div>
+</div>
+<!-- Student List -->
+<div class="flex flex-col gap-1 px-4 py-2 flex-grow overflow-y-auto bg-white dark:bg-background-dark">
+<!-- Student Card 1 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-sage-50 dark:border-slate-800 hover:border-primary/40 transition-colors shadow-sm mb-2">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-sage-100" data-alt="Portrait of Alice Thompson smiling" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBJ6uOmx-cEHf1qXzqp6ZfH0lkKPzkuGp-I16s4XYIQEa48Zfk0y1yHaCEmfGZBxm3AD6UHQ4aoATzNPO0IrtFmvPNVXDyZ61fQX5OQLuL4KiPOq1qZEyb0I364XLWUegUF4JrpkjhsS7Bv7ABFhGYzWr8_gzDdGQiT_S1YG112Ri4s_3KyvEsY1mnv6C3wgAOqVJdm5Y6EWcmh8DEUu595kZTJmglmhtQLwf7wztMtUzalQ2kRHytgJIxIJ6cT8YBB7FvynbwCezR1");'></div>
+<div class="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+</div>
+<div class="flex flex-col flex-1 justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Alice Thompson</p>
+<p class="text-sage-500 dark:text-sage-400 text-xs font-medium mt-0.5 uppercase tracking-wider">Newbie • Joined 2 days ago</p>
+</div>
+<div class="shrink-0">
+<div class="text-sage-300 dark:text-slate-600 flex size-8 items-center justify-center">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-sage-50 dark:border-slate-800 hover:border-primary/40 transition-colors shadow-sm mb-2">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-sage-100" data-alt="Portrait of Marcus Chen looking forward" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBM2TUd-ZklClc3_7rMoAMgUm2Dmc2hedAbwkmRE1iCvjG0cfqUDKdFliwdYW9mzDOKYJfVbaKwm19gwqsRhrbXjY3D1dogzjs8kutE8nh9UpP4SkwiPbkwK-U-huA7DU68VrOBsKKmJYIpeHEFYepbl7RaMVO4PjAld-L-46mI-Lzo4ujUbEz1nVE3SJn3UT0g0ZWltdWj8Nf5W7hPLPYHU3OzW809a9yRbXcLQRV-Al1EoJzSemjpSe2nNPjAKxIYxpwnV8_luZJf");'></div>
+</div>
+<div class="flex flex-col flex-1 justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Marcus Chen</p>
+<p class="text-sage-500 dark:text-sage-400 text-xs font-medium mt-0.5 uppercase tracking-wider">Intermediate • 24 Courses</p>
+</div>
+<div class="shrink-0">
+<div class="text-sage-300 dark:text-slate-600 flex size-8 items-center justify-center">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Student Card 3 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-sage-50 dark:border-slate-800 hover:border-primary/40 transition-colors shadow-sm mb-2">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-sage-100" data-alt="Portrait of David Wright" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZ2NxO_krUONQc53cAnBkWnlIMHI3TOt7dvnTzcx6AWYsH6_--_ciXf61z6lyG4YNW6cvUdOovi-1H8VoBuEz0QkzRpMYAYiP5CYHvPTzNUxbS2kuieU04qfHq1EJxXwtfOzZuxxHmTQDf5TP9PvfBhx_-iiFTQClUjilITnshPE_-4H0cLl5ZwlTA1X07lgM0Wh1qLYRSv4aMaC7zJitzpeUh8cZtGdBUlRrTz7y0nCTUBH5UEqkULowwabxe1o3NN2sVkf4sBXkO");'></div>
+<div class="absolute bottom-0 right-0 h-3.5 w-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+</div>
+<div class="flex flex-col flex-1 justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">David Wright</p>
+<p class="text-sage-500 dark:text-sage-400 text-xs font-medium mt-0.5 uppercase tracking-wider">Advanced • Top Learner</p>
+</div>
+<div class="shrink-0">
+<div class="text-sage-300 dark:text-slate-600 flex size-8 items-center justify-center">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Student Card 4 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-sage-50 dark:border-slate-800 hover:border-primary/40 transition-colors shadow-sm mb-2">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-sage-100" data-alt="Portrait of Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCCG_d1ZZ6gWfzZQ5_aD9aOj0QVhsmlNuIkE7FCbci-n4TF_5jmMp6lGs-PEdP2ab19-aarNYfnwTTb3IegdMTAEBkrPNzq36BXhylv5Y3g4qf21Udlo7fk9S-Drerw8ECYZUm-siF6lwboRFJAltzDv-V7Ruh4ZjD6dNqIRFfR0JAQUvRUx3QaD2zRGYe0-HjQv5ccDOXDH4gHR27iCttbK2B-UquCKieASDktBdQXcjnEyz7KZ7Gj52F-3CCjdjJDKB1-Tregx4ZI");'></div>
+</div>
+<div class="flex flex-col flex-1 justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Sarah Jenkins</p>
+<p class="text-sage-500 dark:text-sage-400 text-xs font-medium mt-0.5 uppercase tracking-wider">Beginner • Last seen today</p>
+</div>
+<div class="shrink-0">
+<div class="text-sage-300 dark:text-slate-600 flex size-8 items-center justify-center">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Student Card 5 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900/50 p-3 rounded-xl border border-sage-50 dark:border-slate-800 hover:border-primary/40 transition-colors shadow-sm mb-2">
+<div class="relative">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-14 w-14 border-2 border-sage-100" data-alt="Portrait of Robert Fox" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA1xfO8-j_wt4ZlplLtVJZCVS5YfpUKv1HCZKRBNmPHB3ajyqp8Y7p3qGpdK7iOmNr4ABhY1aXfYzhAe543OfwUjFJlqm5meqEkDjdAt5w0MOlyOrmZTl_vCJk1LqZtNkUxLIpH5LwEj9P1hjCGRqp8WANfM3gk5An1Ydrx3NOZIdWAGSLCT8cZ-HOYcogPrWi1QxOwHCpdAPmGE3U8CwtTe5hFPYvn262r4zAQDHSX7gZE10pPi99kWyOMD4Jgznc7AkMx4aLU__vc");'></div>
+</div>
+<div class="flex flex-col flex-1 justify-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Robert Fox</p>
+<p class="text-sage-500 dark:text-sage-400 text-xs font-medium mt-0.5 uppercase tracking-wider">Intermediate • 15 Projects</p>
+</div>
+<div class="shrink-0">
+<div class="text-sage-300 dark:text-slate-600 flex size-8 items-center justify-center">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- FAB Button -->
+<button class="absolute bottom-24 right-6 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-sage-600 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">person_add</span>
+</button>
+<!-- Bottom Navigation -->
+<div class="flex border-t border-sage-100 dark:border-slate-800 bg-white dark:bg-background-dark px-4 pb-6 pt-3 sticky bottom-0">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-sage-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-medium leading-normal">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<p class="text-[10px] font-bold leading-normal">Students</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-sage-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<p class="text-[10px] font-medium leading-normal">Schedule</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-sage-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<p class="text-[10px] font-medium leading-normal">Profile</p>
+</a>
+</div>
+</div>
+</body></html>

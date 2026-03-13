@@ -389,7 +389,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const editInputRef = useRef<HTMLDivElement>(null);
   const pendingEditCursorRef = useRef<number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
-  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyInputRef = useRef<HTMLDivElement>(null);
+  const pendingReplyCursorRef = useRef<number | null>(null);
   const [comments, setComments] = useState<SessionComment[]>(() => {
     if (!session) return [];
     if (sessionsProp != null) return [];
@@ -413,14 +414,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeReplyMenuId, setActiveReplyMenuId] = useState<string | null>(null);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editReplyDraft, setEditReplyDraft] = useState('');
-
-  // Auto-grow reply textarea with content
-  useEffect(() => {
-    const el = replyTextareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.max(56, el.scrollHeight)}px`;
-  }, [replyDraft, replyingToCommentId]);
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
@@ -1185,9 +1178,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (!container || !sel || !container.contains(sel.anchorNode)) return;
     const { text, cursorOffset } = serializeContentEditable(container, sel);
     const isEdit = editInputRef.current === container;
+    const isReply = replyInputRef.current === container;
     if (isEdit) {
       setEditDraft(text);
       pendingEditCursorRef.current = cursorOffset;
+    } else if (isReply) {
+      setReplyDraft(text);
+      pendingReplyCursorRef.current = cursorOffset;
     } else {
       setCommentDraft(text);
       pendingCursorRef.current = cursorOffset;
@@ -1263,12 +1260,26 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [editingCommentId, editDraft]);
 
+  // Sync reply composer contenteditable from replyDraft.
+  useEffect(() => {
+    if (replyingToCommentId == null) return;
+    const container = replyInputRef.current;
+    if (!container) return;
+    syncContentEditableFromDraft(container, replyDraft);
+    if (pendingReplyCursorRef.current != null) {
+      const offset = pendingReplyCursorRef.current;
+      pendingReplyCursorRef.current = null;
+      setContentEditableCursor(container, offset);
+    }
+  }, [replyDraft, replyingToCommentId]);
+
   const handleCommentKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const container = e.currentTarget;
       const isEdit = editInputRef.current === container;
-      const setDraft = isEdit ? setEditDraft : setCommentDraft;
-      const pendingRef = isEdit ? pendingEditCursorRef : pendingCursorRef;
+      const isReply = replyInputRef.current === container;
+      const setDraft = isEdit ? setEditDraft : isReply ? setReplyDraft : setCommentDraft;
+      const pendingRef = isEdit ? pendingEditCursorRef : isReply ? pendingReplyCursorRef : pendingCursorRef;
       const focusContainer = () => (container as HTMLDivElement).focus();
 
       if (e.key === '/' || e.key === '@') {
@@ -1374,21 +1385,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
 
       // When no inline menus are open: Enter posts the comment (Shift+Enter inserts newline).
-      if (!isEdit && e.key === 'Enter' && !e.shiftKey) {
+      if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        if (!postingComment) {
-          void handleAddComment();
+        if (isReply) {
+          if (!postingReply && replyingToCommentId != null) {
+            void handleAddReply(replyingToCommentId);
+          }
+        } else if (!isEdit) {
+          if (!postingComment) {
+            void handleAddComment();
+          }
         }
       }
     },
-    [shotMenu, mentionMenu, filteredShots, filteredMentions, postingComment, handleAddComment]
+    [shotMenu, mentionMenu, filteredShots, filteredMentions, postingComment, postingReply, replyingToCommentId, handleAddComment, handleAddReply]
   );
 
   const selectShotFromMenu = useCallback(
     (shot: string) => {
       if (!shotMenu) return;
       const container =
-        editInputRef.current?.contains(document.activeElement) ? editInputRef.current : commentInputRef.current;
+        editInputRef.current?.contains(document.activeElement)
+          ? editInputRef.current
+          : replyInputRef.current?.contains(document.activeElement)
+            ? replyInputRef.current
+            : commentInputRef.current;
       const sel = window.getSelection();
       if (!container || !sel || !container.contains(sel.anchorNode)) return;
       const { text, cursorOffset } = serializeContentEditable(container, sel);
@@ -1396,9 +1417,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const replacement = `[[shot:${shot}]] `;
       const nextDraft = text.slice(0, start) + replacement + text.slice(cursorOffset);
       const isEdit = container === editInputRef.current;
+      const isReply = container === replyInputRef.current;
       if (isEdit) {
         setEditDraft(nextDraft);
         pendingEditCursorRef.current = start + replacement.length;
+      } else if (isReply) {
+        setReplyDraft(nextDraft);
+        pendingReplyCursorRef.current = start + replacement.length;
       } else {
         setCommentDraft(nextDraft);
         pendingCursorRef.current = start + replacement.length;
@@ -1416,7 +1441,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const mention = taggableProfiles.find((p) => p.id === mentionId);
       if (!mention) return;
       const container =
-        editInputRef.current?.contains(document.activeElement) ? editInputRef.current : commentInputRef.current;
+        editInputRef.current?.contains(document.activeElement)
+          ? editInputRef.current
+          : replyInputRef.current?.contains(document.activeElement)
+            ? replyInputRef.current
+            : commentInputRef.current;
       const sel = window.getSelection();
       if (!container || !sel || !container.contains(sel.anchorNode)) return;
       const { text, cursorOffset } = serializeContentEditable(container, sel);
@@ -1424,9 +1453,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const marker = `[[mention:${mention.id}|${mention.name}]] `;
       const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
       const isEdit = container === editInputRef.current;
+      const isReply = container === replyInputRef.current;
       if (isEdit) {
         setEditDraft(nextDraft);
         pendingEditCursorRef.current = start + marker.length;
+      } else if (isReply) {
+        setReplyDraft(nextDraft);
+        pendingReplyCursorRef.current = start + marker.length;
       } else {
         setCommentDraft(nextDraft);
         pendingCursorRef.current = start + marker.length;
@@ -2106,7 +2139,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             aria-multiline="true"
                             aria-label="Edit comment. Type / for shot commands or @ to tag people."
                             onInput={handleCommentInput}
-                            onKeyDown={handleCommentKeyDown}
+                            onKeyDown={(e) => {
+                              e.stopPropagation();
+                              handleCommentKeyDown(e);
+                            }}
                             onPaste={(e) => {
                               e.preventDefault();
                               const text = e.clipboardData.getData('text/plain');
@@ -2542,7 +2578,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     color: COLORS.textPrimary,
                                   }}
                                 >
-                                  {reply.text}
+                                  {parseCommentTextWithShots(reply.text).map((seg, i) => {
+                                    if (seg.type === 'text') return <span key={i}>{seg.value}</span>;
+                                    if (seg.type === 'shot') {
+                                      return (
+                                        <span key={i} style={SHOT_PILL_STYLE}>
+                                          {seg.name}
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span key={i} style={MENTION_PILL_STYLE}>
+                                        @{seg.name}
+                                      </span>
+                                    );
+                                  })}
                                 </p>
                               )}
                             </div>
@@ -2585,24 +2635,150 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               </span>
                             </div>
                           </div>
-                          <textarea
-                            ref={replyTextareaRef}
-                            value={replyDraft}
-                            onChange={(e) => setReplyDraft(e.target.value)}
-                            placeholder="Add a comment to the frame"
-                            style={{
-                              width: '100%',
-                              minHeight: 56,
-                              resize: 'none',
-                              overflow: 'hidden',
-                              borderRadius: RADIUS.sm,
-                              border: `1px solid ${COLORS.backgroundLight}`,
-                              padding: `${SPACING.xs}px ${SPACING.sm}px`,
-                              ...TYPOGRAPHY.bodySmall,
-                              color: COLORS.textPrimary,
-                              backgroundColor: COLORS.cardBg,
-                            }}
-                          />
+                          <div style={{ position: 'relative', marginBottom: SPACING.sm }}>
+                            <div
+                              ref={replyInputRef}
+                              contentEditable
+                              suppressContentEditableWarning
+                              role="textbox"
+                              aria-multiline="true"
+                              aria-label="Add a comment to the frame. Type / for shot commands or @ to tag people."
+                              onInput={handleCommentInput}
+                              onKeyDown={(e) => {
+                                e.stopPropagation();
+                                handleCommentKeyDown(e);
+                              }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const text = e.clipboardData.getData('text/plain');
+                                document.execCommand('insertText', false, text);
+                              }}
+                              style={{
+                                minHeight: 56,
+                                width: '100%',
+                                outline: 'none',
+                                ...TYPOGRAPHY.bodySmall,
+                                color: COLORS.textPrimary,
+                                padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                borderRadius: RADIUS.sm,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                backgroundColor: COLORS.cardBg,
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                              }}
+                            />
+                            {shotMenu != null && (
+                              <div
+                                role="listbox"
+                                aria-label="Shot type"
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                                  marginTop: inlineMenuTop != null ? 0 : 4,
+                                  maxHeight: 220,
+                                  overflowY: 'auto',
+                                  backgroundColor: COLORS.cardBg,
+                                  border: `1px solid ${COLORS.backgroundLight}`,
+                                  borderRadius: RADIUS.sm,
+                                  boxShadow: SHADOWS.light,
+                                  zIndex: 20,
+                                }}
+                              >
+                                {filteredShots.length === 0 ? (
+                                  <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+                                    No matching shot
+                                  </div>
+                                ) : (
+                                  filteredShots.map((shot, i) => (
+                                    <button
+                                      key={shot}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={i === shotMenu.highlightIndex}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        selectShotFromMenu(shot);
+                                      }}
+                                      style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                        border: 'none',
+                                        background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
+                                        textAlign: 'left',
+                                        ...TYPOGRAPHY.bodySmall,
+                                        color: COLORS.textPrimary,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {shot}
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                            {mentionMenu != null && (
+                              <div
+                                role="listbox"
+                                aria-label="Mention person"
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  top: inlineMenuTop != null ? inlineMenuTop : '100%',
+                                  marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
+                                  maxHeight: 220,
+                                  overflowY: 'auto',
+                                  backgroundColor: COLORS.cardBg,
+                                  border: `1px solid ${COLORS.backgroundLight}`,
+                                  borderRadius: RADIUS.sm,
+                                  boxShadow: SHADOWS.light,
+                                  zIndex: 21,
+                                }}
+                              >
+                                {filteredMentions.length === 0 ? (
+                                  <div
+                                    style={{
+                                      padding: SPACING.sm,
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textMuted,
+                                    }}
+                                  >
+                                    No matching person
+                                  </div>
+                                ) : (
+                                  filteredMentions.map((p, i) => (
+                                    <button
+                                      key={p.id}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={mentionMenu.highlightIndex === i}
+                                      onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        selectMentionFromMenu(p.id);
+                                      }}
+                                      style={{
+                                        display: 'block',
+                                        width: '100%',
+                                        padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                        border: 'none',
+                                        background:
+                                          mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+                                        textAlign: 'left',
+                                        ...TYPOGRAPHY.bodySmall,
+                                        color: COLORS.textPrimary,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      {p.name}
+                                    </button>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <div
                             style={{
                               display: 'flex',

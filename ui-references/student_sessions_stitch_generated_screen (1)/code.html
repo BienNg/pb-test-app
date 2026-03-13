@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pickleball Pro - Student Directory</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav {
+            background-color: #8FB9A833; /* primary with 20% opacity */
+            color: #102220;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNav Component -->
+<aside class="w-64 flex-shrink-0 border-r border-primary/20 bg-white dark:bg-background-dark flex flex-col justify-between">
+<div class="p-6">
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">sports_tennis</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-none">PicklePro</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Coaching Dashboard</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg active-nav" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">group</span>
+<span class="text-sm font-semibold">Students</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">assignment_ind</span>
+<span class="text-sm font-medium">Coaches</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">library_books</span>
+<span class="text-sm font-medium">Library</span>
+</a>
+</nav>
+</div>
+<div class="p-6 border-t border-primary/10">
+<div class="flex items-center gap-3 px-2">
+<div class="size-9 rounded-full bg-slate-200" data-alt="Coach profile picture circular avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBUBEnCAZ_DvcoLvQPS16qJY2pZY9Y95gDehDBmFx32N5zPysikLGUN1RbYmWLkIn5VFCoYKyg2zmFIucXQFRJ-G9AyQDCz_ypSD9Xjg0O7fwpEwkRSClzD_4H7GR8HboJsUBSDZ_DCpHMob86SLTwHJEb9e6BGxOqMwtq9GVUN9BYFe9oa91lUVKh5Tjlmn9tI0N9dDXh2aMbcrYXeDoDhqMWOXapNDcVIdams-WhI0OxIBjFdBHu-T45BOkA64skLoIM1h7ji8wh3')"></div>
+<div class="overflow-hidden">
+<p class="text-sm font-bold truncate">Coach Miller</p>
+<p class="text-xs text-slate-500 truncate">miller@picklepro.com</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 ml-auto cursor-pointer">settings</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-y-auto">
+<!-- Header -->
+<header class="h-16 flex-shrink-0 flex items-center justify-between px-8 border-b border-primary/10 bg-white/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none" placeholder="Search directory..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-500 hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold hover:brightness-105 transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">person_add</span>
+                        Add Student
+                    </button>
+</div>
+</header>
+<div class="p-8">
+<!-- Page Title Section -->
+<div class="mb-8">
+<h2 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Student Directory</h2>
+<p class="text-slate-500 dark:text-slate-400">Manage your active roster and monitor student development.</p>
+</div>
+<!-- Tabs -->
+<div class="flex border-b border-primary/10 mb-6">
+<button class="px-6 py-3 border-b-2 border-primary text-primary text-sm font-bold">All Students</button>
+<button class="px-6 py-3 text-slate-500 text-sm font-medium hover:text-primary transition-colors">Active</button>
+<button class="px-6 py-3 text-slate-500 text-sm font-medium hover:text-primary transition-colors">Archived</button>
+</div>
+<!-- Content Table Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-slate-50 dark:bg-slate-800/50 border-b border-primary/10">
+<tr>
+<th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Student</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Level</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Joined Date</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Sessions</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/5">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+<img alt="Student avatar" class="size-full object-cover" data-alt="Portrait of a male student smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5VZY98T-YPQLuKGUkrAhKVFNeaXIQRi4jmKyojBlYxXT8NL9_iCdYPqfLazPfAU2F0CA2IAOmQAr4ZyKVsbNIz_qMb8hRc2zgy-SLbKKYvKgbEVMcpuPd50crbNTNWZqYx6MJ-Dc9yq9SC0DmxnvHYaeRdgrnUURLY5Vrgy2EvCfGic9HFhqhiVJkC3fv9JvlEwKQQ896YZuJmABSGn7bF9LEm-7DVGgKiE-cT5qcwJ2i_Jm514JEaMQ7mofNRRH4bpm4x0sZ08DT"/>
+</div>
+<div>
+<p class="text-sm font-bold">Alex Johnson</p>
+<p class="text-xs text-slate-500">alex.j@example.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                            Intermediate
+                                        </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        Oct 12, 2023
+                                    </td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        24 <span class="text-slate-400 font-normal">lessons</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+<img alt="Student avatar" class="size-full object-cover" data-alt="Portrait of a female student with glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuArLNBsYw-_8H4UjkPqaT3U4pV6Ui7nLA5hJW1CT1t3l_7Lh5DmAW2uVeRFt6IoYSWvE4vjrU96wxmbGyk0z-MkrJChP-igniH0Ynt7Fccr8BVzDR5ctw3t1oPC5GFufqXYSMB3Xa0V6G8yQzD59ohQalTjOnkybEf4W1woReiYB0jFhDNvyZHLqQpAhC0EGgCifS7t7PgEfne40DrDQRQESibD6zHxPlbvdMYEh8Jx33Nakmu1ydnO1JkGq_oJOATZOmpfhAR0OZey"/>
+</div>
+<div>
+<p class="text-sm font-bold">Maria Garcia</p>
+<p class="text-xs text-slate-500">m.garcia@mail.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/20 text-primary dark:text-primary">
+                                            Newbie
+                                        </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        Jan 05, 2024
+                                    </td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        5 <span class="text-slate-400 font-normal">lessons</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+<img alt="Student avatar" class="size-full object-cover" data-alt="Portrait of a middle aged man in athletic gear" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD2aWJ616SPxYZ1oPlB5qBm-25WDOZcis7cZVXjTgfV3erkQq1PXRdXFfUbqSXEvmO556QgYzabYUorhShgZwtYN3A7OE1eBO-ILBVm2CxmN4_x7GOxBumdBevxIzmdLTgPvRhAuKy1heIITNFEBHLZc4ctjoNY1JExffocCRgFzHzi9QXE922d62JtPltCK2v9krmRtAjuiQATgFVCYKVXoUVX7UWCPJLbvkVjHVTZ7Q1776RXT-nGoIeBEUQihHIgztnY4BlcG6Lt"/>
+</div>
+<div>
+<p class="text-sm font-bold">James Chen</p>
+<p class="text-xs text-slate-500">chen.james@web.com</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                                            Advanced
+                                        </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        Jun 15, 2023
+                                    </td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        48 <span class="text-slate-400 font-normal">lessons</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-primary/5 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/20 flex items-center justify-center overflow-hidden">
+<img alt="Student avatar" class="size-full object-cover" data-alt="Portrait of a young woman with a ponytail" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWimGJsjxFRKkoGBniuqWFNedSgdGTRGiPWpMZHb5JeMazDghjf20rslCw9nHBe4VQHR6A4nF2KGk6HFNG39am16dKFJCj5suX-GwuCFqUOEn_E-WdBAstWZE_2fEZ6dess-rMEVmmw5KNjUtjsB2hFX9FE56BNnRxvMDt4dNPSieAzgrPb5gheQl2L858rGI0hQb9T6Ldu51u21TI9wyHNem3UNr0BnNS__LpOYsN-ctq8JEbVoPacTP55Zxb7w9q01cfEacIyQTu"/>
+</div>
+<div>
+<p class="text-sm font-bold">Sarah Smith</p>
+<p class="text-xs text-slate-500">sarah_s@provider.net</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 whitespace-nowrap">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                            Intermediate
+                                        </span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        Sep 20, 2023
+                                    </td>
+<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        18 <span class="text-slate-400 font-normal">lessons</span>
+</td>
+<td class="px-6 py-4 whitespace-nowrap text-right">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between border-t border-primary/10">
+<p class="text-xs text-slate-500">Showing 4 of 48 students</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-bold border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors disabled:opacity-50" disabled="">Previous</button>
+<button class="px-3 py-1 text-xs font-bold border border-primary/20 rounded-lg hover:bg-primary/10 transition-colors">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
