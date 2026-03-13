@@ -76,7 +76,7 @@ export async function fetchFirstSessionDateForStudentIds(
   
   if (error || !data) return {};
 
-  const rows = data as Array<{
+  const rows = data as unknown as Array<{
     student_id: string;
     session_id: string;
     sessions: { date: string } | { date: string }[];
