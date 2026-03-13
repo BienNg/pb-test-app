@@ -96,6 +96,8 @@ export interface VideoPlayerProps {
 
 export interface VideoPlayerHandle {
   playPause: () => void;
+  /** Pause playback without toggling (e.g. when opening frame-detail reply). */
+  pause: () => void;
   skipBy: (deltaSeconds: number) => void;
 }
 
@@ -266,6 +268,16 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     [isYoutube]
   );
 
+  const pause = useCallback(() => {
+    if (isYoutube && playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+      playerRef.current.pauseVideo();
+      return;
+    }
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [isYoutube]);
+
   const handleMuteToggle = useCallback(() => {
     if (isYoutube && playerRef.current) {
       const p = playerRef.current;
@@ -317,8 +329,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   useImperativeHandle(ref, () => ({
     playPause: handlePlayPause,
+    pause,
     skipBy,
-  }), [handlePlayPause, skipBy]);
+  }), [handlePlayPause, pause, skipBy]);
 
   useEffect(() => () => {
     if (skipIndicatorTimeoutRef.current) clearTimeout(skipIndicatorTimeoutRef.current);

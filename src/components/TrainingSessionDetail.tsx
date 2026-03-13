@@ -409,6 +409,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   });
   const [repliesByCommentId, setRepliesByCommentId] = useState<Record<string, SessionCommentReply[]>>({});
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
+  /** Video timestamp (seconds) when user opened the reply composer; used when posting the reply. */
+  const [replyTimestampSeconds, setReplyTimestampSeconds] = useState<number | null>(null);
+  /** When true, video is paused because user opened a frame-detail reply (seek to comment timestamp). */
+  const [frameReplyPauseRequested, setFrameReplyPauseRequested] = useState(false);
   const [replyDraft, setReplyDraft] = useState('');
   const [postingReply, setPostingReply] = useState(false);
   const [activeReplyMenuId, setActiveReplyMenuId] = useState<string | null>(null);
@@ -994,6 +998,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setActiveCommentId(activeComment?.id ?? null);
   }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
 
+  /** Round to frame-accurate precision (4 decimal places ≈ 0.1ms) for storing video timestamps. */
+  const toFramePrecision = (seconds: number) =>
+    Math.round(seconds * 10000) / 10000;
+
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -1015,7 +1023,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (!commentDraft.trim() || !isAdmin) return;
 
     const currentTime = currentVideoTime ?? 0;
-    const timestampSeconds = includeTimestamp ? Math.round(currentTime) : null;
+    const timestampSeconds = includeTimestamp ? toFramePrecision(currentTime) : null;
 
     if (isDbSession && user?.id) {
       const supabase = createClient();
@@ -1076,7 +1084,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setPostingReply(true);
       try {
         const parentComment = comments.find((c) => String(c.id) === parentId);
-        const timestampSeconds = parentComment?.timestampSeconds ?? null;
+        const timestampSeconds = replyTimestampSeconds ?? parentComment?.timestampSeconds ?? null;
 
         const inserted = await insertSessionCommentReply(
           supabase,
@@ -1098,12 +1106,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           });
           setReplyDraft('');
           setReplyingToCommentId(null);
+          setReplyTimestampSeconds(null);
+          setFrameReplyPauseRequested(false);
         }
       } finally {
         setPostingReply(false);
       }
     },
-    [comments, isAdmin, isDbSession, replyDraft, sessionId, user?.id]
+    [comments, isAdmin, isDbSession, replyDraft, replyTimestampSeconds, sessionId, user?.id]
   );
 
   const handleSaveReplyEdit = useCallback(
@@ -1705,7 +1715,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   videoKey={session.id}
                   variant="sessionDetail"
                   accentColor={REFERENCE_PRIMARY}
-                  pauseRequested={anyModalOpen || !isTabVisible || pauseToggle}
+                  pauseRequested={anyModalOpen || !isTabVisible || pauseToggle || frameReplyPauseRequested}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
@@ -2064,6 +2074,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   type="button"
                                   onClick={() => {
                                     setReplyingToCommentId(String(comment.id));
+                                    if (comment.timestampSeconds != null) {
+                                      setPendingSeekSeconds(comment.timestampSeconds);
+                                      setFrameReplyPauseRequested(true);
+                                      setReplyTimestampSeconds(comment.timestampSeconds);
+                                      videoPlayerRef.current?.pause();
+                                    } else {
+                                      setReplyTimestampSeconds(toFramePrecision(currentVideoTime));
+                                    }
                                     setReplyDraft('');
                                     setActiveCommentMenu(null);
                                   }}
@@ -2643,7 +2661,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             >
                               FRAME DETAIL
                               <span style={{ color: '#9ca3af', marginLeft: 4 }}>
-                                [{formatTimestamp(currentVideoTime)}]
+                                [{formatTimestamp(replyTimestampSeconds ?? currentVideoTime)}]
                               </span>
                             </div>
                           </div>
@@ -2824,6 +2842,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setReplyingToCommentId(null);
+                                setReplyTimestampSeconds(null);
+                                setFrameReplyPauseRequested(false);
                                 setReplyDraft('');
                               }}
                               style={{
