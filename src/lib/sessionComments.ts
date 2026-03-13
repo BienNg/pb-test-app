@@ -23,6 +23,10 @@ export type SessionCommentReplyRow = {
   timestamp_seconds: number | null;
   example_gif: string | null;
   created_at: string;
+  marker_x_percent: number | null;
+  marker_y_percent: number | null;
+  marker_radius_x: number | null;
+  marker_radius_y: number | null;
 };
 
 export type SessionCommentWithAuthor = SessionCommentRow & {
@@ -89,6 +93,10 @@ export function mapDbReplyToSessionCommentReply(
     text: row.text,
     timestampSeconds: row.timestamp_seconds ?? undefined,
     exampleGif: row.example_gif ?? undefined,
+    markerXPercent: row.marker_x_percent ?? undefined,
+    markerYPercent: row.marker_y_percent ?? undefined,
+    markerRadiusX: row.marker_radius_x ?? undefined,
+    markerRadiusY: row.marker_radius_y ?? undefined,
   };
 }
 
@@ -204,7 +212,11 @@ export async function fetchSessionCommentReplies(
       text,
       timestamp_seconds,
       example_gif,
-      created_at
+      created_at,
+      marker_x_percent,
+      marker_y_percent,
+      marker_radius_x,
+      marker_radius_y
     `)
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true });
@@ -313,6 +325,14 @@ export async function insertSessionComment(
   };
 }
 
+/** Frame marker data for a reply (position and size of the ellipse on the video). */
+export type ReplyFrameMarker = {
+  markerXPercent: number;
+  markerYPercent: number;
+  markerRadiusX: number;
+  markerRadiusY: number;
+};
+
 /** Insert a reply (subcomment) for a comment. Returns the new reply row or null on error. */
 export async function insertSessionCommentReply(
   supabase: SupabaseClient | null,
@@ -320,19 +340,28 @@ export async function insertSessionCommentReply(
   parentCommentId: string,
   authorId: string,
   text: string,
-  timestampSeconds: number | null
+  timestampSeconds: number | null,
+  marker?: ReplyFrameMarker | null
 ): Promise<SessionCommentReplyWithAuthor | null> {
   if (!supabase) return null;
+  const insertPayload: Record<string, unknown> = {
+    session_id: sessionId,
+    parent_comment_id: parentCommentId,
+    author_id: authorId,
+    text,
+    timestamp_seconds: timestampSeconds,
+  };
+  if (marker != null) {
+    insertPayload.marker_x_percent = marker.markerXPercent;
+    insertPayload.marker_y_percent = marker.markerYPercent;
+    insertPayload.marker_radius_x = marker.markerRadiusX;
+    insertPayload.marker_radius_y = marker.markerRadiusY;
+  }
+  const selectCols = 'id, session_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y';
   const { data: inserted, error } = await supabase
     .from('session_comment_replies')
-    .insert({
-      session_id: sessionId,
-      parent_comment_id: parentCommentId,
-      author_id: authorId,
-      text,
-      timestamp_seconds: timestampSeconds,
-    })
-    .select('id, session_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at')
+    .insert(insertPayload)
+    .select(selectCols)
     .single();
   if (error || !inserted) return null;
 
@@ -369,16 +398,24 @@ export async function insertSessionCommentReply(
   };
 }
 
-/** Update a reply (subcomment) text. Returns true on success. */
+/** Update a reply (subcomment) text and optional frame marker. Returns true on success. */
 export async function updateSessionCommentReply(
   supabase: SupabaseClient | null,
   replyId: string,
-  text: string
+  text: string,
+  marker?: ReplyFrameMarker | null
 ): Promise<boolean> {
   if (!supabase) return false;
+  const updatePayload: Record<string, unknown> = { text };
+  if (marker != null) {
+    updatePayload.marker_x_percent = marker.markerXPercent;
+    updatePayload.marker_y_percent = marker.markerYPercent;
+    updatePayload.marker_radius_x = marker.markerRadiusX;
+    updatePayload.marker_radius_y = marker.markerRadiusY;
+  }
   const { error } = await supabase
     .from('session_comment_replies')
-    .update({ text })
+    .update(updatePayload)
     .eq('id', replyId);
   return !error;
 }

@@ -92,6 +92,23 @@ export interface VideoPlayerProps {
   variant?: 'default' | 'sessionDetail';
   /** Accent color for sessionDetail variant (e.g. #8FB9A8). */
   accentColor?: string;
+
+  /** When true, show a draggable red circle overlay on the video (e.g. for frame-detail reply mode). */
+  showFrameDetailReplyOverlay?: boolean;
+  /** Initial position/size for the frame marker (e.g. when editing a reply that has saved marker). */
+  frameDetailMarkerInitial?: { x: number; y: number; radiusX: number; radiusY: number } | null;
+  /** When true, marker is read-only (e.g. when viewing a reply's frame). */
+  frameDetailMarkerReadOnly?: boolean;
+
+  /** Called when playback starts (user pressed play). */
+  onPlay?: () => void;
+}
+
+export interface FrameMarkerState {
+  x: number;
+  y: number;
+  radiusX: number;
+  radiusY: number;
 }
 
 export interface VideoPlayerHandle {
@@ -99,6 +116,8 @@ export interface VideoPlayerHandle {
   /** Pause playback without toggling (e.g. when opening frame-detail reply). */
   pause: () => void;
   skipBy: (deltaSeconds: number) => void;
+  /** Current frame marker position/size (for saving with reply). */
+  getFrameMarkerState: () => FrameMarkerState | null;
 }
 
 /** Reusable video player with Frame.io-style timeline, skip controls, and optional markers. */
@@ -117,6 +136,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     pauseRequested,
     variant = 'default',
     accentColor = COLORS.primary,
+    showFrameDetailReplyOverlay = false,
+    frameDetailMarkerInitial = null,
+    frameDetailMarkerReadOnly = false,
+    onPlay: onPlayProp,
   },
   ref
 ) {
@@ -127,6 +150,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const frameDetailOverlayRef = useRef<HTMLDivElement>(null);
+  const onPlayPropRef = useRef(onPlayProp);
+  useEffect(() => { onPlayPropRef.current = onPlayProp; });
+
+  const [frameDetailCirclePosition, setFrameDetailCirclePosition] = useState({ x: 50, y: 50 });
+  const [frameDetailCircleRadiusX, setFrameDetailCircleRadiusX] = useState(14);
+  const [frameDetailCircleRadiusY, setFrameDetailCircleRadiusY] = useState(14);
+  const [isDraggingFrameCircle, setIsDraggingFrameCircle] = useState(false);
+  const [isResizingFrameCircle, setIsResizingFrameCircle] = useState(false);
+
+  const FRAME_ELLIPSE_RADIUS_MIN = 10;
+  const FRAME_ELLIPSE_RADIUS_MAX = 72;
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -170,6 +205,76 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [videoKey]);
 
+  // Reset or sync draggable ellipse when entering frame-detail reply overlay mode
+  useEffect(() => {
+    if (!showFrameDetailReplyOverlay) return;
+    if (
+      frameDetailMarkerInitial != null &&
+      typeof frameDetailMarkerInitial.x === 'number' &&
+      typeof frameDetailMarkerInitial.y === 'number' &&
+      typeof frameDetailMarkerInitial.radiusX === 'number' &&
+      typeof frameDetailMarkerInitial.radiusY === 'number'
+    ) {
+      setFrameDetailCirclePosition({ x: frameDetailMarkerInitial.x, y: frameDetailMarkerInitial.y });
+      setFrameDetailCircleRadiusX(frameDetailMarkerInitial.radiusX);
+      setFrameDetailCircleRadiusY(frameDetailMarkerInitial.radiusY);
+    } else {
+      setFrameDetailCirclePosition({ x: 50, y: 50 });
+      setFrameDetailCircleRadiusX(14);
+      setFrameDetailCircleRadiusY(14);
+    }
+  }, [showFrameDetailReplyOverlay, frameDetailMarkerInitial]);
+
+  const handleFrameCirclePointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDraggingFrameCircle(true);
+  }, []);
+
+  const handleFrameCirclePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setFrameDetailCirclePosition({ x, y });
+  }, []);
+
+  const handleFrameCirclePointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsDraggingFrameCircle(false);
+  }, []);
+
+  const handleFrameResizePointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizingFrameCircle(true);
+  }, []);
+
+  const handleFrameResizeWidthPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const centerX = rect.left + (frameDetailCirclePosition.x / 100) * rect.width;
+    const radiusX = Math.round(
+      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientX - centerX)))
+    );
+    setFrameDetailCircleRadiusX(radiusX);
+  }, [frameDetailCirclePosition.x]);
+
+  const handleFrameResizeHeightPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const centerY = rect.top + (frameDetailCirclePosition.y / 100) * rect.height;
+    const radiusY = Math.round(
+      Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientY - centerY)))
+    );
+    setFrameDetailCircleRadiusY(radiusY);
+  }, [frameDetailCirclePosition.y]);
+
+  const handleFrameResizePointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsResizingFrameCircle(false);
+  }, []);
+
   // Load YouTube API and create player when we have a YouTube video
   useEffect(() => {
     if (!isYoutube || !youtubeVideoId || !playerContainerRef.current) return;
@@ -205,9 +310,12 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           },
           onStateChange: (e: { data: number }) => {
             const YT = window.YT!;
-            if (e.data === YT.PlayerState.PLAYING) setIsVideoPlaying(true);
-            else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED)
+            if (e.data === YT.PlayerState.PLAYING) {
+              setIsVideoPlaying(true);
+              onPlayPropRef.current?.();
+            } else if (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED) {
               setIsVideoPlaying(false);
+            }
           },
         },
       });
@@ -327,11 +435,32 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     [isYoutube, videoDuration, seekTo]
   );
 
-  useImperativeHandle(ref, () => ({
-    playPause: handlePlayPause,
-    pause,
-    skipBy,
-  }), [handlePlayPause, pause, skipBy]);
+  const getFrameMarkerState = useCallback((): FrameMarkerState | null => {
+    if (!showFrameDetailReplyOverlay) return null;
+    return {
+      x: frameDetailCirclePosition.x,
+      y: frameDetailCirclePosition.y,
+      radiusX: frameDetailCircleRadiusX,
+      radiusY: frameDetailCircleRadiusY,
+    };
+  }, [
+    showFrameDetailReplyOverlay,
+    frameDetailCirclePosition.x,
+    frameDetailCirclePosition.y,
+    frameDetailCircleRadiusX,
+    frameDetailCircleRadiusY,
+  ]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      playPause: handlePlayPause,
+      pause,
+      skipBy,
+      getFrameMarkerState,
+    }),
+    [handlePlayPause, pause, skipBy, getFrameMarkerState]
+  );
 
   useEffect(() => () => {
     if (skipIndicatorTimeoutRef.current) clearTimeout(skipIndicatorTimeoutRef.current);
@@ -686,6 +815,92 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 </div>
               </div>
             )}
+            {showFrameDetailReplyOverlay && (
+              <div
+                ref={frameDetailOverlayRef}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 4,
+                  pointerEvents:
+                    frameDetailMarkerReadOnly
+                      ? 'none'
+                      : isDraggingFrameCircle || isResizingFrameCircle
+                        ? 'auto'
+                        : 'none',
+                }}
+              >
+                <div
+                  role="presentation"
+                  style={{
+                    position: 'absolute',
+                    left: `${frameDetailCirclePosition.x}%`,
+                    top: `${frameDetailCirclePosition.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    width: frameDetailCircleRadiusX * 2,
+                    height: frameDetailCircleRadiusY * 2,
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: '3px solid #e11',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                    cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameCircle ? 'grabbing' : 'grab',
+                    pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                  }}
+                  onPointerDown={handleFrameCirclePointerDown}
+                  onPointerMove={handleFrameCirclePointerMove}
+                  onPointerUp={handleFrameCirclePointerUp}
+                  onPointerLeave={handleFrameCirclePointerUp}
+                />
+                {!frameDetailMarkerReadOnly && (
+                  <>
+                    <div
+                      role="presentation"
+                      aria-label="Resize marker width"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}px)`,
+                        top: `${frameDetailCirclePosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #e11',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ew-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameResizePointerDown}
+                      onPointerMove={handleFrameResizeWidthPointerMove}
+                      onPointerUp={handleFrameResizePointerUp}
+                      onPointerLeave={handleFrameResizePointerUp}
+                    />
+                    <div
+                      role="presentation"
+                      aria-label="Resize marker height"
+                      style={{
+                        position: 'absolute',
+                        left: `${frameDetailCirclePosition.x}%`,
+                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}px)`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #e11',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ns-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameResizePointerDown}
+                      onPointerMove={handleFrameResizeHeightPointerMove}
+                      onPointerUp={handleFrameResizePointerUp}
+                      onPointerLeave={handleFrameResizePointerUp}
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </>
       ) : (
@@ -775,7 +990,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 display: 'block',
                 objectFit: 'contain',
               }}
-              onPlay={() => setIsVideoPlaying(true)}
+              onPlay={() => {
+                setIsVideoPlaying(true);
+                onPlayProp?.();
+              }}
               onPause={() => setIsVideoPlaying(false)}
               onEnded={() => setIsVideoPlaying(false)}
               onTimeUpdate={(e) =>
@@ -884,6 +1102,92 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     {formatTimestamp(videoDuration)}
                   </span>
                 </div>
+              </div>
+            )}
+            {showFrameDetailReplyOverlay && (
+              <div
+                ref={frameDetailOverlayRef}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 4,
+                  pointerEvents:
+                    frameDetailMarkerReadOnly
+                      ? 'none'
+                      : isDraggingFrameCircle || isResizingFrameCircle
+                        ? 'auto'
+                        : 'none',
+                }}
+              >
+                <div
+                  role="presentation"
+                  style={{
+                    position: 'absolute',
+                    left: `${frameDetailCirclePosition.x}%`,
+                    top: `${frameDetailCirclePosition.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    width: frameDetailCircleRadiusX * 2,
+                    height: frameDetailCircleRadiusY * 2,
+                    borderRadius: '50%',
+                    backgroundColor: 'transparent',
+                    border: '3px solid #e11',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                    cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameCircle ? 'grabbing' : 'grab',
+                    pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                  }}
+                  onPointerDown={handleFrameCirclePointerDown}
+                  onPointerMove={handleFrameCirclePointerMove}
+                  onPointerUp={handleFrameCirclePointerUp}
+                  onPointerLeave={handleFrameCirclePointerUp}
+                />
+                {!frameDetailMarkerReadOnly && (
+                  <>
+                    <div
+                      role="presentation"
+                      aria-label="Resize marker width"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${frameDetailCirclePosition.x}% + ${frameDetailCircleRadiusX}px)`,
+                        top: `${frameDetailCirclePosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #e11',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ew-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameResizePointerDown}
+                      onPointerMove={handleFrameResizeWidthPointerMove}
+                      onPointerUp={handleFrameResizePointerUp}
+                      onPointerLeave={handleFrameResizePointerUp}
+                    />
+                    <div
+                      role="presentation"
+                      aria-label="Resize marker height"
+                      style={{
+                        position: 'absolute',
+                        left: `${frameDetailCirclePosition.x}%`,
+                        top: `calc(${frameDetailCirclePosition.y}% + ${frameDetailCircleRadiusY}px)`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #e11',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ns-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameResizePointerDown}
+                      onPointerMove={handleFrameResizeHeightPointerMove}
+                      onPointerUp={handleFrameResizePointerUp}
+                      onPointerLeave={handleFrameResizePointerUp}
+                    />
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -59,6 +59,11 @@ export interface SessionCommentReply extends Omit<SessionComment, 'id'> {
   id: string;
   /** Parent comment this reply belongs to. */
   parentCommentId: string;
+  /** Frame marker position/size (0–100 percent for x/y, px for radius). When set, shown when viewing this reply. */
+  markerXPercent?: number;
+  markerYPercent?: number;
+  markerRadiusX?: number;
+  markerRadiusY?: number;
 }
 
 export const MySessionsPage: React.FC<MySessionsPageProps> = ({

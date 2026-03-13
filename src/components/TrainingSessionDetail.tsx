@@ -289,6 +289,7 @@ import {
   fetchSessionTaggableProfiles,
   updateSessionCommentReply,
   deleteSessionCommentReply,
+  type ReplyFrameMarker,
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
@@ -344,6 +345,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const pendingCursorRef = useRef<number | null>(null);
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
   const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
+  const activeFrameReplyIdSetAtRef = useRef<number>(0);
   const videoStickySentinelRef = useRef<HTMLDivElement>(null);
   const videoStickySpacerRef = useRef<HTMLDivElement>(null);
 
@@ -418,6 +420,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeReplyMenuId, setActiveReplyMenuId] = useState<string | null>(null);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editReplyDraft, setEditReplyDraft] = useState('');
+  /** When set, we're viewing this reply's frame (seek to timestamp, show marker read-only). */
+  const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
   const [pauseToggle, setPauseToggle] = useState(false);
 
   // Admin session edit state (for DB-backed sessions)
@@ -438,6 +442,61 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     showEditSession ||
     showDeleteConfirm ||
     isFilterSheetOpen;
+
+  const activeReplyForMarkerId = editingReplyId ?? activeFrameReplyId;
+  const { frameDetailMarkerInitial, frameDetailMarkerReadOnly } = useMemo(() => {
+    const readOnly = activeFrameReplyId != null;
+    if (activeReplyForMarkerId == null) {
+      return { frameDetailMarkerInitial: null as { x: number; y: number; radiusX: number; radiusY: number } | null, frameDetailMarkerReadOnly: readOnly };
+    }
+    const allReplies = Object.values(repliesByCommentId).flat();
+    const reply = allReplies.find((r) => r.id === activeReplyForMarkerId);
+    if (
+      reply &&
+      typeof reply.markerXPercent === 'number' &&
+      typeof reply.markerYPercent === 'number' &&
+      typeof reply.markerRadiusX === 'number' &&
+      typeof reply.markerRadiusY === 'number'
+    ) {
+      return {
+        frameDetailMarkerInitial: {
+          x: reply.markerXPercent,
+          y: reply.markerYPercent,
+          radiusX: reply.markerRadiusX,
+          radiusY: reply.markerRadiusY,
+        },
+        frameDetailMarkerReadOnly: readOnly,
+      };
+    }
+    return { frameDetailMarkerInitial: null, frameDetailMarkerReadOnly: readOnly };
+  }, [activeReplyForMarkerId, activeFrameReplyId, repliesByCommentId]);
+
+  useEffect(() => {
+    if (activeFrameReplyId == null) return;
+    activeFrameReplyIdSetAtRef.current = Date.now();
+    const allReplies = Object.values(repliesByCommentId).flat();
+    const reply = allReplies.find((r) => r.id === activeFrameReplyId);
+    if (reply?.timestampSeconds != null) {
+      setPendingSeekSeconds(reply.timestampSeconds);
+      setFrameReplyPauseRequested(true);
+      videoPlayerRef.current?.pause();
+    }
+  }, [activeFrameReplyId, repliesByCommentId]);
+
+  // Hide frame reply overlay when video is played or when playback time moves away from the reply's timestamp
+  useEffect(() => {
+    if (activeFrameReplyId == null) return;
+    const allReplies = Object.values(repliesByCommentId).flat();
+    const reply = allReplies.find((r) => r.id === activeFrameReplyId);
+    if (reply?.timestampSeconds == null) return;
+    const replyTs = reply.timestampSeconds;
+    const graceMs = 800;
+    if (Date.now() - activeFrameReplyIdSetAtRef.current < graceMs) return;
+    const threshold = 1;
+    if (Math.abs(currentVideoTime - replyTs) > threshold) {
+      setActiveFrameReplyId(null);
+    }
+  }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
 
   const shotExampleGifs = useMemo(() => {
     try {
@@ -1085,6 +1144,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       try {
         const parentComment = comments.find((c) => String(c.id) === parentId);
         const timestampSeconds = replyTimestampSeconds ?? parentComment?.timestampSeconds ?? null;
+        const markerState = videoPlayerRef.current?.getFrameMarkerState();
+        const marker: ReplyFrameMarker | undefined =
+          markerState != null
+            ? {
+                markerXPercent: markerState.x,
+                markerYPercent: markerState.y,
+                markerRadiusX: markerState.radiusX,
+                markerRadiusY: markerState.radiusY,
+              }
+            : undefined;
 
         const inserted = await insertSessionCommentReply(
           supabase,
@@ -1092,7 +1161,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           parentId,
           user.id,
           replyDraft.trim(),
-          timestampSeconds
+          timestampSeconds,
+          marker
         );
         if (inserted) {
           const mapped = mapDbReplyToSessionCommentReply(inserted, user.id);
@@ -1108,6 +1178,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           setReplyingToCommentId(null);
           setReplyTimestampSeconds(null);
           setFrameReplyPauseRequested(false);
+          setActiveFrameReplyId(null);
         }
       } finally {
         setPostingReply(false);
@@ -1124,19 +1195,48 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const supabase = createClient();
       setPostingReply(true);
       try {
-        const ok = await updateSessionCommentReply(supabase, replyId, editReplyDraft.trim());
+        const markerState = videoPlayerRef.current?.getFrameMarkerState();
+        const marker: ReplyFrameMarker | undefined =
+          markerState != null
+            ? {
+                markerXPercent: markerState.x,
+                markerYPercent: markerState.y,
+                markerRadiusX: markerState.radiusX,
+                markerRadiusY: markerState.radiusY,
+              }
+            : undefined;
+        const ok = await updateSessionCommentReply(
+          supabase,
+          replyId,
+          editReplyDraft.trim(),
+          marker
+        );
         if (ok) {
           setRepliesByCommentId((prev) => {
             const existing = prev[parentCommentId] ?? [];
             return {
               ...prev,
               [parentCommentId]: existing.map((r) =>
-                r.id === replyId ? { ...r, text: editReplyDraft.trim() } : r
+                r.id === replyId
+                  ? {
+                      ...r,
+                      text: editReplyDraft.trim(),
+                      ...(marker != null
+                        ? {
+                            markerXPercent: marker.markerXPercent,
+                            markerYPercent: marker.markerYPercent,
+                            markerRadiusX: marker.markerRadiusX,
+                            markerRadiusY: marker.markerRadiusY,
+                          }
+                        : {}),
+                    }
+                  : r
               ),
             };
           });
           setEditingReplyId(null);
           setEditReplyDraft('');
+          setActiveFrameReplyId(null);
         }
       } finally {
         setPostingReply(false);
@@ -1716,6 +1816,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   variant="sessionDetail"
                   accentColor={REFERENCE_PRIMARY}
                   pauseRequested={anyModalOpen || !isTabVisible || pauseToggle || frameReplyPauseRequested}
+                  showFrameDetailReplyOverlay={
+                    replyingToCommentId != null || editingReplyId != null || activeFrameReplyId != null
+                  }
+                  frameDetailMarkerInitial={frameDetailMarkerInitial}
+                  frameDetailMarkerReadOnly={frameDetailMarkerReadOnly}
+                  onPlay={() => setActiveFrameReplyId(null)}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
@@ -2073,6 +2179,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    setActiveFrameReplyId(null);
                                     setReplyingToCommentId(String(comment.id));
                                     if (comment.timestampSeconds != null) {
                                       setPendingSeekSeconds(comment.timestampSeconds);
@@ -2385,8 +2492,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (canSeek && tsSeconds != null) {
-                                  videoPlayerRef.current?.pause();
-                                  setPendingSeekSeconds(tsSeconds);
+                                  setActiveFrameReplyId(reply.id);
                                   setActiveCommentId(comment.id);
                                 }
                               }}
@@ -2490,6 +2596,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                         type="button"
                                         onClick={() => {
                                           setEditReplyDraft(reply.text);
+                                          setActiveFrameReplyId(null);
                                           setEditingReplyId(reply.id);
                                           setActiveReplyMenuId(null);
                                         }}
@@ -2583,6 +2690,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        setActiveFrameReplyId(null);
                                         setEditingReplyId(null);
                                         setEditReplyDraft('');
                                       }}
@@ -2842,6 +2950,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
+                                setActiveFrameReplyId(null);
                                 setReplyingToCommentId(null);
                                 setReplyTimestampSeconds(null);
                                 setFrameReplyPauseRequested(false);
