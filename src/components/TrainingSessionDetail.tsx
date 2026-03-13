@@ -2385,9 +2385,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (canSeek && tsSeconds != null) {
+                                  videoPlayerRef.current?.pause();
                                   setPendingSeekSeconds(tsSeconds);
                                   setActiveCommentId(comment.id);
-                                  setPauseToggle((prev) => !prev);
                                 }
                               }}
                             >
@@ -2426,6 +2426,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
+                                        videoPlayerRef.current?.pause();
                                         setPendingSeekSeconds(tsSeconds);
                                         setActiveCommentId(comment.id);
                                       }}
