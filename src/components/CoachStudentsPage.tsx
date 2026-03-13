@@ -289,7 +289,6 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [sortBy] = useState<SortField>('name');
   const [sortAsc] = useState(true);
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
-  const sortDropdownOpen = false;
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isMobile, setIsMobile] = useState(false);
   const showStudentsOnly = !showMySessionsTab;
@@ -328,8 +327,6 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
     });
     return list;
   }, [students, searchQuery, filterLevel, sortBy, sortAsc]);
-
-  const sortLabel = sortBy === 'name' ? 'Name' : sortBy === 'lessons' ? 'Lessons' : sortBy === 'lastActive' ? 'Last active' : 'Level';
 
   return (
     <div

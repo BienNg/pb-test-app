@@ -1154,7 +1154,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [isAdmin, isDbSession, user?.id]
+    [isDbSession, user?.id]
   );
 
   const filteredShots = useMemo(() => {
