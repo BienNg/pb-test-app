@@ -102,6 +102,8 @@ export interface VideoPlayerProps {
 
   /** Called when playback starts (user pressed play). */
   onPlay?: () => void;
+  /** Called when any playback control (skip or play/pause) is pressed. */
+  onControlPressed?: () => void;
 }
 
 export interface FrameMarkerState {
@@ -140,6 +142,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     frameDetailMarkerInitial = null,
     frameDetailMarkerReadOnly = false,
     onPlay: onPlayProp,
+    onControlPressed,
   },
   ref
 ) {
@@ -1608,31 +1611,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             WebkitOverflowScrolling: 'touch',
           }}
         >
-          <button type="button" onClick={() => skipBy(-1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="-1f" title="−1f">
+          <button type="button" onClick={() => { skipBy(-1 / 30); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="-1f" title="−1f">
             −1f
           </button>
-          <button type="button" onClick={() => skipBy(-10)} style={sessionDetailCircleBtn(false)} aria-label="-10s" title="−10s">
+          <button type="button" onClick={() => { skipBy(-10); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="-10s" title="−10s">
             −10s
           </button>
-          <button type="button" onClick={() => skipBy(-5)} style={sessionDetailCircleBtn(false)} aria-label="-5s" title="−5s">
+          <button type="button" onClick={() => { skipBy(-5); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="-5s" title="−5s">
             −5s
           </button>
-          <button type="button" onClick={() => skipBy(-1)} style={sessionDetailCircleBtn(false)} aria-label="-1s" title="−1s">
+          <button type="button" onClick={() => { skipBy(-1); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="-1s" title="−1s">
             −1s
           </button>
-          <button type="button" onClick={handlePlayPause} style={sessionDetailPlayPauseBtn(accentColor)} aria-label={isVideoPlaying ? 'Pause' : 'Play'} title={isVideoPlaying ? 'Pause' : 'Play'}>
+          <button type="button" onClick={() => { handlePlayPause(); onControlPressed?.(); }} style={sessionDetailPlayPauseBtn(accentColor)} aria-label={isVideoPlaying ? 'Pause' : 'Play'} title={isVideoPlaying ? 'Pause' : 'Play'}>
             {isVideoPlaying ? <IconPause size={18} /> : <IconPlay size={18} />}
           </button>
-          <button type="button" onClick={() => skipBy(1)} style={sessionDetailCircleBtn(false)} aria-label="+1s" title="+1s">
+          <button type="button" onClick={() => { skipBy(1); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+1s" title="+1s">
             +1s
           </button>
-          <button type="button" onClick={() => skipBy(5)} style={sessionDetailCircleBtn(false)} aria-label="+5s" title="+5s">
+          <button type="button" onClick={() => { skipBy(5); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+5s" title="+5s">
             +5s
           </button>
-          <button type="button" onClick={() => skipBy(10)} style={sessionDetailCircleBtn(false)} aria-label="+10s" title="+10s">
+          <button type="button" onClick={() => { skipBy(10); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+10s" title="+10s">
             +10s
           </button>
-          <button type="button" onClick={() => skipBy(1 / 30)} style={sessionDetailCircleBtn(false)} aria-label="+1f" title="+1f">
+          <button type="button" onClick={() => { skipBy(1 / 30); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+1f" title="+1f">
             +1f
           </button>
         </div>

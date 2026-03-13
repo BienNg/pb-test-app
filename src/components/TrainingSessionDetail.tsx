@@ -2038,6 +2038,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   frameDetailMarkerInitial={frameDetailMarkerInitial}
                   frameDetailMarkerReadOnly={frameDetailMarkerReadOnly}
                   onPlay={() => setActiveFrameReplyId(null)}
+                  onControlPressed={() => setActiveFrameReplyId(null)}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
