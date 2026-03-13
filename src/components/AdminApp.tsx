@@ -9,7 +9,7 @@ import { LessonsPage } from './LessonsPage';
 import { MySessionsPage, type TrainingSession } from './MySessionsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
-import { fetchSessionCountsForStudentIds } from '@/lib/studentSessions';
+import { fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'library';
@@ -362,14 +362,29 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       const filtered = rows.filter((r) => r.role === 'student' || !r.role);
       const studentIds = filtered.map((r) => r.id);
       const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
+      const firstSessionDates = await fetchFirstSessionDateForStudentIds(supabase, studentIds);
+      
       setStudents(
-        filtered.map((r) => ({
-          id: r.id,
-          name: r.full_name?.trim() || r.email || r.id,
-          email: r.email ?? '',
-          lessonsCompleted: sessionCounts[r.id] ?? 0,
-          lastActive: '—',
-        }))
+        filtered.map((r) => {
+          const firstSessionDate = firstSessionDates[r.id];
+          let joinedDate = '—';
+          if (firstSessionDate) {
+            const d = new Date(firstSessionDate + 'T12:00:00');
+            joinedDate = d.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            });
+          }
+          return {
+            id: r.id,
+            name: r.full_name?.trim() || r.email || r.id,
+            email: r.email ?? '',
+            lessonsCompleted: sessionCounts[r.id] ?? 0,
+            lastActive: joinedDate,
+            joinedDate: joinedDate,
+          };
+        })
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load students');

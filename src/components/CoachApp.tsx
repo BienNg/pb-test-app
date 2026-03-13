@@ -10,7 +10,7 @@ import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
 import type { TrainingSession } from './MySessionsPage';
 import { createClient } from '@/lib/supabase/client';
-import { fetchSessionsForStudent } from '@/lib/studentSessions';
+import { fetchSessionsForStudent, fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
@@ -20,6 +20,8 @@ export const CoachApp: React.FC = () => {
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [students, setStudents] = useState<StudentInfo[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
 
   const reloadSelectedStudentSessions = useCallback(async () => {
     if (!selectedStudent) {
@@ -34,6 +36,63 @@ export const CoachApp: React.FC = () => {
       setLoadingSessions(false);
     }
   }, [selectedStudent]);
+
+  const reloadStudents = useCallback(async () => {
+    setLoadingStudents(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.from('profiles').select('id, email, full_name, role');
+      if (error) {
+        console.error('Error loading students:', error);
+        setStudents([]);
+        return;
+      }
+      const rows = (data ?? []) as {
+        id: string;
+        email: string | null;
+        full_name: string | null;
+        role: string | null;
+      }[];
+      const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+      const studentIds = filtered.map((r) => r.id);
+      const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
+      const firstSessionDates = await fetchFirstSessionDateForStudentIds(supabase, studentIds);
+      
+      setStudents(
+        filtered.map((r) => {
+          const firstSessionDate = firstSessionDates[r.id];
+          let joinedDate = '—';
+          if (firstSessionDate) {
+            const d = new Date(firstSessionDate + 'T12:00:00');
+            joinedDate = d.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            });
+          }
+          return {
+            id: r.id,
+            name: r.full_name?.trim() || r.email || r.id,
+            email: r.email ?? '',
+            lessonsCompleted: sessionCounts[r.id] ?? 0,
+            lastActive: joinedDate,
+            joinedDate: joinedDate,
+          };
+        })
+      );
+    } catch (err) {
+      console.error('Failed to load students:', err);
+      setStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'students') {
+      void reloadStudents();
+    }
+  }, [activeTab, reloadStudents]);
 
   useEffect(() => {
     if (!selectedStudent) {
@@ -79,6 +138,7 @@ export const CoachApp: React.FC = () => {
       case 'students':
         return (
           <CoachStudentsPage
+            students={students}
             onSelectStudent={setSelectedStudent}
             onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
           />

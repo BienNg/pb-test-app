@@ -62,6 +62,40 @@ export async function fetchSessionCountsForStudentIds(
   return counts;
 }
 
+/** Fetch the date of the first session for each student. Returns a map of student_id -> first_session_date. */
+export async function fetchFirstSessionDateForStudentIds(
+  supabase: SupabaseClient | null,
+  studentIds: string[]
+): Promise<Record<string, string>> {
+  if (!supabase || studentIds.length === 0) return {};
+  
+  const { data, error } = await supabase
+    .from('session_students')
+    .select('student_id, session_id, sessions!inner(date)')
+    .in('student_id', studentIds);
+  
+  if (error || !data) return {};
+  
+  const rows = data as Array<{
+    student_id: string;
+    session_id: string;
+    sessions: { date: string };
+  }>;
+  
+  const firstDates: Record<string, string> = {};
+  
+  for (const row of rows) {
+    const studentId = row.student_id;
+    const sessionDate = row.sessions.date;
+    
+    if (!firstDates[studentId] || sessionDate < firstDates[studentId]) {
+      firstDates[studentId] = sessionDate;
+    }
+  }
+  
+  return firstDates;
+}
+
 /** Fetch sessions for a student from DB (session_students -> sessions). Returns [] on error or no Supabase. */
 export async function fetchSessionsForStudent(
   supabase: SupabaseClient | null,

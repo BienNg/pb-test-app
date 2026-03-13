@@ -36,6 +36,8 @@ const LEVEL_COLORS: Record<StudentLevel, { bg: string; text: string; badgeBg?: s
   expert: { bg: '#55877F', text: '#dc2626', badgeBg: 'rgba(220, 38, 38, 0.1)' },
 };
 
+type ViewMode = 'table' | 'grid' | 'list';
+
 // Mock students for the coach
 const MOCK_STUDENTS: StudentInfo[] = [
   { id: '1', name: 'Alex Johnson', email: 'alex.j@example.com', lessonsCompleted: 24, lastActive: 'Oct 12, 2023', level: 'intermediate', joinedDate: 'Oct 2023', progress: 72 },
@@ -51,7 +53,7 @@ const MOCK_STUDENTS: StudentInfo[] = [
 interface StudentCardProps {
   student: StudentInfo;
   onClick: () => void;
-  viewMode?: 'list' | 'grid' | 'table';
+  viewMode?: ViewMode;
   isMobile?: boolean;
 }
 
@@ -272,7 +274,6 @@ interface CoachStudentsPageProps {
 }
 
 type SortField = 'name' | 'lessons' | 'lastActive' | 'level';
-type ViewMode = 'table' | 'grid' | 'list';
 
 export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   title = 'Student Directory',
@@ -798,7 +799,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                               </span>
                             </td>
                             <td style={{ padding: '16px 24px', fontSize: '14px', color: '#55877f' }}>
-                              {student.lastActive}
+                              {student.joinedDate || student.lastActive}
                             </td>
                             <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 600, color: COLORS.textPrimary }}>
                               {student.lessonsCompleted} <span style={{ color: '#9BC1B9', fontWeight: 400 }}>lessons</span>
