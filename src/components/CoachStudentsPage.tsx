@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
-import { IconUser, IconChevronRight, IconSearch, IconChevronDown } from './Icons';
+import { IconUser, IconChevronRight, IconSearch } from './Icons';
 import { LessonCard } from './Cards';
 import type { TrainingSession } from './MySessionsPage';
 
@@ -286,10 +286,10 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
   const [selectedSubSegment, setSelectedSubSegment] = useState<'completed' | 'new'>('completed');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortField>('name');
-  const [sortAsc, setSortAsc] = useState(true);
+  const [sortBy] = useState<SortField>('name');
+  const [sortAsc] = useState(true);
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const sortDropdownOpen = false;
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isMobile, setIsMobile] = useState(false);
   const showStudentsOnly = !showMySessionsTab;

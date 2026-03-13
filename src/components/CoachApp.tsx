@@ -21,7 +21,7 @@ export const CoachApp: React.FC = () => {
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [students, setStudents] = useState<StudentInfo[]>([]);
-  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [, setLoadingStudents] = useState(false);
 
   const reloadSelectedStudentSessions = useCallback(async () => {
     if (!selectedStudent) {

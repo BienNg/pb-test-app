@@ -1102,7 +1102,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [comments, isDbSession, replyDraft, sessionId, user?.id]
+    [comments, isAdmin, isDbSession, replyDraft, sessionId, user?.id]
   );
 
   const handleSaveReplyEdit = useCallback(
@@ -1154,7 +1154,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [isDbSession, user?.id]
+    [isAdmin, isDbSession, user?.id]
   );
 
   const filteredShots = useMemo(() => {
