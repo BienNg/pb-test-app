@@ -422,7 +422,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editReplyDraft, setEditReplyDraft] = useState('');
   /** When set, we're viewing this reply's frame (seek to timestamp, show marker read-only). */
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
-  const [pauseToggle, setPauseToggle] = useState(false);
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
@@ -1131,6 +1130,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     selectedMentionIds,
     sessionId,
     user?.id,
+    isAdmin,
   ]);
 
   const handleAddReply = useCallback(
@@ -1815,7 +1815,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   videoKey={session.id}
                   variant="sessionDetail"
                   accentColor={REFERENCE_PRIMARY}
-                  pauseRequested={anyModalOpen || !isTabVisible || pauseToggle || frameReplyPauseRequested}
+                  pauseRequested={anyModalOpen || !isTabVisible || frameReplyPauseRequested}
                   showFrameDetailReplyOverlay={
                     replyingToCommentId != null || editingReplyId != null || activeFrameReplyId != null
                   }

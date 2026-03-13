@@ -206,6 +206,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }, [videoKey]);
 
   // Reset or sync draggable ellipse when entering frame-detail reply overlay mode
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (!showFrameDetailReplyOverlay) return;
     if (
@@ -224,6 +225,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       setFrameDetailCircleRadiusY(14);
     }
   }, [showFrameDetailReplyOverlay, frameDetailMarkerInitial]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleFrameCirclePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
