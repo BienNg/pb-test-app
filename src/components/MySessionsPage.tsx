@@ -5,7 +5,7 @@ import { LessonCard } from './Cards';
 import { Card } from './BaseComponents';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
-import { parseCommentTextWithShots } from './TrainingSessionDetail';
+import { parseCommentTextWithShots } from './commentText';
 import { IconUser } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 
