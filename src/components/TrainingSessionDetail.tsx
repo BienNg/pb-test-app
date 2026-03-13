@@ -414,6 +414,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeReplyMenuId, setActiveReplyMenuId] = useState<string | null>(null);
   const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
   const [editReplyDraft, setEditReplyDraft] = useState('');
+  const [pauseToggle, setPauseToggle] = useState(false);
 
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
@@ -1704,7 +1705,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   videoKey={session.id}
                   variant="sessionDetail"
                   accentColor={REFERENCE_PRIMARY}
-                  pauseRequested={anyModalOpen || !isTabVisible}
+                  pauseRequested={anyModalOpen || !isTabVisible || pauseToggle}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
@@ -2021,32 +2022,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               </button>
                             </>
                           )}
-                          {isAdmin && isDbSession && user?.id && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReplyingToCommentId(String(comment.id));
-                                setReplyDraft('');
-                              }}
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 6,
-                                padding: '4px 10px',
-                                borderRadius: 999,
-                                border: '1px solid #d1e3db',
-                                backgroundColor: '#f4faf7',
-                                color: '#6a9a95',
-                                fontSize: 11,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                marginLeft: 4,
-                              }}
-                            >
-                              Reply
-                            </button>
-                          )}
                           {isAdmin && (
                             <button
                               type="button"
@@ -2084,6 +2059,36 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 overflow: 'hidden',
                               }}
                             >
+                              {isDbSession && user?.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setReplyingToCommentId(String(comment.id));
+                                    setReplyDraft('');
+                                    setActiveCommentMenu(null);
+                                  }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                    background: 'none',
+                                    border: 'none',
+                                    ...TYPOGRAPHY.bodySmall,
+                                    color: COLORS.textPrimary,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Add Frame Comment
+                                </button>
+                              )}
+                              <div
+                                style={{
+                                  height: 1,
+                                  margin: `${SPACING.xs}px 0`,
+                                  backgroundColor: COLORS.backgroundLight,
+                                }}
+                              />
                               <button
                                 type="button"
                                 onClick={() => {
@@ -2339,8 +2344,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       )}
                       {repliesByCommentId[String(comment.id)] &&
                         repliesByCommentId[String(comment.id)].map((reply) => {
-                          const canSeek = false;
                           const tsSeconds = (reply.timestampSeconds ?? comment.timestampSeconds) ?? null;
+                          const canSeek = tsSeconds != null && !!session?.videoUrl;
                           const timestampLabel =
                             tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
                           const isOwnReply = reply.role === 'You';
@@ -2359,7 +2364,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 backgroundColor: COLORS.cardBg,
                                 padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
                               }}
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (canSeek && tsSeconds != null) {
+                                  setPendingSeekSeconds(tsSeconds);
+                                  setActiveCommentId(comment.id);
+                                  setPauseToggle((prev) => !prev);
+                                }
+                              }}
                             >
                               <div
                                 style={{
