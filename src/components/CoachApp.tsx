@@ -41,6 +41,11 @@ export const CoachApp: React.FC = () => {
     setLoadingStudents(true);
     try {
       const supabase = createClient();
+      if (!supabase) {
+        console.error('Supabase client is not configured.');
+        setStudents([]);
+        return;
+      }
       const { data, error } = await supabase.from('profiles').select('id, email, full_name, role');
       if (error) {
         console.error('Error loading students:', error);
