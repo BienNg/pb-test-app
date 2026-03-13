@@ -234,12 +234,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }, []);
 
   const handleFrameCirclePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingFrameCircle) return;
     if (!frameDetailOverlayRef.current) return;
     const rect = frameDetailOverlayRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
     setFrameDetailCirclePosition({ x, y });
-  }, []);
+  }, [isDraggingFrameCircle]);
 
   const handleFrameCirclePointerUp = useCallback((e: React.PointerEvent) => {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
@@ -253,6 +254,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }, []);
 
   const handleFrameResizeWidthPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingFrameCircle) return;
     if (!frameDetailOverlayRef.current) return;
     const rect = frameDetailOverlayRef.current.getBoundingClientRect();
     const centerX = rect.left + (frameDetailCirclePosition.x / 100) * rect.width;
@@ -260,9 +262,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientX - centerX)))
     );
     setFrameDetailCircleRadiusX(radiusX);
-  }, [frameDetailCirclePosition.x]);
+  }, [isResizingFrameCircle, frameDetailCirclePosition.x]);
 
   const handleFrameResizeHeightPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingFrameCircle) return;
     if (!frameDetailOverlayRef.current) return;
     const rect = frameDetailOverlayRef.current.getBoundingClientRect();
     const centerY = rect.top + (frameDetailCirclePosition.y / 100) * rect.height;
@@ -270,7 +273,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       Math.max(FRAME_ELLIPSE_RADIUS_MIN, Math.min(FRAME_ELLIPSE_RADIUS_MAX, Math.abs(e.clientY - centerY)))
     );
     setFrameDetailCircleRadiusY(radiusY);
-  }, [frameDetailCirclePosition.y]);
+  }, [isResizingFrameCircle, frameDetailCirclePosition.y]);
 
   const handleFrameResizePointerUp = useCallback((e: React.PointerEvent) => {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);

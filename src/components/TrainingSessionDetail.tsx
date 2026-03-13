@@ -1584,6 +1584,149 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [mentionMenu, taggableProfiles]
   );
 
+  interface ShotSuggestionsDropdownProps {
+    shotMenu: { query: string; slashStart: number; highlightIndex: number };
+    filteredShots: string[];
+    inlineMenuTop: number | null;
+    onSelectShot: (shot: string) => void;
+  }
+
+  const ShotSuggestionsDropdown: React.FC<ShotSuggestionsDropdownProps> = ({
+    shotMenu,
+    filteredShots,
+    inlineMenuTop,
+    onSelectShot,
+  }) => (
+    <div
+      role="listbox"
+      aria-label="Shot type"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: inlineMenuTop != null ? inlineMenuTop : '100%',
+        marginTop: inlineMenuTop != null ? 0 : 4,
+        maxHeight: 220,
+        overflowY: 'auto',
+        backgroundColor: COLORS.cardBg,
+        border: `1px solid ${COLORS.backgroundLight}`,
+        borderRadius: RADIUS.sm,
+        boxShadow: SHADOWS.light,
+        zIndex: 20,
+      }}
+    >
+      {filteredShots.length === 0 ? (
+        <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
+          No matching shot
+        </div>
+      ) : (
+        filteredShots.map((shot, i) => (
+          <button
+            key={shot}
+            type="button"
+            role="option"
+            aria-selected={i === shotMenu.highlightIndex}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onSelectShot(shot);
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: `${SPACING.sm}px ${SPACING.md}px`,
+              border: 'none',
+              background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
+              textAlign: 'left',
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            {shot}
+          </button>
+        ))
+      )}
+    </div>
+  );
+
+  interface MentionSuggestionsDropdownProps {
+    mentionMenu: { query: string; atStart: number; highlightIndex: number };
+    filteredMentions: { id: string; name: string }[];
+    inlineMenuTop: number | null;
+    hasShotMenu: boolean;
+    emptyLabel: string;
+    showAtPrefix: boolean;
+    onSelectMention: (id: string) => void;
+  }
+
+  const MentionSuggestionsDropdown: React.FC<MentionSuggestionsDropdownProps> = ({
+    mentionMenu,
+    filteredMentions,
+    inlineMenuTop,
+    hasShotMenu,
+    emptyLabel,
+    showAtPrefix,
+    onSelectMention,
+  }) => (
+    <div
+      role="listbox"
+      aria-label="Mention person"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: inlineMenuTop != null ? inlineMenuTop : '100%',
+        marginTop: inlineMenuTop != null ? 0 : hasShotMenu ? 8 : 4,
+        maxHeight: 220,
+        overflowY: 'auto',
+        backgroundColor: COLORS.cardBg,
+        border: `1px solid ${COLORS.backgroundLight}`,
+        borderRadius: RADIUS.sm,
+        boxShadow: SHADOWS.light,
+        zIndex: 21,
+      }}
+    >
+      {filteredMentions.length === 0 ? (
+        <div
+          style={{
+            padding: SPACING.sm,
+            ...TYPOGRAPHY.bodySmall,
+            color: COLORS.textMuted,
+          }}
+        >
+          {emptyLabel}
+        </div>
+      ) : (
+        filteredMentions.map((p, i) => (
+          <button
+            key={p.id}
+            type="button"
+            role="option"
+            aria-selected={mentionMenu.highlightIndex === i}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onSelectMention(p.id);
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: `${SPACING.sm}px ${SPACING.md}px`,
+              border: 'none',
+              background:
+                mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+              textAlign: 'left',
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            {showAtPrefix ? `@${p.name}` : p.name}
+          </button>
+        ))
+      )}
+    </div>
+  );
+
   const handleDeleteComment = async (commentId: string | number) => {
     if (!isDbSession || typeof commentId !== 'string') {
       // Local state fallback
@@ -1817,7 +1960,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   accentColor={REFERENCE_PRIMARY}
                   pauseRequested={anyModalOpen || !isTabVisible || frameReplyPauseRequested}
                   showFrameDetailReplyOverlay={
-                    replyingToCommentId != null || editingReplyId != null || activeFrameReplyId != null
+                    replyingToCommentId != null ||
+                    editingReplyId != null ||
+                    (activeFrameReplyId != null && frameDetailMarkerInitial != null)
                   }
                   frameDetailMarkerInitial={frameDetailMarkerInitial}
                   frameDetailMarkerReadOnly={frameDetailMarkerReadOnly}
@@ -2293,109 +2438,23 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             }}
                           />
                           {shotMenu != null && (
-                            <div
-                              role="listbox"
-                              aria-label="Shot type"
-                              style={{
-                                position: 'absolute',
-                                left: 0,
-                                right: 0,
-                                top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                                marginTop: inlineMenuTop != null ? 0 : 4,
-                                maxHeight: 220,
-                                overflowY: 'auto',
-                                backgroundColor: COLORS.cardBg,
-                                border: `1px solid ${COLORS.backgroundLight}`,
-                                borderRadius: RADIUS.sm,
-                                boxShadow: SHADOWS.light,
-                                zIndex: 20,
-                              }}
-                            >
-                              {filteredShots.length === 0 ? (
-                                <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
-                                  No matching shot
-                                </div>
-                              ) : (
-                                filteredShots.map((shot, i) => (
-                                  <button
-                                    key={shot}
-                                    type="button"
-                                    role="option"
-                                    aria-selected={i === shotMenu.highlightIndex}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      selectShotFromMenu(shot);
-                                    }}
-                                    style={{
-                                      display: 'block',
-                                      width: '100%',
-                                      padding: `${SPACING.sm}px ${SPACING.md}px`,
-                                      border: 'none',
-                                      background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
-                                      textAlign: 'left',
-                                      ...TYPOGRAPHY.bodySmall,
-                                      color: COLORS.textPrimary,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    {shot}
-                                  </button>
-                                ))
-                              )}
-                            </div>
+                            <ShotSuggestionsDropdown
+                              shotMenu={shotMenu}
+                              filteredShots={filteredShots}
+                              inlineMenuTop={inlineMenuTop}
+                              onSelectShot={selectShotFromMenu}
+                            />
                           )}
                           {mentionMenu != null && (
-                            <div
-                              role="listbox"
-                              aria-label="Mention person"
-                              style={{
-                                position: 'absolute',
-                                left: 0,
-                                right: 0,
-                                top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                                marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
-                                maxHeight: 220,
-                                overflowY: 'auto',
-                                backgroundColor: COLORS.cardBg,
-                                border: `1px solid ${COLORS.backgroundLight}`,
-                                borderRadius: RADIUS.sm,
-                                boxShadow: SHADOWS.light,
-                                zIndex: 21,
-                              }}
-                            >
-                              {filteredMentions.length === 0 ? (
-                                <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
-                                  No students/coaches assigned to this session
-                                </div>
-                              ) : (
-                                filteredMentions.map((p, i) => (
-                                  <button
-                                    key={p.id}
-                                    type="button"
-                                    role="option"
-                                    aria-selected={mentionMenu.highlightIndex === i}
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      selectMentionFromMenu(p.id);
-                                    }}
-                                    style={{
-                                      display: 'block',
-                                      width: '100%',
-                                      padding: `${SPACING.sm}px ${SPACING.md}px`,
-                                      border: 'none',
-                                      background:
-                                        mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
-                                      textAlign: 'left',
-                                      ...TYPOGRAPHY.bodySmall,
-                                      color: COLORS.textPrimary,
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    @{p.name}
-                                  </button>
-                                ))
-                              )}
-                            </div>
+                            <MentionSuggestionsDropdown
+                              mentionMenu={mentionMenu}
+                              filteredMentions={filteredMentions}
+                              inlineMenuTop={inlineMenuTop}
+                              hasShotMenu={shotMenu != null}
+                              emptyLabel="No students/coaches assigned to this session"
+                              showAtPrefix
+                              onSelectMention={selectMentionFromMenu}
+                            />
                           )}
                           <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.sm, justifyContent: 'flex-end' }}>
                             <button
@@ -2532,8 +2591,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        videoPlayerRef.current?.pause();
-                                        setPendingSeekSeconds(tsSeconds);
+                                        setActiveFrameReplyId(reply.id);
                                         setActiveCommentId(comment.id);
                                       }}
                                       style={{
@@ -2807,115 +2865,23 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               }}
                             />
                             {shotMenu != null && (
-                              <div
-                                role="listbox"
-                                aria-label="Shot type"
-                                style={{
-                                  position: 'absolute',
-                                  left: 0,
-                                  right: 0,
-                                  top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                                  marginTop: inlineMenuTop != null ? 0 : 4,
-                                  maxHeight: 220,
-                                  overflowY: 'auto',
-                                  backgroundColor: COLORS.cardBg,
-                                  border: `1px solid ${COLORS.backgroundLight}`,
-                                  borderRadius: RADIUS.sm,
-                                  boxShadow: SHADOWS.light,
-                                  zIndex: 20,
-                                }}
-                              >
-                                {filteredShots.length === 0 ? (
-                                  <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
-                                    No matching shot
-                                  </div>
-                                ) : (
-                                  filteredShots.map((shot, i) => (
-                                    <button
-                                      key={shot}
-                                      type="button"
-                                      role="option"
-                                      aria-selected={i === shotMenu.highlightIndex}
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        selectShotFromMenu(shot);
-                                      }}
-                                      style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                                        border: 'none',
-                                        background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
-                                        textAlign: 'left',
-                                        ...TYPOGRAPHY.bodySmall,
-                                        color: COLORS.textPrimary,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      {shot}
-                                    </button>
-                                  ))
-                                )}
-                              </div>
+                              <ShotSuggestionsDropdown
+                                shotMenu={shotMenu}
+                                filteredShots={filteredShots}
+                                inlineMenuTop={inlineMenuTop}
+                                onSelectShot={selectShotFromMenu}
+                              />
                             )}
                             {mentionMenu != null && (
-                              <div
-                                role="listbox"
-                                aria-label="Mention person"
-                                style={{
-                                  position: 'absolute',
-                                  left: 0,
-                                  right: 0,
-                                  top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                                  marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
-                                  maxHeight: 220,
-                                  overflowY: 'auto',
-                                  backgroundColor: COLORS.cardBg,
-                                  border: `1px solid ${COLORS.backgroundLight}`,
-                                  borderRadius: RADIUS.sm,
-                                  boxShadow: SHADOWS.light,
-                                  zIndex: 21,
-                                }}
-                              >
-                                {filteredMentions.length === 0 ? (
-                                  <div
-                                    style={{
-                                      padding: SPACING.sm,
-                                      ...TYPOGRAPHY.bodySmall,
-                                      color: COLORS.textMuted,
-                                    }}
-                                  >
-                                    No matching person
-                                  </div>
-                                ) : (
-                                  filteredMentions.map((p, i) => (
-                                    <button
-                                      key={p.id}
-                                      type="button"
-                                      role="option"
-                                      aria-selected={mentionMenu.highlightIndex === i}
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        selectMentionFromMenu(p.id);
-                                      }}
-                                      style={{
-                                        display: 'block',
-                                        width: '100%',
-                                        padding: `${SPACING.sm}px ${SPACING.md}px`,
-                                        border: 'none',
-                                        background:
-                                          mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
-                                        textAlign: 'left',
-                                        ...TYPOGRAPHY.bodySmall,
-                                        color: COLORS.textPrimary,
-                                        cursor: 'pointer',
-                                      }}
-                                    >
-                                      {p.name}
-                                    </button>
-                                  ))
-                                )}
-                              </div>
+                              <MentionSuggestionsDropdown
+                                mentionMenu={mentionMenu}
+                                filteredMentions={filteredMentions}
+                                inlineMenuTop={inlineMenuTop}
+                                hasShotMenu={shotMenu != null}
+                                emptyLabel="No matching person"
+                                showAtPrefix={false}
+                                onSelectMention={selectMentionFromMenu}
+                              />
                             )}
                           </div>
                           <div
@@ -3158,115 +3124,23 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </span>
                 )}
                 {editingCommentId == null && shotMenu != null && (
-                  <div
-                    role="listbox"
-                    aria-label="Shot type"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      right: 0,
-                      top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                      marginTop: inlineMenuTop != null ? 0 : 4,
-                      maxHeight: 220,
-                      overflowY: 'auto',
-                      backgroundColor: COLORS.cardBg,
-                      border: `1px solid ${COLORS.backgroundLight}`,
-                      borderRadius: RADIUS.sm,
-                      boxShadow: SHADOWS.light,
-                      zIndex: 20,
-                    }}
-                  >
-                    {filteredShots.length === 0 ? (
-                      <div style={{ padding: SPACING.sm, ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted }}>
-                        No matching shot
-                      </div>
-                    ) : (
-                      filteredShots.map((shot, i) => (
-                        <button
-                          key={shot}
-                          type="button"
-                          role="option"
-                          aria-selected={i === shotMenu.highlightIndex}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            selectShotFromMenu(shot);
-                          }}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: `${SPACING.sm}px ${SPACING.md}px`,
-                            border: 'none',
-                            background: i === shotMenu.highlightIndex ? COLORS.backgroundLight : 'transparent',
-                            textAlign: 'left',
-                            ...TYPOGRAPHY.bodySmall,
-                            color: COLORS.textPrimary,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {shot}
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  <ShotSuggestionsDropdown
+                    shotMenu={shotMenu}
+                    filteredShots={filteredShots}
+                    inlineMenuTop={inlineMenuTop}
+                    onSelectShot={selectShotFromMenu}
+                  />
                 )}
                 {editingCommentId == null && mentionMenu != null && (
-                  <div
-                    role="listbox"
-                    aria-label="Mention person"
-                    style={{
-                      position: 'absolute',
-                      left: 0,
-                      right: 0,
-                      top: inlineMenuTop != null ? inlineMenuTop : '100%',
-                      marginTop: inlineMenuTop != null ? 0 : shotMenu ? 8 : 4,
-                      maxHeight: 220,
-                      overflowY: 'auto',
-                      backgroundColor: COLORS.cardBg,
-                      border: `1px solid ${COLORS.backgroundLight}`,
-                      borderRadius: RADIUS.sm,
-                      boxShadow: SHADOWS.light,
-                      zIndex: 21,
-                    }}
-                  >
-                    {filteredMentions.length === 0 ? (
-                      <div
-                        style={{
-                          padding: SPACING.sm,
-                          ...TYPOGRAPHY.bodySmall,
-                          color: COLORS.textMuted,
-                        }}
-                      >
-                        No students/coaches assigned to this session
-                      </div>
-                    ) : (
-                      filteredMentions.map((p, i) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          role="option"
-                          aria-selected={mentionMenu.highlightIndex === i}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            selectMentionFromMenu(p.id);
-                          }}
-                          style={{
-                            display: 'block',
-                            width: '100%',
-                            padding: `${SPACING.sm}px ${SPACING.md}px`,
-                            border: 'none',
-                            background:
-                              mentionMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
-                            textAlign: 'left',
-                            ...TYPOGRAPHY.bodySmall,
-                            color: COLORS.textPrimary,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          @{p.name}
-                        </button>
-                      ))
-                    )}
-                  </div>
+                  <MentionSuggestionsDropdown
+                    mentionMenu={mentionMenu}
+                    filteredMentions={filteredMentions}
+                    inlineMenuTop={inlineMenuTop}
+                    hasShotMenu={shotMenu != null}
+                    emptyLabel="No students/coaches assigned to this session"
+                    showAtPrefix
+                    onSelectMention={selectMentionFromMenu}
+                  />
                 )}
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
