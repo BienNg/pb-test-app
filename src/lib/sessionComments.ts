@@ -369,6 +369,33 @@ export async function insertSessionCommentReply(
   };
 }
 
+/** Update a reply (subcomment) text. Returns true on success. */
+export async function updateSessionCommentReply(
+  supabase: SupabaseClient | null,
+  replyId: string,
+  text: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comment_replies')
+    .update({ text })
+    .eq('id', replyId);
+  return !error;
+}
+
+/** Delete a reply (subcomment). Returns true on success. */
+export async function deleteSessionCommentReply(
+  supabase: SupabaseClient | null,
+  replyId: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comment_replies')
+    .delete()
+    .eq('id', replyId);
+  return !error;
+}
+
 /** Update the example GIF attached to a comment. Returns true on success. */
 export async function updateCommentExampleGif(
   supabase: SupabaseClient | null,

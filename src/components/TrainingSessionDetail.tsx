@@ -287,6 +287,8 @@ import {
   mapDbCommentToSessionComment,
   mapDbReplyToSessionCommentReply,
   fetchSessionTaggableProfiles,
+  updateSessionCommentReply,
+  deleteSessionCommentReply,
 } from '@/lib/sessionComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
@@ -408,6 +410,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [replyingToCommentId, setReplyingToCommentId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState('');
   const [postingReply, setPostingReply] = useState(false);
+  const [activeReplyMenuId, setActiveReplyMenuId] = useState<string | null>(null);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyDraft, setEditReplyDraft] = useState('');
 
   // Auto-grow reply textarea with content
   useEffect(() => {
@@ -1013,7 +1018,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, [activeCommentId]);
 
   const handleAddComment = useCallback(async () => {
-    if (!commentDraft.trim()) return;
+    if (!commentDraft.trim() || !isAdmin) return;
 
     const currentTime = currentVideoTime ?? 0;
     const timestampSeconds = includeTimestamp ? Math.round(currentTime) : null;
@@ -1070,7 +1075,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const handleAddReply = useCallback(
     async (parentIdRaw: string | number) => {
       if (!replyDraft.trim()) return;
-      if (!isDbSession || !user?.id) return;
+      if (!isDbSession || !user?.id || !isAdmin) return;
       const parentId = String(parentIdRaw);
 
       const supabase = createClient();
@@ -1105,6 +1110,58 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
     },
     [comments, isDbSession, replyDraft, sessionId, user?.id]
+  );
+
+  const handleSaveReplyEdit = useCallback(
+    async (parentCommentId: string, replyId: string) => {
+      if (!editReplyDraft.trim()) return;
+      if (!isDbSession || !user?.id) return;
+
+      const supabase = createClient();
+      setPostingReply(true);
+      try {
+        const ok = await updateSessionCommentReply(supabase, replyId, editReplyDraft.trim());
+        if (ok) {
+          setRepliesByCommentId((prev) => {
+            const existing = prev[parentCommentId] ?? [];
+            return {
+              ...prev,
+              [parentCommentId]: existing.map((r) =>
+                r.id === replyId ? { ...r, text: editReplyDraft.trim() } : r
+              ),
+            };
+          });
+          setEditingReplyId(null);
+          setEditReplyDraft('');
+        }
+      } finally {
+        setPostingReply(false);
+      }
+    },
+    [editReplyDraft, isDbSession, user?.id]
+  );
+
+  const handleDeleteReply = useCallback(
+    async (parentCommentId: string, replyId: string) => {
+      if (!isDbSession || !user?.id) return;
+      const supabase = createClient();
+      setPostingReply(true);
+      try {
+        const ok = await deleteSessionCommentReply(supabase, replyId);
+        if (ok) {
+          setRepliesByCommentId((prev) => {
+            const existing = prev[parentCommentId] ?? [];
+            return {
+              ...prev,
+              [parentCommentId]: existing.filter((r) => r.id !== replyId),
+            };
+          });
+        }
+      } finally {
+        setPostingReply(false);
+      }
+    },
+    [isDbSession, user?.id]
   );
 
   const filteredShots = useMemo(() => {
@@ -1387,12 +1444,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (!isDbSession || typeof commentId !== 'string') {
       // Local state fallback
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setRepliesByCommentId((prev) => {
+        const next = { ...prev };
+        delete next[String(commentId)];
+        return next;
+      });
       return;
     }
     const supabase = createClient();
     const success = await deleteSessionComment(supabase, commentId);
     if (success) {
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setRepliesByCommentId((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
     }
   };
 
@@ -1921,32 +1988,33 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               </button>
                             </>
                           )}
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (!isDbSession || !user?.id) return;
-                              setReplyingToCommentId(String(comment.id));
-                              setReplyDraft('');
-                            }}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              padding: '4px 10px',
-                              borderRadius: 999,
-                              border: '1px solid #d1e3db',
-                              backgroundColor: '#f4faf7',
-                              color: '#6a9a95',
-                              fontSize: 11,
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                              marginLeft: 4,
-                            }}
-                          >
-                            Reply
-                          </button>
-                          {comment.role === 'You' && (
+                          {isAdmin && isDbSession && user?.id && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReplyingToCommentId(String(comment.id));
+                                setReplyDraft('');
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                padding: '4px 10px',
+                                borderRadius: 999,
+                                border: '1px solid #d1e3db',
+                                backgroundColor: '#f4faf7',
+                                color: '#6a9a95',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                marginLeft: 4,
+                              }}
+                            >
+                              Reply
+                            </button>
+                          )}
+                          {isAdmin && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -2239,6 +2307,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           const tsSeconds = (reply.timestampSeconds ?? comment.timestampSeconds) ?? null;
                           const timestampLabel =
                             tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
+                          const isOwnReply = reply.role === 'You';
+                          const isEditing = editingReplyId === reply.id;
+                          const isMenuOpen = activeReplyMenuId === reply.id;
                           return (
                             <div
                               key={reply.id}
@@ -2260,6 +2331,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   marginBottom: 4,
+                                  position: 'relative',
                                 }}
                               >
                                 <div
@@ -2276,41 +2348,203 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     <span style={{ color: '#9ca3af', marginLeft: 4 }}>[{timestampLabel}]</span>
                                   )}
                                 </div>
-                                {canSeek && tsSeconds != null && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setPendingSeekSeconds(tsSeconds);
-                                      setActiveCommentId(comment.id);
-                                    }}
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                  }}
+                                >
+                                  {canSeek && tsSeconds != null && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setPendingSeekSeconds(tsSeconds);
+                                        setActiveCommentId(comment.id);
+                                      }}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: '#8fb9a8',
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        textTransform: 'uppercase',
+                                      }}
+                                    >
+                                      <IconPlay size={12} />
+                                      View frame
+                                    </button>
+                                  )}
+                                  {isOwnReply && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveReplyMenuId((prev) =>
+                                          prev === reply.id ? null : String(reply.id)
+                                        );
+                                      }}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        padding: 4,
+                                        cursor: 'pointer',
+                                        color: COLORS.textSecondary,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderRadius: '50%',
+                                      }}
+                                    >
+                                      <IconMoreVertical size={16} />
+                                    </button>
+                                  )}
+                                  {isMenuOpen && (
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{
+                                        position: 'absolute',
+                                        top: '100%',
+                                        right: 0,
+                                        marginTop: 4,
+                                        backgroundColor: COLORS.cardBg,
+                                        borderRadius: RADIUS.md,
+                                        zIndex: 10,
+                                        minWidth: 120,
+                                        overflow: 'hidden',
+                                      }}
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditReplyDraft(reply.text);
+                                          setEditingReplyId(reply.id);
+                                          setActiveReplyMenuId(null);
+                                        }}
+                                        style={{
+                                          display: 'block',
+                                          width: '100%',
+                                          textAlign: 'left',
+                                          padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                          background: 'none',
+                                          border: 'none',
+                                          ...TYPOGRAPHY.bodySmall,
+                                          color: COLORS.textPrimary,
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          void handleDeleteReply(String(comment.id), reply.id);
+                                          setActiveReplyMenuId(null);
+                                        }}
+                                        style={{
+                                          display: 'block',
+                                          width: '100%',
+                                          textAlign: 'left',
+                                          padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                          background: 'none',
+                                          border: 'none',
+                                          ...TYPOGRAPHY.bodySmall,
+                                          color: '#ef4444',
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {isEditing ? (
+                                <div>
+                                  <textarea
+                                    value={editReplyDraft}
+                                    onChange={(e) => setEditReplyDraft(e.target.value)}
                                     style={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: 6,
-                                      border: 'none',
-                                      background: 'transparent',
-                                      color: '#8fb9a8',
-                                      fontSize: 11,
-                                      fontWeight: 700,
-                                      cursor: 'pointer',
-                                      textTransform: 'uppercase',
+                                      width: '100%',
+                                      minHeight: 56,
+                                      resize: 'none',
+                                      overflow: 'hidden',
+                                      borderRadius: RADIUS.sm,
+                                      border: `1px solid ${COLORS.backgroundLight}`,
+                                      padding: `${SPACING.xs}px ${SPACING.sm}px`,
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textPrimary,
+                                      backgroundColor: COLORS.cardBg,
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'flex-end',
+                                      gap: 8,
+                                      marginTop: SPACING.xs,
                                     }}
                                   >
-                                    <IconPlay size={12} />
-                                    View frame
-                                  </button>
-                                )}
-                              </div>
-                              <p
-                                style={{
-                                  ...TYPOGRAPHY.bodySmall,
-                                  margin: 0,
-                                  color: COLORS.textPrimary,
-                                }}
-                              >
-                                {reply.text}
-                              </p>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void handleSaveReplyEdit(String(comment.id), reply.id);
+                                      }}
+                                      disabled={postingReply || !editReplyDraft.trim()}
+                                      style={{
+                                        padding: '4px 10px',
+                                        borderRadius: 999,
+                                        border: 'none',
+                                        backgroundColor:
+                                          postingReply || !editReplyDraft.trim() ? '#d1e3db' : '#8fb9a8',
+                                        color: '#ffffff',
+                                        fontSize: 11,
+                                        fontWeight: 600,
+                                        cursor:
+                                          postingReply || !editReplyDraft.trim() ? 'default' : 'pointer',
+                                      }}
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingReplyId(null);
+                                        setEditReplyDraft('');
+                                      }}
+                                      style={{
+                                        padding: '4px 8px',
+                                        borderRadius: 999,
+                                        border: 'none',
+                                        backgroundColor: 'transparent',
+                                        color: COLORS.textSecondary,
+                                        fontSize: 11,
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p
+                                  style={{
+                                    ...TYPOGRAPHY.bodySmall,
+                                    margin: 0,
+                                    color: COLORS.textPrimary,
+                                  }}
+                                >
+                                  {reply.text}
+                                </p>
+                              )}
                             </div>
                           );
                         })}
@@ -2426,6 +2660,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 })
               )}
 
+            {isAdmin && (
             <div
               style={{
                 borderRadius: RADIUS.md,
@@ -2744,6 +2979,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </button>
               </div>
             </div>
+            )}
             </div>
           </div>
         </div>
