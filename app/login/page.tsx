@@ -2,8 +2,10 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase/client';
 import { Eye, EyeOff, TrendingUp, GraduationCap } from 'lucide-react';
+import academyLogo from '@/assets/logo/Pickleball Academy Icon Transparent.png';
 
 // Design tokens from reference
 const styles = {
@@ -27,16 +29,6 @@ const styles = {
     900: '#0f172a',
   },
 } as const;
-
-function TennisIcon({ size = 40 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-      <path d="M2 12h20" />
-    </svg>
-  );
-}
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -188,28 +180,28 @@ function LoginContent() {
         }}
       >
       <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {/* Header: logo + title + tagline */}
-        <div style={{ marginBottom: 40, textAlign: 'center' }}>
+        {/* Header: logo + tagline */}
+        <div style={{ marginBottom: 16, textAlign: 'center' }}>
           <div
             style={{
-              margin: '0 auto 24px',
-              width: 80,
-              height: 80,
-              borderRadius: styles.radius2xl,
-              background: styles.primary,
-              color: 'white',
+              margin: '0 auto 0px',
+              width: 180,
+              height: 180,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: `0 10px 15px -3px ${styles.primary}33`,
             }}
           >
-            <TennisIcon size={40} />
+            <Image
+              src={academyLogo}
+              alt="Pickleball Academy"
+              width={180}
+              height={180}
+              style={{ objectFit: 'contain' }}
+              priority
+            />
           </div>
-          <h1 style={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.025em', color: styles.slate[900], margin: 0 }}>
-            Pickleball Academy
-          </h1>
-          <p style={{ marginTop: 8, color: styles.slate[500], fontSize: '1rem', marginBottom: 0 }}>
+          <p style={{ marginTop: 0, color: styles.slate[500], fontSize: '1rem', marginBottom: 0 }}>
             Your court performance, optimized.
           </p>
         </div>
