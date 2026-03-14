@@ -366,7 +366,15 @@ function ShotDetailView({
   onShotDetailOpenChange?: (open: boolean) => void;
   onWatchTutorial?: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<ShotDetailTab>('technique');
+  const [activeTab, setActiveTab] = useState<ShotDetailTab>('sessions');
+  const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(skill.items.map((item) => [item.label, item.completed]))
+  );
+
+  const isMastered = (label: string) => completedItems[label] ?? false;
+  const toggleMastered = (label: string) => {
+    setCompletedItems((prev) => ({ ...prev, [label]: !(prev[label] ?? false) }));
+  };
 
   useEffect(() => {
     onShotDetailOpenChange?.(true);
@@ -488,8 +496,142 @@ function ShotDetailView({
 
       {activeTab === 'sessions' && (
         <AnimatedTabPanel>
-          {/* Your Sessions — empty for now */}
-          <div style={{ flex: 1, padding: 24, minHeight: 200 }} />
+          {/* Your Sessions — empty state when no sessions for this shot */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 32,
+              textAlign: 'center',
+              minHeight: 320,
+            }}
+          >
+            <div style={{ position: 'relative', marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  width: 192,
+                  height: 192,
+                  borderRadius: '50%',
+                  backgroundColor: `${SAGE_PRIMARY}1A`,
+                }}
+              />
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  width: 160,
+                  height: 160,
+                  backgroundColor: COLORS.white,
+                  borderRadius: 16,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  border: `1px solid ${COLORS.textMuted}40`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: 24,
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0.1,
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: SAGE_PRIMARY }} />
+                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, backgroundColor: SAGE_PRIMARY }} />
+                </div>
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: '50%',
+                    backgroundColor: `${SAGE_PRIMARY}33`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 8,
+                  }}
+                >
+                  <svg
+                    width="48"
+                    height="48"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={SAGE_PRIMARY}
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ flexShrink: 0 }}
+                  >
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M12 4a8 8 0 0 1 0 16 8 8 0 0 1 0-16" />
+                  </svg>
+                </div>
+                <div style={{ width: 48, height: 8, backgroundColor: `${SAGE_PRIMARY}4D`, borderRadius: 4 }} />
+              </div>
+            </div>
+            <div style={{ maxWidth: 320, marginBottom: 40 }}>
+              <h2
+                style={{
+                  fontSize: 24,
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  color: COLORS.textPrimary,
+                  margin: '0 0 12px',
+                }}
+              >
+                No sessions for {skill.title} yet
+              </h2>
+              <p
+                style={{
+                  ...TYPOGRAPHY.bodySmall,
+                  color: COLORS.textSecondary,
+                  margin: 0,
+                  lineHeight: 1.5,
+                }}
+              >
+                Book a session and your coach can tag {skill.title} in your feedback. In the meantime watch Video Lessons to improve your technique.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onWatchTutorial?.()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                width: '100%',
+                maxWidth: 240,
+                height: 56,
+                padding: '0 24px',
+                backgroundColor: SAGE_PRIMARY,
+                color: COLORS.white,
+                border: 'none',
+                borderRadius: 12,
+                fontSize: 16,
+                fontWeight: 700,
+                boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                cursor: onWatchTutorial ? 'pointer' : 'default',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseDown={(e) => onWatchTutorial && (e.currentTarget.style.transform = 'scale(0.98)')}
+              onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3" />
+              </svg>
+              <span>Watch Video Lessons</span>
+            </button>
+          </div>
         </AnimatedTabPanel>
       )}
 
@@ -555,60 +697,83 @@ function ShotDetailView({
               Technique Points
             </h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {skill.items.map((item, idx) => (
-                <div
-                  key={item.label}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 16,
-                    padding: 16,
-                    borderRadius: 12,
-                    backgroundColor: COLORS.white,
-                    border: `1px solid ${SAGE_PRIMARY}0D`,
-                    opacity: 1,
-                    animation: `shotDetailCardFadeIn ${TAB_PANEL_ANIMATION_MS}ms ease-out ${idx * 50}ms both`,
-                  }}
-                >
+              {skill.items.map((item, idx) => {
+                const mastered = isMastered(item.label);
+                return (
                   <div
+                    key={item.label}
                     style={{
-                      width: 48,
-                      height: 48,
-                      flexShrink: 0,
-                      borderRadius: 12,
-                      backgroundColor: `${SAGE_PRIMARY}1A`,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      color: SAGE_PRIMARY,
+                      gap: 16,
+                      padding: 16,
+                      borderRadius: 12,
+                      backgroundColor: COLORS.white,
+                      border: `1px solid ${SAGE_PRIMARY}0D`,
+                      opacity: 1,
+                      animation: `shotDetailCardFadeIn ${TAB_PANEL_ANIMATION_MS}ms ease-out ${idx * 50}ms both`,
                     }}
                   >
-                    {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3
+                    <div
                       style={{
-                        fontSize: 16,
-                        fontWeight: 700,
-                        color: COLORS.textPrimary,
-                        margin: 0,
+                        width: 48,
+                        height: 48,
+                        flexShrink: 0,
+                        borderRadius: 12,
+                        backgroundColor: `${SAGE_PRIMARY}1A`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: SAGE_PRIMARY,
                       }}
                     >
-                      {item.label}
-                    </h3>
-                    <p
+                      {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3
+                        style={{
+                          fontSize: 16,
+                          fontWeight: 700,
+                          color: COLORS.textPrimary,
+                          margin: 0,
+                        }}
+                      >
+                        {item.label}
+                      </h3>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          lineHeight: 1.5,
+                          color: COLORS.textSecondary,
+                          margin: '4px 0 0',
+                        }}
+                      >
+                        {mastered ? 'Completed' : 'Focus on this in your next practice.'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleMastered(item.label)}
+                      aria-label={mastered ? `Mark "${item.label}" as not mastered` : `Mark "${item.label}" as mastered`}
                       style={{
-                        fontSize: 14,
-                        lineHeight: 1.5,
-                        color: COLORS.textSecondary,
-                        margin: '4px 0 0',
+                        width: 24,
+                        height: 24,
+                        flexShrink: 0,
+                        borderRadius: '50%',
+                        backgroundColor: mastered ? SAGE_PRIMARY : 'transparent',
+                        border: mastered ? 'none' : `2px solid ${SAGE_PRIMARY}33`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
                       }}
                     >
-                      {item.completed ? 'Completed' : 'Focus on this in your next practice.'}
-                    </p>
+                      {mastered && <IconCheck size={12} style={{ color: COLORS.white }} />}
+                    </button>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </AnimatedTabPanel>
