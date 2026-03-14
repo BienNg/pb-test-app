@@ -454,6 +454,10 @@ function AdminStudentsPage({
   // When viewing a training session detail (from progress page or shot video), show full-screen overlay
   if (activeTrainingSessionId != null) {
     const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
+    const breadcrumbFromRoadmap =
+      overrideSession && selectedStudent
+        ? { studentName: selectedStudent.name, shotTitle: overrideSession.title }
+        : undefined;
     return (
       <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: COLORS.backgroundLibrary }}>
         <TrainingSessionDetail
@@ -466,6 +470,7 @@ function AdminStudentsPage({
           onSaveVideoUrl={overrideSession ? undefined : handleSaveVideoUrl}
           onSessionUpdated={handleSessionUpdated}
           onDeleteSession={overrideSession ? undefined : handleSessionUpdated}
+          breadcrumbFromRoadmap={breadcrumbFromRoadmap}
         />
       </div>
     );

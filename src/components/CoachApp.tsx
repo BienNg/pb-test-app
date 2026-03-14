@@ -112,6 +112,10 @@ export const CoachApp: React.FC = () => {
   // When viewing a training session detail (or shot video), show full-screen overlay
   if (activeTrainingSessionId != null) {
     const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
+    const breadcrumbFromRoadmap =
+      overrideSession && selectedStudent
+        ? { studentName: selectedStudent.name, shotTitle: overrideSession.title }
+        : undefined;
     return (
       <div style={{ height: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
@@ -123,6 +127,7 @@ export const CoachApp: React.FC = () => {
           sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
           onSessionUpdated={reloadSelectedStudentSessions}
           onDeleteSession={overrideSession ? undefined : async () => { await reloadSelectedStudentSessions(); }}
+          breadcrumbFromRoadmap={breadcrumbFromRoadmap}
         />
       </div>
     );

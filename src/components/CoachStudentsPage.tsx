@@ -906,6 +906,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                       title={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
                       category="Training Session"
                       thumbnail={session.thumbnail}
+                      videoUrl={session.videoUrl}
                       isVOD
                       onClick={() =>
                         onOpenSession

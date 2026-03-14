@@ -2,6 +2,7 @@ import React from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
 import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
+import { getYoutubeVideoId as getYoutubeIdFromUrl } from '@/lib/youtube';
 
 interface TrainerCardProps {
   name: string;
@@ -74,22 +75,15 @@ export const TrainerCard: React.FC<TrainerCardProps> = ({
   </Card>
 );
 
-/** Extract YouTube video ID from watch or share link. Returns null if not YouTube. */
-function getYoutubeVideoId(url: string): string | null {
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (watchMatch) return watchMatch[1];
-  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-  if (embedMatch) return embedMatch[1];
-  return null;
-}
+const YOUTUBE_VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 
-/** Get thumbnail URL: use thumbnail if it's a URL, else derive from YouTube videoUrl. */
+/** Get thumbnail URL: use thumbnail if it's a URL, else derive from YouTube videoUrl (full URL or bare video ID). */
 function getThumbnailUrl(thumbnail?: string, videoUrl?: string): string | null {
   if (thumbnail?.startsWith('http://') || thumbnail?.startsWith('https://')) return thumbnail;
-  if (videoUrl) {
-    const id = getYoutubeVideoId(videoUrl);
-    if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
-  }
+  if (!videoUrl?.trim()) return null;
+  const trimmed = videoUrl.trim();
+  const id = getYoutubeIdFromUrl(trimmed) ?? (YOUTUBE_VIDEO_ID_REGEX.test(trimmed) ? trimmed : null);
+  if (id) return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   return null;
 }
 
@@ -152,13 +146,16 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         height: '100%',
       }}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail — background image so YouTube thumbnail shows even before img loads */}
       <div
         className="lesson-card-thumb"
         style={{
           width: '100%',
           aspectRatio: '16/9',
           backgroundColor: '#e2e8f0',
+          backgroundImage: thumbnailUrl ? `url(${thumbnailUrl})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconArrowLeft,
+  IconChevronRight,
   IconCheck,
   IconClock,
   IconFilter,
@@ -68,6 +69,12 @@ import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
 import { MOCK_COACHES } from '../data/mockCoaches';
 
+/** When set, header shows breadcrumb "StudentName > Your Roadmap > ShotTitle" (e.g. when opened from shot video in roadmap). */
+export interface BreadcrumbFromRoadmap {
+  studentName?: string;
+  shotTitle: string;
+}
+
 export interface TrainingSessionDetailProps {
   sessionId: string;
   onBack: () => void;
@@ -81,6 +88,8 @@ export interface TrainingSessionDetailProps {
   onDeleteSession?: (sessionId: string) => Promise<void> | void;
   /** When false, the video is paused (e.g. user switched to another tab). Default true. */
   isTabVisible?: boolean;
+  /** When set (e.g. opened from shot video in roadmap), header shows breadcrumb instead of date. */
+  breadcrumbFromRoadmap?: BreadcrumbFromRoadmap;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
@@ -91,6 +100,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onSessionUpdated,
   onDeleteSession,
   isTabVisible = true,
+  breadcrumbFromRoadmap,
 }) => {
   const { user } = useAuth();
   const sessionList = sessionsProp ?? [];
@@ -1526,21 +1536,85 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           <IconArrowLeft size={22} />
         </button>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: 'clamp(15px, 4.5vw, 18px)',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: COLORS.textPrimary,
-            minWidth: 0,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {session.dateLabel}
-        </h1>
+        {breadcrumbFromRoadmap ? (
+          <nav
+            aria-label="Breadcrumb"
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              minWidth: 0,
+              overflow: 'hidden',
+            }}
+          >
+            {breadcrumbFromRoadmap.studentName && (
+              <>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    letterSpacing: '-0.015em',
+                    color: COLORS.textSecondary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {breadcrumbFromRoadmap.studentName}
+                </span>
+                <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
+              </>
+            )}
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                letterSpacing: '-0.015em',
+                color: breadcrumbFromRoadmap.studentName ? COLORS.textSecondary : COLORS.textPrimary,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Your Roadmap
+            </span>
+            <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                lineHeight: 1.3,
+                letterSpacing: '-0.015em',
+                color: COLORS.textPrimary,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {breadcrumbFromRoadmap.shotTitle}
+            </span>
+          </nav>
+        ) : (
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 'clamp(15px, 4.5vw, 18px)',
+              fontWeight: 700,
+              letterSpacing: '-0.02em',
+              color: COLORS.textPrimary,
+              minWidth: 0,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {session?.dateLabel}
+          </h1>
+        )}
         <div
           style={{
             width: 40,

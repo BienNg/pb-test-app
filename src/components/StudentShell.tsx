@@ -211,6 +211,9 @@ export function StudentShell() {
             onSessionUpdated={reloadSessions}
             onDeleteSession={overrideSession ? undefined : async () => { await reloadSessions(); }}
             isTabVisible={showSessionOverlay}
+            breadcrumbFromRoadmap={
+              overrideSession ? { shotTitle: overrideSession.title } : undefined
+            }
           />
         </SessionDetailOverlay>
       )}
