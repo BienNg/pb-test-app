@@ -24,8 +24,8 @@ function SessionDetailOverlay({
   const [entered, setEntered] = useState(false);
   useEffect(() => {
     if (!visible) {
-      setEntered(false);
-      return;
+      const id = requestAnimationFrame(() => setEntered(false));
+      return () => cancelAnimationFrame(id);
     }
     const id = requestAnimationFrame(() => {
       setEntered(true);
