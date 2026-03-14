@@ -1,5 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
+import { getYoutubeVideoId } from '@/lib/youtube';
 import {
   IconPause,
   IconPlay,
@@ -41,14 +42,10 @@ function loadYoutubeAPI(): Promise<void> {
   });
 }
 
-/** Extract YouTube video ID from watch or share link. Returns null if not YouTube. */
-function getYoutubeVideoId(url: string | null | undefined): string | null {
+/** Resolve YouTube video ID for use in this component (handles URLs with extra params like si=, feature=). */
+function resolveYoutubeVideoId(url: string | null | undefined): string | null {
   if (!url) return null;
-  const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (watchMatch) return watchMatch[1];
-  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-  if (embedMatch) return embedMatch[1];
-  return null;
+  return getYoutubeVideoId(url);
 }
 
 export interface VideoPlayerMarker {
@@ -147,7 +144,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   ref
 ) {
   const isSessionDetail = variant === 'sessionDetail';
-  const youtubeVideoId = getYoutubeVideoId(videoUrl || undefined);
+  const youtubeVideoId = resolveYoutubeVideoId(videoUrl || undefined);
   const isYoutube = !!youtubeVideoId;
 
   const videoRef = useRef<HTMLVideoElement>(null);

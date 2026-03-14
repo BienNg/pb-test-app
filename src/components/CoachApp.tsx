@@ -19,6 +19,7 @@ export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [students, setStudents] = useState<StudentInfo[]>([]);
@@ -108,16 +109,20 @@ export const CoachApp: React.FC = () => {
     void reloadSelectedStudentSessions();
   }, [selectedStudent, selectedStudent?.id, reloadSelectedStudentSessions]);
 
-  // When viewing a training session detail, show full-screen overlay
+  // When viewing a training session detail (or shot video), show full-screen overlay
   if (activeTrainingSessionId != null) {
+    const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
     return (
       <div style={{ height: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
-          onBack={() => setActiveTrainingSessionId(null)}
-          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
+          onBack={() => {
+            setActiveTrainingSessionId(null);
+            setOverrideSession(null);
+          }}
+          sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
           onSessionUpdated={reloadSelectedStudentSessions}
-          onDeleteSession={async () => { await reloadSelectedStudentSessions(); }}
+          onDeleteSession={overrideSession ? undefined : async () => { await reloadSelectedStudentSessions(); }}
         />
       </div>
     );
@@ -132,7 +137,14 @@ export const CoachApp: React.FC = () => {
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
           onBack={() => setSelectedStudent(null)}
-          onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
+          onOpenSession={(sessionId: string) => {
+            setOverrideSession(null);
+            setActiveTrainingSessionId(sessionId);
+          }}
+          onOpenShotVideo={(session) => {
+            setOverrideSession(session);
+            setActiveTrainingSessionId(session.id);
+          }}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onAddSession={async (youtubeUrl, context) => {
             if (!context) return;

@@ -98,7 +98,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const hasVideoUrl = !!(session?.videoUrl?.trim());
   const canAddVideoUrl = !!onSaveVideoUrl;
   const isAdmin = !!onSaveVideoUrl;
-  const isDbSession = sessionsProp != null && session != null;
+  const isShotVideo = session?.session_type === 'shot_video';
+  const isDbSession = sessionsProp != null && session != null && !isShotVideo;
+  /** Show comment composer for admin (real sessions) or for shot videos (same UX as session detail). */
+  const showCommentComposer = isAdmin || isShotVideo;
 
   // Debug logging
   console.log('[TrainingSessionDetail] Rendered:', {
@@ -847,7 +850,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, [activeCommentId]);
 
   const handleAddComment = useCallback(async () => {
-    if (!commentDraft.trim() || !isAdmin) return;
+    if (!commentDraft.trim() || !showCommentComposer) return;
 
     const currentTime = currentVideoTime ?? 0;
     const timestampSeconds = includeTimestamp ? toFramePrecision(currentTime) : null;
@@ -899,7 +902,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     selectedMentionIds,
     sessionId,
     user?.id,
-    isAdmin,
+    showCommentComposer,
   ]);
 
   const handleAddReply = useCallback(
@@ -1601,7 +1604,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           <div
             style={{
               minWidth: 0,
-              ...(isNarrow ? {} : { overflow: 'hidden', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }),
+              ...(isNarrow ? { minHeight: 200 } : { overflow: 'hidden', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }),
             }}
           >
             {/* Sentinel: when this scrolls past viewport top (narrow only), we stick the video with position:fixed */}
@@ -2611,7 +2614,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 })
               )}
 
-            {isAdmin && (
+            {showCommentComposer && (
             <div
               style={{
                 borderRadius: RADIUS.md,

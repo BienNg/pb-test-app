@@ -61,3 +61,57 @@ export async function insertShotVideo(
   }
   return { id: (data as { id: string }).id };
 }
+
+/** Shape used to open a shot video in TrainingSessionDetail (matches TrainingSession from MySessionsPage). */
+export interface ShotVideoAsSession {
+  id: string;
+  dateKey: string;
+  dateLabel: string;
+  time: string;
+  thumbnail: string;
+  duration: string;
+  title: string;
+  focus: string;
+  videoUrl: string;
+  session_type?: string;
+}
+
+/**
+ * Convert a shot_videos row to a session-like object for TrainingSessionDetail.
+ * Caller must pass a getYoutubeVideoId function to avoid importing from @/lib/youtube (avoids circular deps).
+ */
+export function shotVideoToSessionLike(
+  row: ShotVideoRow,
+  getYoutubeVideoId: (url: string) => string | null
+): ShotVideoAsSession {
+  const dateKey =
+    row.created_at && row.created_at.length >= 10
+      ? row.created_at.slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+  let dateLabel = '';
+  try {
+    const d = new Date(dateKey + 'T12:00:00');
+    dateLabel = d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    dateLabel = dateKey;
+  }
+  const ytId = getYoutubeVideoId(row.video_url);
+  const thumbnail = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : '';
+  return {
+    id: row.id,
+    dateKey,
+    dateLabel,
+    time: '—',
+    thumbnail,
+    duration: '—',
+    title: row.shot_title,
+    focus: '',
+    videoUrl: row.video_url,
+    session_type: 'shot_video',
+  };
+}

@@ -329,14 +329,25 @@ function AdminOverviewPage({
   );
 }
 
-function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
+function AdminStudentsPage({
+  isDesktop,
+  onBreadcrumbTailChange,
+}: {
+  isDesktop: boolean;
+  onBreadcrumbTailChange?: (segments: string[]) => void;
+}) {
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  useEffect(() => {
+    onBreadcrumbTailChange?.(selectedStudent ? ['Students', selectedStudent.name] : []);
+  }, [selectedStudent, onBreadcrumbTailChange]);
 
   const reloadStudents = React.useCallback(async () => {
     const supabase = createClient();
@@ -440,17 +451,21 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
     }
   };
 
-  // When viewing a training session detail (from progress page), show full-screen overlay
+  // When viewing a training session detail (from progress page or shot video), show full-screen overlay
   if (activeTrainingSessionId != null) {
+    const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
     return (
       <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: COLORS.backgroundLibrary }}>
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
-          onBack={() => setActiveTrainingSessionId(null)}
-          sessions={sessionsForStudent.length > 0 ? sessionsForStudent : undefined}
-          onSaveVideoUrl={handleSaveVideoUrl}
+          onBack={() => {
+            setActiveTrainingSessionId(null);
+            setOverrideSession(null);
+          }}
+          sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
+          onSaveVideoUrl={overrideSession ? undefined : handleSaveVideoUrl}
           onSessionUpdated={handleSessionUpdated}
-          onDeleteSession={handleSessionUpdated}
+          onDeleteSession={overrideSession ? undefined : handleSessionUpdated}
         />
       </div>
     );
@@ -465,7 +480,14 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
           onBack={() => setSelectedStudent(null)}
-          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          onOpenSession={(sessionId) => {
+            setOverrideSession(null);
+            setActiveTrainingSessionId(sessionId);
+          }}
+          onOpenShotVideo={(session) => {
+            setOverrideSession(session);
+            setActiveTrainingSessionId(session.id);
+          }}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onAddSession={async (youtubeUrl, context) => {
             if (!context) return;
@@ -682,6 +704,7 @@ const SHEET_TRANSITION_MS = 300;
 
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
+  const [breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
   const requestedSessions = MOCK_REQUESTED_SESSIONS_INITIAL;
   const isDesktop = useIsDesktop();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -839,7 +862,12 @@ export const AdminApp: React.FC = () => {
           />
         );
       case 'students':
-        return <AdminStudentsPage isDesktop={isDesktop} />;
+        return (
+          <AdminStudentsPage
+            isDesktop={isDesktop}
+            onBreadcrumbTailChange={setBreadcrumbTail}
+          />
+        );
       case 'coaches':
         return <AdminCoachesPage isDesktop={isDesktop} />;
       case 'library':
@@ -904,6 +932,10 @@ export const AdminApp: React.FC = () => {
     newSessionStudentIds.length > 0;
 
   const sidebarCollapsed = isDesktop && !sidebarOpen;
+
+  useEffect(() => {
+    if (activeTab !== 'students') setBreadcrumbTail([]);
+  }, [activeTab]);
 
   const tabButton = (tab: (typeof tabs)[0]) => {
     const isActive = tab.id === activeTab;
@@ -1072,7 +1104,77 @@ export const AdminApp: React.FC = () => {
         </aside>
       )}
 
-      <div style={{ width: '100%', minHeight: '100vh' }}>{renderContent()}</div>
+      <div style={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <nav
+          aria-label="Breadcrumb"
+          style={{
+            flexShrink: 0,
+            padding: `${SPACING.sm}px ${SPACING.lg}px`,
+            paddingLeft: isDesktop ? SPACING.xl : SPACING.lg,
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            backgroundColor: COLORS.white,
+          }}
+        >
+          <ol
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: SPACING.xs,
+              margin: 0,
+              padding: 0,
+              listStyle: 'none',
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.textSecondary,
+            }}
+          >
+            <li>
+              <button
+                type="button"
+                onClick={() => setActiveTab('overview')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  color: activeTab === 'overview' ? COLORS.textPrimary : COLORS.textSecondary,
+                  fontWeight: activeTab === 'overview' ? 600 : 500,
+                  ...TYPOGRAPHY.bodySmall,
+                }}
+              >
+                Admin
+              </button>
+            </li>
+            <li style={{ color: COLORS.textMuted }} aria-hidden>/</li>
+            {breadcrumbTail.length > 0 ? (
+              breadcrumbTail.map((segment, i) => (
+                <React.Fragment key={i}>
+                  <li
+                    style={{
+                      color: i === breadcrumbTail.length - 1 ? COLORS.textPrimary : COLORS.textSecondary,
+                      fontWeight: i === breadcrumbTail.length - 1 ? 600 : 500,
+                    }}
+                  >
+                    {segment}
+                  </li>
+                  {i < breadcrumbTail.length - 1 && (
+                    <li style={{ color: COLORS.textMuted }} aria-hidden>/</li>
+                  )}
+                </React.Fragment>
+              ))
+            ) : (
+              <li
+                style={{
+                  color: COLORS.textPrimary,
+                  fontWeight: 600,
+                }}
+              >
+                {tabs.find((t) => t.id === activeTab)?.label ?? activeTab}
+              </li>
+            )}
+          </ol>
+        </nav>
+        <div style={{ flex: 1, minHeight: 0 }}>{renderContent()}</div>
+      </div>
 
       {!isDesktop && (
         <nav

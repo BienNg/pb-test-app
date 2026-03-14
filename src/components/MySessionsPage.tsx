@@ -3,10 +3,9 @@ import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
-import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
-import { fetchShotVideos, type ShotVideoRow } from '@/lib/shotVideos';
+import { fetchShotVideos, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
 import { parseCommentTextWithShots } from './commentText';
 import {
   IconUser,
@@ -51,6 +50,8 @@ export interface MySessionsPageProps {
     youtubeUrl: string,
     context?: { studentId: string; shotId: string; shotTitle: string }
   ) => void | Promise<void>;
+  /** When provided, called when user taps a shot video in the roadmap "Your Sessions" tab; opens that video in TrainingSessionDetail. */
+  onOpenShotVideo?: (session: TrainingSession) => void;
 }
 
 export interface TrainingSession {
@@ -376,6 +377,7 @@ function ShotDetailView({
   onShotDetailOpenChange,
   onWatchTutorial,
   onAddSession,
+  onOpenShotVideo,
 }: {
   skill: RoadmapSkill;
   /** When set (e.g. coach viewing a student), shown as first segment in the header breadcrumb. */
@@ -390,6 +392,8 @@ function ShotDetailView({
     youtubeUrl: string,
     context?: { studentId: string; shotId: string; shotTitle: string }
   ) => void | Promise<void>;
+  /** When provided, called when user taps a shot video card; opens that video in TrainingSessionDetail. */
+  onOpenShotVideo?: (session: TrainingSession) => void;
 }) {
   const [activeTab, setActiveTab] = useState<ShotDetailTab>('sessions');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
@@ -656,7 +660,9 @@ function ShotDetailView({
                     videoUrl={sv.video_url}
                     dateLabel={dateLabel}
                     isVOD
-                    onClick={() => window.open(sv.video_url, '_blank', 'noopener,noreferrer')}
+                    onClick={() =>
+                      onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)
+                    }
                   />
                 );
               })}
@@ -1224,9 +1230,11 @@ export interface RoadmapSkillsChecklistProps {
     youtubeUrl: string,
     context?: { studentId: string; shotId: string; shotTitle: string }
   ) => void | Promise<void>;
+  /** When provided, called when user taps a shot video in the roadmap; opens that video in TrainingSessionDetail. */
+  onOpenShotVideo?: (session: TrainingSession) => void;
 }
 
-export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpenChange, onWatchTutorial, onAddSession }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const filteredSkills = React.useMemo(() => {
@@ -1360,6 +1368,7 @@ export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpe
           onShotDetailOpenChange={onShotDetailOpenChange}
           onWatchTutorial={onWatchTutorial}
           onAddSession={onAddSession}
+          onOpenShotVideo={onOpenShotVideo}
         />
       )}
     </div>
@@ -1378,13 +1387,13 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   studentName,
   studentId,
   onAddSession,
+  onOpenShotVideo,
 }) => {
   const sessions = sessionsProp ?? [];
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
-  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
   useEffect(() => {
@@ -1691,13 +1700,9 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
                       videoUrl={session.videoUrl}
                       shots={shotsBySession[session.id]}
                       isVOD
-                      onClick={() => {
-                        if (onOpenSession) {
-                          onOpenSession(session.id);
-                        } else {
-                          setOpenSessionId(session.id);
-                        }
-                      }}
+                      onClick={() =>
+                        onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
+                      }
                     />
                   </div>
                 </ScrollAnimatedCard>
@@ -1707,29 +1712,9 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
         )}
 
         {selectedSegment === 'roadmap' && (
-          <RoadmapSkillsChecklist studentName={studentName} studentId={studentId} onAddSession={onAddSession} />
+          <RoadmapSkillsChecklist studentName={studentName} studentId={studentId} onAddSession={onAddSession} onOpenShotVideo={onOpenShotVideo} />
         )}
       </div>
-
-      {openSessionId != null && !onOpenSession && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 300,
-            backgroundColor: COLORS.backgroundLibrary ?? '#f6f8f8',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'auto',
-          }}
-        >
-          <TrainingSessionDetail
-            sessionId={openSessionId}
-            onBack={() => setOpenSessionId(null)}
-            sessions={sessions.length > 0 ? sessions : undefined}
-          />
-        </div>
-      )}
     </div>
   );
 };

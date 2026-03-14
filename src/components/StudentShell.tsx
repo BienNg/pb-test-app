@@ -62,6 +62,7 @@ export function StudentShell() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('sessions');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
+  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [shotDetailOpen, setShotDetailOpen] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -91,7 +92,7 @@ export function StudentShell() {
   const showRoadmap = activeTab === 'roadmap';
   const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
-  const showSessionOverlay = showSessions && activeTrainingSessionId != null;
+  const showSessionOverlay = activeTrainingSessionId != null;
   const hideBottomNav = showSessionOverlay || viewingLessonDetail || shotDetailOpen;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
@@ -155,6 +156,10 @@ export function StudentShell() {
             setShotDetailOpen(false);
             setActiveTab('library');
           }}
+          onOpenShotVideo={(session) => {
+            setOverrideSession(session);
+            setActiveTrainingSessionId(session.id);
+          }}
         />
       </div>
       {/* My Sessions tab content */}
@@ -168,7 +173,14 @@ export function StudentShell() {
       >
         <MySessionsPage
           hideSegmentSwitcher
-          onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
+          onOpenSession={(sessionId) => {
+            setOverrideSession(null);
+            setActiveTrainingSessionId(sessionId);
+          }}
+          onOpenShotVideo={(session) => {
+            setOverrideSession(session);
+            setActiveTrainingSessionId(session.id);
+          }}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onOpenLibrary={() => setActiveTab('library')}
         />
@@ -191,10 +203,13 @@ export function StudentShell() {
         >
           <TrainingSessionDetail
             sessionId={activeTrainingSessionId}
-            onBack={() => setActiveTrainingSessionId(null)}
-            sessions={sessionsForStudent}
+            onBack={() => {
+              setActiveTrainingSessionId(null);
+              setOverrideSession(null);
+            }}
+            sessions={overrideSession ? [overrideSession] : sessionsForStudent}
             onSessionUpdated={reloadSessions}
-            onDeleteSession={async () => { await reloadSessions(); }}
+            onDeleteSession={overrideSession ? undefined : async () => { await reloadSessions(); }}
             isTabVisible={showSessionOverlay}
           />
         </SessionDetailOverlay>
