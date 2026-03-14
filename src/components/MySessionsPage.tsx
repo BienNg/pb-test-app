@@ -329,7 +329,32 @@ const TECHNIQUE_ICONS = [
   <IconZap key="zap" size={24} />,
 ];
 
-/** Full-screen shot detail view: header, hero, Technique Points. No navbar. */
+type ShotDetailTab = 'sessions' | 'technique';
+
+const TAB_TRANSITION_MS = 220;
+const TAB_PANEL_ANIMATION_MS = 280;
+
+/** Wraps tab content and animates it in on mount (fade + slide up). */
+function AnimatedTabPanel({ children }: { children: React.ReactNode }) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+  return (
+    <div
+      style={{
+        opacity: entered ? 1 : 0,
+        transform: entered ? 'translateY(0)' : 'translateY(10px)',
+        transition: `opacity ${TAB_PANEL_ANIMATION_MS}ms ease-out, transform ${TAB_PANEL_ANIMATION_MS}ms ease-out`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/** Full-screen shot detail view: header, tab switcher, hero + technique or empty sessions. No navbar. */
 function ShotDetailView({
   skill,
   onClose,
@@ -341,6 +366,8 @@ function ShotDetailView({
   onShotDetailOpenChange?: (open: boolean) => void;
   onWatchTutorial?: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<ShotDetailTab>('technique');
+
   useEffect(() => {
     onShotDetailOpenChange?.(true);
     return () => {
@@ -407,120 +434,185 @@ function ShotDetailView({
         <div style={{ width: 48 }} aria-hidden />
       </div>
 
-      {/* Hero */}
+      {/* Tab switcher */}
       <div
         style={{
-          margin: 16,
-          marginTop: 12,
-          minHeight: 320,
-          borderRadius: 12,
-          overflow: 'hidden',
-          backgroundImage: `linear-gradient(0deg, rgba(16, 34, 32, 0.8) 0%, rgba(16, 34, 32, 0) 50%), url("https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800")`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-          padding: 24,
+          gap: 0,
+          padding: '12px 16px 0',
+          flexShrink: 0,
+          borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
         }}
       >
-        <p style={{ color: '#fff', fontSize: 28, fontWeight: 700, lineHeight: 1.2, margin: 0 }}>
-          Master the {skill.title}
-        </p>
         <button
           type="button"
-          onClick={onWatchTutorial}
+          onClick={() => setActiveTab('sessions')}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            alignSelf: 'flex-start',
-            marginTop: 16,
-            padding: '12px 24px',
-            borderRadius: 9999,
-            backgroundColor: SAGE_PRIMARY,
-            color: '#1C1C1E',
-            fontWeight: 700,
-            fontSize: 16,
+            flex: 1,
+            padding: '12px 16px',
             border: 'none',
+            borderBottom: `3px solid ${activeTab === 'sessions' ? '#6a9a95' : 'transparent'}`,
+            marginBottom: -1,
+            background: 'transparent',
+            fontSize: 15,
+            fontWeight: activeTab === 'sessions' ? 600 : 400,
+            color: activeTab === 'sessions' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
+            borderRadius: 0,
+            transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          <IconPlay size={20} />
-          Watch Tutorial
+          Your Sessions
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('technique')}
+          style={{
+            flex: 1,
+            padding: '12px 16px',
+            border: 'none',
+            borderBottom: `3px solid ${activeTab === 'technique' ? '#6a9a95' : 'transparent'}`,
+            marginBottom: -1,
+            background: 'transparent',
+            fontSize: 15,
+            fontWeight: activeTab === 'technique' ? 600 : 400,
+            color: activeTab === 'technique' ? COLORS.textPrimary : '#6a9a95',
+            cursor: 'pointer',
+            borderRadius: 0,
+            transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+          }}
+        >
+          {skill.title} Technique
         </button>
       </div>
 
-      {/* Technique Points */}
-      <div style={{ padding: '24px 16px 80px' }}>
-        <h2
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            lineHeight: 1.3,
-            letterSpacing: '-0.015em',
-            color: COLORS.textPrimary,
-            marginBottom: 16,
-          }}
-        >
-          Technique Points
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {skill.items.map((item, idx) => (
-            <div
-              key={item.label}
+      {activeTab === 'sessions' && (
+        <AnimatedTabPanel>
+          {/* Your Sessions — empty for now */}
+          <div style={{ flex: 1, padding: 24, minHeight: 200 }} />
+        </AnimatedTabPanel>
+      )}
+
+      {activeTab === 'technique' && (
+        <AnimatedTabPanel>
+          {/* Hero */}
+          <div
+            style={{
+              margin: 16,
+              marginTop: 12,
+              minHeight: 320,
+              borderRadius: 12,
+              overflow: 'hidden',
+              backgroundImage: `linear-gradient(0deg, rgba(16, 34, 32, 0.8) 0%, rgba(16, 34, 32, 0) 50%), url("https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800")`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: 24,
+            }}
+          >
+            <p style={{ color: '#fff', fontSize: 28, fontWeight: 700, lineHeight: 1.2, margin: 0 }}>
+              Master the {skill.title}
+            </p>
+            <button
+              type="button"
+              onClick={onWatchTutorial}
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 16,
-                padding: 16,
-                borderRadius: 12,
-                backgroundColor: COLORS.white,
-                border: `1px solid ${SAGE_PRIMARY}0D`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                alignSelf: 'flex-start',
+                marginTop: 16,
+                padding: '12px 24px',
+                borderRadius: 9999,
+                backgroundColor: SAGE_PRIMARY,
+                color: '#1C1C1E',
+                fontWeight: 700,
+                fontSize: 16,
+                border: 'none',
+                cursor: 'pointer',
               }}
             >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  flexShrink: 0,
-                  borderRadius: 12,
-                  backgroundColor: `${SAGE_PRIMARY}1A`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: SAGE_PRIMARY,
-                }}
-              >
-                {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3
+              <IconPlay size={20} />
+              Watch Tutorial
+            </button>
+          </div>
+
+          {/* Technique Points */}
+          <div style={{ padding: '24px 16px 80px' }}>
+            <h2
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                lineHeight: 1.3,
+                letterSpacing: '-0.015em',
+                color: COLORS.textPrimary,
+                marginBottom: 16,
+              }}
+            >
+              Technique Points
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {skill.items.map((item, idx) => (
+                <div
+                  key={item.label}
                   style={{
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: COLORS.textPrimary,
-                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 16,
+                    padding: 16,
+                    borderRadius: 12,
+                    backgroundColor: COLORS.white,
+                    border: `1px solid ${SAGE_PRIMARY}0D`,
+                    opacity: 1,
+                    animation: `shotDetailCardFadeIn ${TAB_PANEL_ANIMATION_MS}ms ease-out ${idx * 50}ms both`,
                   }}
                 >
-                  {item.label}
-                </h3>
-                <p
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                    color: COLORS.textSecondary,
-                    margin: '4px 0 0',
-                  }}
-                >
-                  {item.completed ? 'Completed' : 'Focus on this in your next practice.'}
-                </p>
-              </div>
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      flexShrink: 0,
+                      borderRadius: 12,
+                      backgroundColor: `${SAGE_PRIMARY}1A`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: SAGE_PRIMARY,
+                    }}
+                  >
+                    {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: COLORS.textPrimary,
+                        margin: 0,
+                      }}
+                    >
+                      {item.label}
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: 14,
+                        lineHeight: 1.5,
+                        color: COLORS.textSecondary,
+                        margin: '4px 0 0',
+                      }}
+                    >
+                      {item.completed ? 'Completed' : 'Focus on this in your next practice.'}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        </AnimatedTabPanel>
+      )}
     </div>
   );
 }
