@@ -9,6 +9,53 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { useAuth } from './providers/AuthProvider';
 
+const SESSION_DETAIL_TRANSITION_MS = 280;
+
+/** Wraps session detail overlay and runs enter animation (slide-up + fade) when visible. */
+function SessionDetailOverlay({
+  visible,
+  height,
+  children,
+}: {
+  visible: boolean;
+  height: string;
+  children: ReactNode;
+}) {
+  const [entered, setEntered] = useState(false);
+  useEffect(() => {
+    if (!visible) {
+      setEntered(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      setEntered(true);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [visible]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height,
+        overflow: 'hidden',
+        display: visible ? 'flex' : 'none',
+        flexDirection: 'column',
+        backgroundColor: '#f6f8f8',
+        zIndex: 50,
+        opacity: visible && entered ? 1 : 0,
+        transform: visible && entered ? 'translateY(0)' : 'translateY(16px)',
+        transition: `opacity ${SESSION_DETAIL_TRANSITION_MS}ms ease-out, transform ${SESSION_DETAIL_TRANSITION_MS}ms ease-out`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 type TabId = 'sessions' | 'library';
 
 export function StudentShell() {
@@ -115,19 +162,9 @@ export function StudentShell() {
       </div>
       {/* Keep session detail mounted when a session is open so video position is preserved; hide when on another tab and pause video */}
       {activeTrainingSessionId != null && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: showSessionOverlay ? '100vh' : 'calc(100vh - 80px)',
-            overflow: 'hidden',
-            display: showSessionOverlay ? 'flex' : 'none',
-            flexDirection: 'column',
-            backgroundColor: '#f6f8f8',
-            zIndex: 50,
-          }}
+        <SessionDetailOverlay
+          visible={showSessionOverlay}
+          height={showSessionOverlay ? '100vh' : 'calc(100vh - 80px)'}
         >
           <TrainingSessionDetail
             sessionId={activeTrainingSessionId}
@@ -137,7 +174,7 @@ export function StudentShell() {
             onDeleteSession={async () => { await reloadSessions(); }}
             isTabVisible={showSessionOverlay}
           />
-        </div>
+        </SessionDetailOverlay>
       )}
 
       {!hideBottomNav && (

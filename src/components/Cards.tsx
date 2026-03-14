@@ -121,6 +121,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   dateLabel,
   variant = 'grid',
 }) => {
+  const [pressed, setPressed] = React.useState(false);
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
 
   const isList = variant === 'list';
@@ -131,6 +132,9 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   return (
     <div
       onClick={onClick}
+      onPointerDown={onClick ? () => setPressed(true) : undefined}
+      onPointerUp={onClick ? () => setPressed(false) : undefined}
+      onPointerLeave={onClick ? () => setPressed(false) : undefined}
       role={onClick ? 'button' : undefined}
       className={isList ? undefined : 'lesson-card-grid'}
       style={{
@@ -141,6 +145,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         border: `1px solid ${isList ? '#e2e8f0' : '#e1e9e7'}`,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'transform 0.2s, box-shadow 0.2s',
+        transform: pressed && onClick ? 'scale(0.98)' : undefined,
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
