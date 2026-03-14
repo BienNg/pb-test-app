@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Eye, EyeOff, TrendingUp, BarChart3 } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, GraduationCap } from 'lucide-react';
 
 // Design tokens from reference
 const styles = {
@@ -44,9 +44,8 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [showNotSupported, setShowNotSupported] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -87,70 +86,107 @@ function LoginContent() {
     }
   }
 
-  async function handleSignInWithGoogle() {
-    if (!supabase) {
-      setError('Auth is not configured.');
-      return;
-    }
-    setError(null);
-    setGoogleLoading(true);
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
-        },
-      });
-      if (oauthError) {
-        setError(oauthError.message);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sign in with Google failed.');
-    } finally {
-      setGoogleLoading(false);
-    }
+  function handleSocialSignIn() {
+    setShowNotSupported(true);
   }
-
-  async function handleSignInWithApple() {
-    if (!supabase) {
-      setError('Auth is not configured.');
-      return;
-    }
-    setError(null);
-    setAppleLoading(true);
-    try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
-        },
-      });
-      if (oauthError) {
-        setError(oauthError.message);
-      }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sign in with Apple failed.');
-    } finally {
-      setAppleLoading(false);
-    }
-  }
-
-  const socialLoading = googleLoading || appleLoading;
 
   return (
-    <div
-      style={{
-        minHeight: 'max(884px, 100dvh)',
-        background: styles.backgroundLight,
-        fontFamily: styles.fontDisplay,
-        color: styles.slate[900],
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-      }}
-    >
+    <>
+      {showNotSupported && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="not-supported-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={() => setShowNotSupported(false)}
+        >
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          `}</style>
+          <div
+            style={{
+              background: 'white',
+              borderRadius: styles.radius2xl,
+              padding: 24,
+              maxWidth: 340,
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              animation: 'slideUp 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p
+              id="not-supported-title"
+              style={{
+                fontFamily: styles.fontDisplay,
+                fontSize: 18,
+                fontWeight: 600,
+                color: styles.slate[900],
+                margin: '0 0 12px',
+                textAlign: 'center',
+              }}
+            >
+              not supported yet
+            </p>
+            <p
+              style={{
+                fontFamily: styles.fontDisplay,
+                fontSize: 14,
+                color: styles.slate[500],
+                margin: '0 0 20px',
+                textAlign: 'center',
+                lineHeight: 1.5,
+              }}
+            >
+              Sign in with email and password for now.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowNotSupported(false)}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: styles.radiusXl,
+                border: 'none',
+                background: styles.primary,
+                color: 'white',
+                fontFamily: styles.fontDisplay,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div
+        style={{
+          minHeight: 'max(884px, 100dvh)',
+          background: styles.backgroundLight,
+          fontFamily: styles.fontDisplay,
+          color: styles.slate[900],
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 16,
+        }}
+      >
       <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {/* Header: logo + title + tagline */}
         <div style={{ marginBottom: 40, textAlign: 'center' }}>
@@ -171,7 +207,7 @@ function LoginContent() {
             <TennisIcon size={40} />
           </div>
           <h1 style={{ fontSize: '1.875rem', fontWeight: 700, letterSpacing: '-0.025em', color: styles.slate[900], margin: 0 }}>
-            Pickleball Health
+            Pickleball Academy
           </h1>
           <p style={{ marginTop: 8, color: styles.slate[500], fontSize: '1rem', marginBottom: 0 }}>
             Your court performance, optimized.
@@ -371,8 +407,7 @@ function LoginContent() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <button
               type="button"
-              onClick={handleSignInWithGoogle}
-              disabled={loading || socialLoading}
+              onClick={handleSocialSignIn}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -381,7 +416,7 @@ function LoginContent() {
                 borderRadius: styles.radiusXl,
                 border: `1px solid ${styles.slate[200]}`,
                 background: 'white',
-                cursor: loading || socialLoading ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 500,
                 color: styles.slate[900],
@@ -393,12 +428,11 @@ function LoginContent() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              {googleLoading ? '…' : 'Google'}
+              Google
             </button>
             <button
               type="button"
-              onClick={handleSignInWithApple}
-              disabled={loading || socialLoading}
+              onClick={handleSocialSignIn}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -407,7 +441,7 @@ function LoginContent() {
                 borderRadius: styles.radiusXl,
                 border: `1px solid ${styles.slate[200]}`,
                 background: 'white',
-                cursor: loading || socialLoading ? 'not-allowed' : 'pointer',
+                cursor: 'pointer',
                 fontSize: 14,
                 fontWeight: 500,
                 color: styles.slate[900],
@@ -416,7 +450,7 @@ function LoginContent() {
               <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" style={{ marginRight: 8 }} aria-hidden>
                 <path d="M17.05 20.28c-.96.95-2.21 1.72-3.72 1.72-1.47 0-2.33-.51-3.33-.51-.99 0-2 .54-3.32.54-2.13 0-4.04-1.89-4.04-5.12 0-2.66 1.48-4.38 3.12-4.38.93 0 1.64.48 2.37.48.69 0 1.29-.48 2.4-.48 1.41 0 2.49.81 3.03 1.95-2.43 1.23-2.04 4.14.49 5.12-.48 1.44-1.41 2.31-2.4 3.31zm-1.83-11.85c0 1.5-1.14 2.73-2.67 2.73-.06-1.59 1.23-2.88 2.67-2.73z" />
               </svg>
-              {appleLoading ? '…' : 'Apple'}
+              Apple
             </button>
           </div>
 
@@ -473,19 +507,16 @@ function LoginContent() {
               background: `${styles.sageSoft}4D`,
             }}
           >
-            <BarChart3 size={24} style={{ color: styles.primary, marginBottom: 8 }} aria-hidden />
+            <GraduationCap size={24} style={{ color: styles.primary, marginBottom: 8 }} aria-hidden />
             <span style={{ fontSize: 12, fontWeight: 500, color: styles.slate[600], letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-              Health Insights
+              Academy Course
             </span>
           </div>
         </div>
 
-        {/* Footer */}
-        <p style={{ marginTop: 'auto', paddingTop: 32, paddingBottom: 32, textAlign: 'center', fontSize: 12, color: styles.slate[400] }}>
-          © 2024 Pickleball Health & Fitness. All rights reserved.
-        </p>
       </div>
     </div>
+    </>
   );
 }
 
