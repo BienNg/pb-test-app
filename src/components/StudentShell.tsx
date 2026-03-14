@@ -14,7 +14,7 @@ type TabId = 'sessions' | 'library';
 export function StudentShell() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('sessions');
-  const [sessionsSelectedSegment, setSessionsSelectedSegment] = useState<'videos' | 'duprCoach'>('videos');
+  const [sessionsSelectedSegment, setSessionsSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -100,6 +100,7 @@ export function StudentShell() {
           onSelectedSegmentChange={setSessionsSelectedSegment}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
+          onOpenLibrary={() => setActiveTab('library')}
         />
       </div>
       <div

@@ -33,6 +33,8 @@ import {
   ArrowLeft,
   Pencil,
   X,
+  Hand,
+  Zap,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -221,5 +223,17 @@ export const IconPencil: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconX: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <X size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconHand: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Hand size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconZap: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Zap size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

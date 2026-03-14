@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8FB9A8",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#102220",
+                        "sage-soft": "#E1EAE7",
+                        "sage-dark": "#618986",
+                    },
+                    fontFamily: {
+                        "display": ["Lexend", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>My Sessions - Pickleball Trainer</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-white dark:bg-background-dark shadow-xl">
+<!-- Header -->
+<header class="flex items-center px-4 py-6 justify-between border-b border-sage-soft dark:border-slate-800">
+<button class="text-slate-900 dark:text-slate-100 flex size-10 items-center justify-center rounded-full hover:bg-sage-soft dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">My Sessions</h1>
+</header>
+<!-- Main Content (Empty State) -->
+<main class="flex-1 flex flex-col items-center justify-center px-8 text-center">
+<!-- Minimalist Illustration Area -->
+<div class="relative mb-8 flex items-center justify-center">
+<!-- Background Circle Decor -->
+<div class="absolute w-48 h-48 bg-primary/10 rounded-full"></div>
+<!-- Paddle/Court Illustration Container -->
+<div class="relative z-10 w-40 h-40 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-sage-soft dark:border-slate-700 flex flex-col items-center justify-center p-6 overflow-hidden">
+<!-- Stylized Court Lines -->
+<div class="absolute inset-0 opacity-10">
+<div class="absolute top-1/2 left-0 right-0 h-px bg-primary"></div>
+<div class="absolute top-0 bottom-0 left-1/2 w-px bg-primary"></div>
+</div>
+<!-- Pickleball Icon -->
+<div class="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-primary text-5xl">sports_tennis</span>
+</div>
+<div class="w-12 h-2 bg-primary/30 rounded-full"></div>
+</div>
+</div>
+<!-- Text Content -->
+<div class="max-w-xs space-y-3 mb-10">
+<h2 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">No sessions yet</h2>
+<p class="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                    Start your journey by uploading your first training video for analysis.
+                </p>
+</div>
+<!-- Primary Action Button -->
+<button class="group relative flex w-full max-w-[240px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl h-14 px-6 bg-primary text-white text-base font-bold transition-transform active:scale-95 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span class="truncate">Upload Video</span>
+</button>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="flex gap-2 border-t border-sage-soft dark:border-slate-800 bg-white dark:bg-background-dark px-4 pb-6 pt-3">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">home</span>
+</div>
+<p class="text-[10px] font-medium uppercase tracking-wider">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">video_camera_front</span>
+</div>
+<p class="text-[10px] font-bold uppercase tracking-wider">Sessions</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">target</span>
+</div>
+<p class="text-[10px] font-medium uppercase tracking-wider">Drills</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<div class="flex h-8 items-center justify-center">
+<span class="material-symbols-outlined">person</span>
+</div>
+<p class="text-[10px] font-medium uppercase tracking-wider">Profile</p>
+</a>
+</nav>
+</div>
+</body></html>
