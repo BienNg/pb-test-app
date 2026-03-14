@@ -1,15 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
+import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { LessonCard } from './Cards';
-import { Card } from './BaseComponents';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { parseCommentTextWithShots } from './commentText';
 import {
   IconUser,
   IconCheck,
-  IconCircle,
   IconTarget,
   IconHand,
   IconArrowDownUp,
@@ -416,7 +414,7 @@ function RoadmapSkillsChecklist() {
               ))}
             </div>
           </div>
-          </ScrollAnimatedCard>
+        </ScrollAnimatedCard>
         ))}
       </div>
     </div>
