@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
+import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { fetchShotVideos, type ShotVideoRow } from '@/lib/shotVideos';
@@ -1383,6 +1384,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
   useEffect(() => {
@@ -1689,9 +1691,13 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
                       videoUrl={session.videoUrl}
                       shots={shotsBySession[session.id]}
                       isVOD
-                      onClick={() =>
-                        onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
-                      }
+                      onClick={() => {
+                        if (onOpenSession) {
+                          onOpenSession(session.id);
+                        } else {
+                          setOpenSessionId(session.id);
+                        }
+                      }}
                     />
                   </div>
                 </ScrollAnimatedCard>
@@ -1704,6 +1710,26 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
           <RoadmapSkillsChecklist studentName={studentName} studentId={studentId} onAddSession={onAddSession} />
         )}
       </div>
+
+      {openSessionId != null && !onOpenSession && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            backgroundColor: COLORS.backgroundLibrary ?? '#f6f8f8',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'auto',
+          }}
+        >
+          <TrainingSessionDetail
+            sessionId={openSessionId}
+            onBack={() => setOpenSessionId(null)}
+            sessions={sessions.length > 0 ? sessions : undefined}
+          />
+        </div>
+      )}
     </div>
   );
 };
