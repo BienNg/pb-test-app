@@ -8,6 +8,7 @@ import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessio
 import { parseCommentTextWithShots } from './commentText';
 import { IconUser } from './Icons';
 import { useAuth } from './providers/AuthProvider';
+import { useInView } from '@/hooks/useInView';
 
 export interface MySessionsPageProps {
   /** Override page title (e.g. "Alex's Sessions" when coach views a student) */
@@ -64,6 +65,28 @@ export interface SessionCommentReply extends Omit<SessionComment, 'id'> {
   markerYPercent?: number;
   markerRadiusX?: number;
   markerRadiusY?: number;
+}
+
+const CARD_ANIMATION_DURATION_MS = 480;
+const CARD_STAGGER_MS = 80;
+
+/** Wraps content and animates it in when it scrolls into view (fade + slide up), with optional stagger delay. */
+function ScrollAnimatedCard({ children, staggerIndex = 0 }: { children: React.ReactNode; staggerIndex?: number }) {
+  const { ref, inView } = useInView({ threshold: 0.08, rootMargin: '0px 0px -24px 0px', triggerOnce: true });
+  const delayMs = inView ? staggerIndex * CARD_STAGGER_MS : 0;
+  return (
+    <div
+      ref={ref}
+      style={{
+        opacity: inView ? 1 : 0,
+        transform: inView ? 'translateY(0)' : 'translateY(24px)',
+        transition: `opacity ${CARD_ANIMATION_DURATION_MS}ms ease-out, transform ${CARD_ANIMATION_DURATION_MS}ms ease-out`,
+        transitionDelay: `${delayMs}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 export const MySessionsPage: React.FC<MySessionsPageProps> = ({
@@ -318,21 +341,23 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
                 gap: '24px',
               }}
             >
-              {sessions.map((session) => (
-                <div key={session.id} id={`session-${session.id}`}>
-                  <LessonCard
-                    title={session.title || session.focus || 'Training Session'}
-                    dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
-                    category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
-                    thumbnail={session.thumbnail}
-                    videoUrl={session.videoUrl}
-                    shots={shotsBySession[session.id]}
-                    isVOD
-                    onClick={() =>
-                      onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
-                    }
-                  />
-                </div>
+              {sessions.map((session, index) => (
+                <ScrollAnimatedCard key={session.id} staggerIndex={index}>
+                  <div id={`session-${session.id}`}>
+                    <LessonCard
+                      title={session.title || session.focus || 'Training Session'}
+                      dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
+                      category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
+                      thumbnail={session.thumbnail}
+                      videoUrl={session.videoUrl}
+                      shots={shotsBySession[session.id]}
+                      isVOD
+                      onClick={() =>
+                        onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
+                      }
+                    />
+                  </div>
+                </ScrollAnimatedCard>
               ))}
             </div>
           </div>
