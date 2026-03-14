@@ -14,7 +14,6 @@ import {
   IconHand,
   IconArrowDownUp,
   IconZap,
-  IconPlay,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -352,17 +351,17 @@ function RoadmapSkillsChecklist() {
           gap: 24,
         }}
       >
-        {ROADMAP_SKILLS.map((skill) => (
-          <div
-            key={skill.id}
-            style={{
-              backgroundColor: COLORS.white,
-              borderRadius: 12,
-              padding: 24,
-              border: `1px solid ${SAGE_PRIMARY}1A`,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-            }}
-          >
+        {ROADMAP_SKILLS.map((skill, index) => (
+          <ScrollAnimatedCard key={skill.id} staggerIndex={index}>
+            <div
+              style={{
+                backgroundColor: COLORS.white,
+                borderRadius: 12,
+                padding: 24,
+                border: `1px solid ${SAGE_PRIMARY}1A`,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+            >
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
               <div
                 style={{
@@ -417,132 +416,9 @@ function RoadmapSkillsChecklist() {
               ))}
             </div>
           </div>
+          </ScrollAnimatedCard>
         ))}
       </div>
-
-      <section
-        style={{
-          marginTop: 48,
-          backgroundColor: `${SAGE_PRIMARY}0D`,
-          borderRadius: 16,
-          padding: 32,
-          border: `1px solid ${SAGE_PRIMARY}33`,
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            flexWrap: 'wrap',
-            gap: 32,
-          }}
-        >
-          <div style={{ flex: '1 1 280px', minWidth: 0 }}>
-            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 12px', color: COLORS.textPrimary }}>
-              Coach&apos;s Corner
-            </h3>
-            <p
-              style={{
-                color: COLORS.textSecondary,
-                lineHeight: 1.6,
-                margin: '0 0 16px',
-                fontSize: 15,
-              }}
-            >
-              &quot;Your kitchen play has seen incredible improvement this week, Alex. You&apos;re staying low and patient. Next week, we&apos;ll focus on your transition footwork to make sure you&apos;re getting to the line safely after your third shot drop.&quot;
-            </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  backgroundColor: COLORS.textMuted,
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ fontSize: 14, fontWeight: 600, fontStyle: 'italic', color: SAGE_PRIMARY }}>
-                Coach Marcus
-              </span>
-            </div>
-          </div>
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 256,
-              aspectRatio: '1',
-              backgroundColor: COLORS.textMuted,
-              borderRadius: 12,
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  backgroundColor: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(255,255,255,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: COLORS.white,
-                }}
-              >
-                <IconPlay size={24} style={{ color: COLORS.white }} />
-              </div>
-            </div>
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 12,
-                left: 12,
-                padding: '4px 8px',
-                backgroundColor: 'rgba(0,0,0,0.6)',
-                borderRadius: 6,
-                fontSize: 10,
-                fontWeight: 600,
-                color: COLORS.white,
-                textTransform: 'uppercase',
-              }}
-            >
-              New drill
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <footer
-        style={{
-          marginTop: 64,
-          paddingTop: 32,
-          borderTop: `1px solid ${SAGE_PRIMARY}1A`,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-          color: COLORS.textSecondary,
-          fontSize: 14,
-        }}
-      >
-        <p style={{ margin: 0 }}>© 2024 DUPR Performance Lab. Keep leveling up.</p>
-        <div style={{ display: 'flex', gap: 24 }}>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Resource Library</a>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Book Session</a>
-          <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
-        </div>
-      </footer>
     </div>
   );
 }
