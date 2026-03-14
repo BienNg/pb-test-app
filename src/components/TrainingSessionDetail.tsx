@@ -27,6 +27,7 @@ import {
 } from './TrainingSessionDetail/constants';
 import { getCaretTopOffset } from './TrainingSessionDetail/utils';
 import { ExampleGifButton } from './TrainingSessionDetail/ExampleGifButton';
+import { FrameDetailCard } from './TrainingSessionDetail/FrameDetailCard';
 
 export { SHOT_LIST, SHOT_PILL_STYLE } from './TrainingSessionDetail/constants';
 
@@ -242,11 +243,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const allReplies = Object.values(repliesByCommentId).flat();
     const reply = allReplies.find((r) => r.id === activeFrameReplyId);
     if (reply?.timestampSeconds != null) {
-      setPendingSeekSeconds(reply.timestampSeconds);
-      setFrameReplyPauseRequested(true);
-      videoPlayerRef.current?.pause();
+      const alreadyAtFrame = Math.abs(currentVideoTime - reply.timestampSeconds) <= 1;
+      if (!alreadyAtFrame) {
+        setPendingSeekSeconds(reply.timestampSeconds);
+        setFrameReplyPauseRequested(true);
+        videoPlayerRef.current?.pause();
+      }
     }
-  }, [activeFrameReplyId, repliesByCommentId]);
+  }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
 
   // Hide frame reply overlay when video is played or when playback time moves away from the reply's timestamp
   useEffect(() => {
@@ -826,6 +830,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const toFramePrecision = (seconds: number) =>
     Math.round(seconds * 10000) / 10000;
 
+  /** Skip seeking if we're already within this many seconds of the target (avoids re-seeking when already on frame). */
+  const SEEK_SKIP_THRESHOLD_SECONDS = 1;
+  const seekToTimestampIfNeeded = useCallback(
+    (seconds: number) => {
+      if (Math.abs(currentVideoTime - seconds) <= SEEK_SKIP_THRESHOLD_SECONDS) return;
+      setPendingSeekSeconds(seconds);
+    },
+    [currentVideoTime]
+  );
+
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
@@ -1348,29 +1362,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       );
     },
     [mentionMenu, taggableProfiles]
-  );
-
-  interface FrameDetailCardProps {
-    children: React.ReactNode;
-    onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
-  }
-
-  const FrameDetailCard: React.FC<FrameDetailCardProps> = ({ children, onClick }) => (
-    <div
-      style={{
-        marginTop: SPACING.sm,
-        marginLeft: 24,
-        borderRadius: RADIUS.md,
-        borderTopLeftRadius: 0,
-        borderBottomLeftRadius: 0,
-        borderLeft: '3px solid #8fb9a8',
-        backgroundColor: COLORS.cardBg,
-        padding: `${SPACING.sm}px ${SPACING.sm}px ${SPACING.sm}px ${SPACING.md}px`,
-      }}
-      onClick={onClick}
-    >
-      {children}
-    </div>
   );
 
   interface ShotSuggestionsDropdownProps {
@@ -1913,7 +1904,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       onClick={
                         canSeekToTimestamp
                           ? () => {
-                              setPendingSeekSeconds(comment.timestampSeconds!);
+                              seekToTimestampIfNeeded(comment.timestampSeconds!);
                               setActiveCommentId(comment.id);
                             }
                           : undefined
@@ -1923,7 +1914,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           ? (e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
-                                setPendingSeekSeconds(comment.timestampSeconds!);
+                                seekToTimestampIfNeeded(comment.timestampSeconds!);
                                 setActiveCommentId(comment.id);
                               }
                               if (e.key === ' ') e.preventDefault();
@@ -2037,7 +2028,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setPendingSeekSeconds(comment.timestampSeconds!);
+                                  seekToTimestampIfNeeded(comment.timestampSeconds!);
                                   setActiveCommentId(comment.id);
                                 }}
                                 onKeyDown={(e) => { if (e.key === ' ') e.preventDefault(); }}
@@ -2104,10 +2095,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     setActiveFrameReplyId(null);
                                     setReplyingToCommentId(String(comment.id));
                                     if (comment.timestampSeconds != null) {
-                                      setPendingSeekSeconds(comment.timestampSeconds);
+                                      seekToTimestampIfNeeded(comment.timestampSeconds);
                                       setFrameReplyPauseRequested(true);
                                       setReplyTimestampSeconds(comment.timestampSeconds);
-                                      videoPlayerRef.current?.pause();
+                                      if (Math.abs(currentVideoTime - comment.timestampSeconds) > 1) {
+                                        videoPlayerRef.current?.pause();
+                                      }
                                     } else {
                                       setReplyTimestampSeconds(toFramePrecision(currentVideoTime));
                                     }

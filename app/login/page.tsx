@@ -276,27 +276,12 @@ function LoginContent() {
             </div>
 
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, marginLeft: 4 }}>
-                <label
-                  htmlFor="password"
-                  style={{ fontSize: 14, fontWeight: 500, color: styles.slate[700] }}
-                >
-                  Password
-                </label>
-                {!isSignUp && (
-                  <a
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: styles.primary,
-                    }}
-                  >
-                    Forgot Password?
-                  </a>
-                )}
-              </div>
+              <label
+                htmlFor="password"
+                style={{ display: 'block', fontSize: 14, fontWeight: 500, color: styles.slate[700], marginBottom: 6, marginLeft: 4 }}
+              >
+                Password
+              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   id="password"
