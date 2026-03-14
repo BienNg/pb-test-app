@@ -1551,7 +1551,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           >
             {breadcrumbFromRoadmap.studentName && (
               <>
-                <span
+                <button
+                  type="button"
+                  onClick={onBack}
                   style={{
                     fontSize: 14,
                     fontWeight: 600,
@@ -1561,14 +1563,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
                   }}
                 >
                   {breadcrumbFromRoadmap.studentName}
-                </span>
+                </button>
                 <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
               </>
             )}
-            <span
+            <button
+              type="button"
+              onClick={onBack}
               style={{
                 fontSize: 14,
                 fontWeight: 600,
@@ -1578,12 +1586,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
               }}
             >
               Your Roadmap
-            </span>
+            </button>
             <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
             <span
+              aria-current="page"
               style={{
                 fontSize: 14,
                 fontWeight: 600,
@@ -1596,6 +1609,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               }}
             >
               {breadcrumbFromRoadmap.shotTitle}
+              {session?.dateLabel ? ` · ${session.dateLabel}` : ''}
             </span>
           </nav>
         ) : (

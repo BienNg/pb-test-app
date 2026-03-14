@@ -7,6 +7,7 @@ import { MySessionsPage, RoadmapSkillsChecklist, type TrainingSession } from './
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
+import { fetchShotVideoCountsByShot } from '@/lib/shotVideos';
 import { useAuth } from './providers/AuthProvider';
 
 const SESSION_DETAIL_TRANSITION_MS = 280;
@@ -67,6 +68,7 @@ export function StudentShell() {
   const [shotDetailOpen, setShotDetailOpen] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
 
   const handleTabClick = (tabId: TabId) => {
     setActiveTab(tabId);
@@ -88,6 +90,24 @@ export function StudentShell() {
   useEffect(() => {
     void reloadSessions();
   }, [reloadSessions]);
+
+  // Shot video counts per shot for roadmap (badge + same sort as admin: descending by session count).
+  useEffect(() => {
+    if (!user?.id) {
+      setShotVideoCountByShotId({});
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    let cancelled = false;
+    (async () => {
+      const counts = await fetchShotVideoCountsByShot(supabase, user.id);
+      if (!cancelled) setShotVideoCountByShotId(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const showRoadmap = activeTab === 'roadmap';
   const showSessions = activeTab === 'sessions';
@@ -151,6 +171,7 @@ export function StudentShell() {
         aria-hidden={!showRoadmap}
       >
         <RoadmapSkillsChecklist
+          sessionCountByShotId={shotVideoCountByShotId}
           onShotDetailOpenChange={setShotDetailOpen}
           onWatchTutorial={() => {
             setShotDetailOpen(false);

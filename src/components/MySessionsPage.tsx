@@ -1278,7 +1278,7 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
             background: 'transparent',
           }}
         />
-        <ProfileMenuButton />
+        {!studentName && <ProfileMenuButton />}
       </div>
 
       <div
@@ -1531,7 +1531,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
             >
               {title ?? 'My Sessions'}
             </h1>
-            <ProfileMenuButton />
+            {!hideSegmentSwitcher && <ProfileMenuButton />}
           </div>
 
           {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
