@@ -128,6 +128,7 @@ export const CoachApp: React.FC = () => {
       <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
         <MySessionsPage
           title={`${selectedStudent.name}'s Sessions`}
+          studentName={selectedStudent.name}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}

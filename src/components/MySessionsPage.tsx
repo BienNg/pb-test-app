@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
+import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
@@ -15,6 +16,7 @@ import {
   IconSearch,
   IconArrowLeft,
   IconPlay,
+  IconChevronRight,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -38,6 +40,10 @@ export interface MySessionsPageProps {
   onOpenLibrary?: () => void;
   /** When true, hide the "Your Sessions | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
   hideSegmentSwitcher?: boolean;
+  /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
+  studentName?: string;
+  /** When provided (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
+  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
 }
 
 export interface TrainingSession {
@@ -357,19 +363,53 @@ function AnimatedTabPanel({ children }: { children: React.ReactNode }) {
 /** Full-screen shot detail view: header, tab switcher, hero + technique or empty sessions. No navbar. */
 function ShotDetailView({
   skill,
+  studentName,
   onClose,
   onShotDetailOpenChange,
   onWatchTutorial,
+  onAddSession,
 }: {
   skill: RoadmapSkill;
+  /** When set (e.g. coach viewing a student), shown as first segment in the header breadcrumb. */
+  studentName?: string;
   onClose: () => void;
   onShotDetailOpenChange?: (open: boolean) => void;
   onWatchTutorial?: () => void;
+  /** When set (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
+  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState<ShotDetailTab>('sessions');
+  const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
+  const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
+  const [addSessionError, setAddSessionError] = useState<string | null>(null);
+  const [addSessionSaving, setAddSessionSaving] = useState(false);
   const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(skill.items.map((item) => [item.label, item.completed]))
   );
+  const isAdmin = Boolean(studentName);
+
+  const handleAddSessionSubmit = async () => {
+    const trimmed = addSessionYoutubeUrl.trim();
+    if (!trimmed) {
+      setAddSessionError('Please enter a YouTube URL');
+      return;
+    }
+    if (!getYoutubeVideoId(trimmed)) {
+      setAddSessionError('Enter a valid YouTube URL (e.g. youtube.com/watch?v=... or youtu.be/...)');
+      return;
+    }
+    setAddSessionError(null);
+    setAddSessionSaving(true);
+    try {
+      await onAddSession?.(trimmed);
+      setAddSessionModalOpen(false);
+      setAddSessionYoutubeUrl('');
+    } catch (e) {
+      setAddSessionError(e instanceof Error ? e.message : 'Failed to add session');
+    } finally {
+      setAddSessionSaving(false);
+    }
+  };
 
   const isMastered = (label: string) => completedItems[label] ?? false;
   const toggleMastered = (label: string) => {
@@ -425,20 +465,71 @@ function ShotDetailView({
         >
           <IconArrowLeft size={24} />
         </button>
-        <h2
+        <nav
+          aria-label="Breadcrumb"
           style={{
             flex: 1,
-            textAlign: 'center',
-            fontSize: 18,
-            fontWeight: 700,
-            lineHeight: 1.3,
-            letterSpacing: '-0.015em',
-            margin: 0,
-            color: COLORS.textPrimary,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            minWidth: 0,
           }}
         >
-          {skill.title}
-        </h2>
+          {studentName && (
+            <>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  padding: 0,
+                  border: 'none',
+                  background: 'none',
+                  font: 'inherit',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                  letterSpacing: '-0.015em',
+                  color: COLORS.textSecondary,
+                  cursor: 'pointer',
+                }}
+              >
+                {studentName}
+              </button>
+              <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
+            </>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              padding: 0,
+              border: 'none',
+              background: 'none',
+              font: 'inherit',
+              fontSize: 14,
+              fontWeight: 600,
+              lineHeight: 1.3,
+              letterSpacing: '-0.015em',
+              color: studentName ? COLORS.textSecondary : COLORS.textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            Your Roadmap
+          </button>
+          <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              lineHeight: 1.3,
+              letterSpacing: '-0.015em',
+              color: COLORS.textPrimary,
+            }}
+          >
+            {skill.title}
+          </span>
+        </nav>
         <div style={{ width: 48 }} aria-hidden />
       </div>
 
@@ -597,40 +688,76 @@ function ShotDetailView({
                   lineHeight: 1.5,
                 }}
               >
-                Book a session and your coach can tag {skill.title} in your feedback. In the meantime watch Video Lessons to improve your technique.
+                {isAdmin
+                  ? `Add a session and attach a video for ${skill.title}. Paste a YouTube URL to add a video lesson.`
+                  : `Book a session and your coach can tag ${skill.title} in your feedback. In the meantime watch Video Lessons to improve your technique.`}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onWatchTutorial?.()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                width: '100%',
-                maxWidth: 240,
-                height: 56,
-                padding: '0 24px',
-                backgroundColor: SAGE_PRIMARY,
-                color: COLORS.white,
-                border: 'none',
-                borderRadius: 12,
-                fontSize: 16,
-                fontWeight: 700,
-                boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
-                cursor: onWatchTutorial ? 'pointer' : 'default',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
-              onMouseDown={(e) => onWatchTutorial && (e.currentTarget.style.transform = 'scale(0.98)')}
-              onMouseUp={(e) => (e.currentTarget.style.transform = '')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-              <span>Watch Video Lessons</span>
-            </button>
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => setAddSessionModalOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  width: '100%',
+                  maxWidth: 240,
+                  height: 56,
+                  padding: '0 24px',
+                  backgroundColor: SAGE_PRIMARY,
+                  color: COLORS.white,
+                  border: 'none',
+                  borderRadius: 12,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                  cursor: 'pointer',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+                onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Add a session</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onWatchTutorial?.()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  width: '100%',
+                  maxWidth: 240,
+                  height: 56,
+                  padding: '0 24px',
+                  backgroundColor: SAGE_PRIMARY,
+                  color: COLORS.white,
+                  border: 'none',
+                  borderRadius: 12,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                  cursor: onWatchTutorial ? 'pointer' : 'default',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+                onMouseDown={(e) => onWatchTutorial && (e.currentTarget.style.transform = 'scale(0.98)')}
+                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>Watch Video Lessons</span>
+              </button>
+            )}
           </div>
         </AnimatedTabPanel>
       )}
@@ -778,6 +905,118 @@ function ShotDetailView({
           </div>
         </AnimatedTabPanel>
       )}
+
+      {addSessionModalOpen && (
+        <div
+          role="presentation"
+          onClick={() => !addSessionSaving && setAddSessionModalOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Add session video"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 12,
+              padding: SPACING.xl,
+              maxWidth: 440,
+              width: '100%',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            }}
+          >
+            <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: `0 0 ${SPACING.lg}px` }}>
+              Add session video
+            </h3>
+            <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: `0 0 ${SPACING.md}px` }}>
+              Paste a YouTube URL to add a video for {skill.title}.
+            </p>
+            <div style={{ marginBottom: SPACING.md }}>
+              <label
+                htmlFor="add-session-youtube"
+                style={{
+                  display: 'block',
+                  ...TYPOGRAPHY.label,
+                  color: COLORS.textSecondary,
+                  marginBottom: SPACING.xs,
+                }}
+              >
+                YouTube URL
+              </label>
+              <input
+                id="add-session-youtube"
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={addSessionYoutubeUrl}
+                onChange={(e) => {
+                  setAddSessionYoutubeUrl(e.target.value);
+                  setAddSessionError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setAddSessionModalOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: SPACING.sm,
+                  borderRadius: 8,
+                  border: `1px solid ${addSessionError ? '#c00' : COLORS.textMuted}`,
+                  ...TYPOGRAPHY.body,
+                  color: COLORS.textPrimary,
+                }}
+              />
+              {addSessionError && (
+                <p style={{ ...TYPOGRAPHY.bodySmall, color: '#c00', margin: `${SPACING.xs}px 0 0` }}>
+                  {addSessionError}
+                </p>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: SPACING.sm, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => !addSessionSaving && setAddSessionModalOpen(false)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  border: `1px solid ${COLORS.textMuted}`,
+                  background: COLORS.white,
+                  color: COLORS.textPrimary,
+                  ...TYPOGRAPHY.body,
+                  cursor: addSessionSaving ? 'default' : 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddSessionSubmit}
+                disabled={addSessionSaving}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: SAGE_PRIMARY,
+                  color: COLORS.white,
+                  ...TYPOGRAPHY.body,
+                  fontWeight: 600,
+                  cursor: addSessionSaving ? 'default' : 'pointer',
+                }}
+              >
+                {addSessionSaving ? 'Adding…' : 'Add video'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -874,13 +1113,17 @@ function ProfileMenuButton() {
 }
 
 export interface RoadmapSkillsChecklistProps {
+  /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
+  studentName?: string;
   /** When provided, called with true/false when shot detail opens/closes so parent can hide navbar. */
   onShotDetailOpenChange?: (open: boolean) => void;
   /** When provided, called when user taps "Watch Tutorial" in shot detail (e.g. switch to library tab). */
   onWatchTutorial?: () => void;
+  /** When provided (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
+  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
 }
 
-export function RoadmapSkillsChecklist({ onShotDetailOpenChange, onWatchTutorial }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, onShotDetailOpenChange, onWatchTutorial, onAddSession }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const filteredSkills = React.useMemo(() => {
@@ -1008,9 +1251,11 @@ export function RoadmapSkillsChecklist({ onShotDetailOpenChange, onWatchTutorial
       {selectedSkill && (
         <ShotDetailView
           skill={selectedSkill}
+          studentName={studentName}
           onClose={() => setSelectedSkill(null)}
           onShotDetailOpenChange={onShotDetailOpenChange}
           onWatchTutorial={onWatchTutorial}
+          onAddSession={onAddSession}
         />
       )}
     </div>
@@ -1026,6 +1271,8 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   sessions: sessionsProp,
   onOpenLibrary,
   hideSegmentSwitcher = false,
+  studentName,
+  onAddSession,
 }) => {
   const sessions = sessionsProp ?? [];
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
@@ -1350,7 +1597,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
         )}
 
         {selectedSegment === 'roadmap' && (
-          <RoadmapSkillsChecklist />
+          <RoadmapSkillsChecklist studentName={studentName} onAddSession={onAddSession} />
         )}
       </div>
     </div>

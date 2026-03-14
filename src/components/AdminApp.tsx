@@ -461,6 +461,7 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
       <div style={{ minHeight: '100vh', backgroundColor: COLORS.backgroundLibrary }}>
         <MySessionsPage
           title={`${selectedStudent.name}'s Sessions`}
+          studentName={selectedStudent.name}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
