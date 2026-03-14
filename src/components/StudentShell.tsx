@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
-import { MySessionsPage, type TrainingSession } from './MySessionsPage';
+import { MySessionsPage, RoadmapSkillsChecklist, type TrainingSession } from './MySessionsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
@@ -56,12 +56,11 @@ function SessionDetailOverlay({
   );
 }
 
-type TabId = 'sessions' | 'library';
+type TabId = 'roadmap' | 'sessions' | 'library';
 
 export function StudentShell() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('sessions');
-  const [sessionsSelectedSegment, setSessionsSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -88,6 +87,7 @@ export function StudentShell() {
     void reloadSessions();
   }, [reloadSessions]);
 
+  const showRoadmap = activeTab === 'roadmap';
   const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
   const showSessionOverlay = showSessions && activeTrainingSessionId != null;
@@ -105,6 +105,16 @@ export function StudentShell() {
       ),
     },
     {
+      id: 'roadmap',
+      label: 'Roadmap',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 11l3 3L22 4" />
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+        </svg>
+      ),
+    },
+    {
       id: 'library',
       label: 'Library',
       icon: (
@@ -114,13 +124,6 @@ export function StudentShell() {
       ),
     },
   ];
-
-  const rightTab = (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
 
   return (
     <main
@@ -133,7 +136,21 @@ export function StudentShell() {
         backgroundColor: '#f6f8f8',
       }}
     >
-      {/* Keep all tab content mounted so state (scroll, segment, etc.) is preserved when switching tabs */}
+      {/* Roadmap tab content */}
+      <div
+        style={{
+          display: showRoadmap ? 'block' : 'none',
+          height: 'calc(100vh - 80px)',
+          overflow: 'auto',
+          padding: 24,
+          backgroundColor: '#f6f8f8',
+          boxSizing: 'border-box',
+        }}
+        aria-hidden={!showRoadmap}
+      >
+        <RoadmapSkillsChecklist />
+      </div>
+      {/* My Sessions tab content */}
       <div
         style={{
           display: showSessions && !showSessionOverlay ? 'block' : 'none',
@@ -143,8 +160,7 @@ export function StudentShell() {
         aria-hidden={!showSessions}
       >
         <MySessionsPage
-          selectedSegment={sessionsSelectedSegment}
-          onSelectedSegmentChange={setSessionsSelectedSegment}
+          hideSegmentSwitcher
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onOpenLibrary={() => setActiveTab('library')}
@@ -252,22 +268,6 @@ export function StudentShell() {
                 </button>
               );
             })}
-            <div
-              style={{
-                flex: 1,
-                padding: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 2,
-                color: COLORS.textSecondary,
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{rightTab}</span>
-              <span style={{ ...TYPOGRAPHY.label, fontSize: 11, fontWeight: 500, color: COLORS.textSecondary, whiteSpace: 'nowrap' }}>Profile</span>
-              <div style={{ height: 4 }} />
-            </div>
           </div>
         </nav>
       )}

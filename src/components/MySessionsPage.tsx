@@ -33,6 +33,8 @@ export interface MySessionsPageProps {
   sessions: TrainingSession[];
   /** Optional callback when user taps "Watch Video Lessons" in the empty state (e.g. switch to library tab). */
   onOpenLibrary?: () => void;
+  /** When true, hide the "Your Sessions | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
+  hideSegmentSwitcher?: boolean;
 }
 
 export interface TrainingSession {
@@ -314,7 +316,7 @@ const ROADMAP_SKILLS: Array<{
   },
 ];
 
-function RoadmapSkillsChecklist() {
+export function RoadmapSkillsChecklist() {
   return (
     <div style={{ marginBottom: SPACING.xl }}>
       <header style={{ marginBottom: 40 }}>
@@ -429,12 +431,13 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   onOpenSession,
   sessions: sessionsProp,
   onOpenLibrary,
+  hideSegmentSwitcher = false,
 }) => {
   const { signOut } = useAuth();
   const router = useRouter();
   const sessions = sessionsProp ?? [];
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
-  const selectedSegment = selectedSegmentProp ?? internalSelectedSegment;
+  const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -616,52 +619,54 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
             </div>
           </div>
 
-          {/* Segmented Control */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '32px',
-              borderBottom: '1px solid #e1e9e7',
-              marginBottom: '24px',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedSegment('videos')}
+          {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
+          {!hideSegmentSwitcher && (
+            <div
               style={{
-                paddingBottom: '12px',
-                border: 'none',
-                borderBottom: `3px solid ${selectedSegment === 'videos' ? '#6a9a95' : 'transparent'}`,
-                borderRadius: 0,
-                backgroundColor: 'transparent',
-                color: selectedSegment === 'videos' ? '#333333' : '#6a9a95',
-                fontSize: 14,
-                fontWeight: selectedSegment === 'videos' ? 600 : 400,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
+                display: 'flex',
+                gap: '32px',
+                borderBottom: '1px solid #e1e9e7',
+                marginBottom: '24px',
               }}
             >
-              Your Sessions
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedSegment('roadmap')}
-              style={{
-                paddingBottom: '12px',
-                border: 'none',
-                borderBottom: `3px solid ${selectedSegment === 'roadmap' ? '#6a9a95' : 'transparent'}`,
-                borderRadius: 0,
-                backgroundColor: 'transparent',
-                color: selectedSegment === 'roadmap' ? '#333333' : '#6a9a95',
-                fontSize: 14,
-                fontWeight: selectedSegment === 'roadmap' ? 600 : 400,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-            >
-              Your Roadmap
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment('videos')}
+                style={{
+                  paddingBottom: '12px',
+                  border: 'none',
+                  borderBottom: `3px solid ${selectedSegment === 'videos' ? '#6a9a95' : 'transparent'}`,
+                  borderRadius: 0,
+                  backgroundColor: 'transparent',
+                  color: selectedSegment === 'videos' ? '#333333' : '#6a9a95',
+                  fontSize: 14,
+                  fontWeight: selectedSegment === 'videos' ? 600 : 400,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Your Sessions
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedSegment('roadmap')}
+                style={{
+                  paddingBottom: '12px',
+                  border: 'none',
+                  borderBottom: `3px solid ${selectedSegment === 'roadmap' ? '#6a9a95' : 'transparent'}`,
+                  borderRadius: 0,
+                  backgroundColor: 'transparent',
+                  color: selectedSegment === 'roadmap' ? '#333333' : '#6a9a95',
+                  fontSize: 14,
+                  fontWeight: selectedSegment === 'roadmap' ? 600 : 400,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                Your Roadmap
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Content based on selected segment */}
