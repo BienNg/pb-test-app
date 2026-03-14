@@ -12,3 +12,23 @@ export function getCaretTopOffset(container: HTMLElement): number {
   const offset = caretRect.bottom - containerRect.top;
   return Math.max(0, offset);
 }
+
+/** Find a reply by id from the replies-by-comment map. */
+export function getReplyById<T extends { id: string | number }>(
+  repliesByCommentId: Record<string, T[]>,
+  replyId: string | number
+): T | undefined {
+  return Object.values(repliesByCommentId).flat().find((r) => r.id === replyId);
+}
+
+/** Round to frame-accurate precision (4 decimal places ≈ 0.1ms) for storing video timestamps. */
+export function toFramePrecision(seconds: number): number {
+  return Math.round(seconds * 10000) / 10000;
+}
+
+/** Format seconds as M:SS for display. */
+export function formatTimestamp(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
+}

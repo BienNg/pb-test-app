@@ -25,7 +25,12 @@ import {
   REFERENCE_PRIMARY,
   MENTION_PILL_STYLE,
 } from './TrainingSessionDetail/constants';
-import { getCaretTopOffset } from './TrainingSessionDetail/utils';
+import {
+  getCaretTopOffset,
+  getReplyById,
+  toFramePrecision,
+  formatTimestamp,
+} from './TrainingSessionDetail/utils';
 import { ExampleGifButton } from './TrainingSessionDetail/ExampleGifButton';
 import { FrameDetailCard } from './TrainingSessionDetail/FrameDetailCard';
 import { ShotSuggestionsDropdown } from './TrainingSessionDetail/ShotSuggestionsDropdown';
@@ -191,6 +196,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** When set, we're viewing this reply's frame (seek to timestamp, show marker read-only). */
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
 
+  const supabase = useMemo(() => createClient(), []);
+
   // Admin session edit state (for DB-backed sessions)
   const [showEditSession, setShowEditSession] = useState(false);
   const [_editSessionLoading, setEditSessionLoading] = useState(false);
@@ -216,8 +223,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (activeReplyForMarkerId == null) {
       return { frameDetailMarkerInitial: null as { x: number; y: number; radiusX: number; radiusY: number } | null, frameDetailMarkerReadOnly: readOnly };
     }
-    const allReplies = Object.values(repliesByCommentId).flat();
-    const reply = allReplies.find((r) => r.id === activeReplyForMarkerId);
+    const reply = getReplyById(repliesByCommentId, activeReplyForMarkerId);
     if (
       reply &&
       typeof reply.markerXPercent === 'number' &&
@@ -241,8 +247,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   useEffect(() => {
     if (activeFrameReplyId == null) return;
     activeFrameReplyIdSetAtRef.current = Date.now();
-    const allReplies = Object.values(repliesByCommentId).flat();
-    const reply = allReplies.find((r) => r.id === activeFrameReplyId);
+    const reply = getReplyById(repliesByCommentId, activeFrameReplyId);
     if (reply?.timestampSeconds != null) {
       const alreadyAtFrame = Math.abs(currentVideoTime - reply.timestampSeconds) <= 1;
       if (!alreadyAtFrame) {
@@ -256,8 +261,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   // Hide frame reply overlay when video is played or when playback time moves away from the reply's timestamp
   useEffect(() => {
     if (activeFrameReplyId == null) return;
-    const allReplies = Object.values(repliesByCommentId).flat();
-    const reply = allReplies.find((r) => r.id === activeFrameReplyId);
+    const reply = getReplyById(repliesByCommentId, activeFrameReplyId);
     if (reply?.timestampSeconds == null) return;
     const replyTs = reply.timestampSeconds;
     const graceMs = 800;
@@ -343,7 +347,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setComments((prev) => prev.map((c) => (c.id === commentId ? { ...c, exampleGif: undefined } : c)));
 
     if (isDbSession && typeof commentId === 'string') {
-      const supabase = createClient();
       await updateCommentExampleGif(supabase, commentId, null);
     }
   };
@@ -365,7 +368,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setIsExampleModalOpen(false);
     // Persist to DB for real comments
     if (isDbSession && typeof commentId === 'string') {
-      const supabase = createClient();
       await updateCommentExampleGif(supabase, commentId, gifFileName);
     }
   };
@@ -442,7 +444,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   // Load comments and taggable profiles when viewing a DB session
   useEffect(() => {
     if (!sessionId) return;
-    const supabase = createClient();
     setCommentsLoading(true);
     Promise.all([
       isDbSession ? fetchSessionComments(supabase, sessionId) : Promise.resolve([]),
@@ -468,7 +469,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setTaggableProfiles(taggable);
       })
       .finally(() => setCommentsLoading(false));
-  }, [isDbSession, sessionId, user?.id]);
+  }, [supabase, isDbSession, sessionId, user?.id]);
 
   // Video player keyboard shortcuts when comment section / any edit box is not focused
   useEffect(() => {
@@ -549,7 +550,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   // Lazy-load session details and student list for admin editing
   useEffect(() => {
     if (!isDbSession || !showEditSession || editSessionLoadedRef.current === true) return;
-    const supabase = createClient();
     if (!supabase) {
       setEditSessionError('Supabase not configured');
       return;
@@ -617,7 +617,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
     };
     void load();
-  }, [isDbSession, showEditSession, sessionId, session]);
+  }, [supabase, isDbSession, showEditSession, sessionId, session]);
 
   const toggleEditStudent = useCallback((id: string) => {
     setEditStudentIds((prev) =>
@@ -627,7 +627,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const handleSaveSessionDetails = useCallback(async () => {
     if (!isDbSession) return;
-    const supabase = createClient();
     if (!supabase) {
       setEditSessionError('Supabase not configured');
       return;
@@ -672,14 +671,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     } finally {
       setEditSessionSaving(false);
     }
-  }, [isDbSession, editDate, editCoachId, editSessionType, editTitle, editStudentIds, sessionId, onSessionUpdated]);
+  }, [supabase, isDbSession, editDate, editCoachId, editSessionType, editTitle, editStudentIds, sessionId, onSessionUpdated]);
 
   const handleDeleteSession = useCallback(async () => {
     if (!isDbSession) {
       setEditSessionError('This session cannot be deleted.');
       return;
     }
-    const supabase = createClient();
     if (!supabase) {
       setEditSessionError('Supabase not configured');
       return;
@@ -706,7 +704,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditSessionDeleting(false);
       setShowDeleteConfirm(false);
     }
-  }, [isDbSession, sessionId, onDeleteSession, onBack]);
+  }, [supabase, isDbSession, sessionId, onDeleteSession, onBack]);
 
   const sortedCommentTimestamps = useMemo(
     () =>
@@ -827,10 +825,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setActiveCommentId(activeComment?.id ?? null);
   }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
 
-  /** Round to frame-accurate precision (4 decimal places ≈ 0.1ms) for storing video timestamps. */
-  const toFramePrecision = (seconds: number) =>
-    Math.round(seconds * 10000) / 10000;
-
   /** Skip seeking if we're already within this many seconds of the target (avoids re-seeking when already on frame). */
   const SEEK_SKIP_THRESHOLD_SECONDS = 1;
   const seekToTimestampIfNeeded = useCallback(
@@ -840,12 +834,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     },
     [currentVideoTime]
   );
-
-  const formatTimestamp = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
-  };
 
   // Scroll comments list to the active comment and keep it in view
   useEffect(() => {
@@ -865,7 +853,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const timestampSeconds = includeTimestamp ? toFramePrecision(currentTime) : null;
 
     if (isDbSession && user?.id) {
-      const supabase = createClient();
       setPostingComment(true);
       try {
         const inserted = await insertSessionComment(
@@ -903,6 +890,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setCommentDraft('');
     setPendingNewCommentGif(null);
   }, [
+    supabase,
     commentDraft,
     currentVideoTime,
     includeTimestamp,
@@ -920,7 +908,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!isDbSession || !user?.id || !isAdmin) return;
       const parentId = String(parentIdRaw);
 
-      const supabase = createClient();
       setPostingReply(true);
       try {
         const parentComment = comments.find((c) => String(c.id) === parentId);
@@ -965,7 +952,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [comments, isAdmin, isDbSession, replyDraft, replyTimestampSeconds, sessionId, user?.id]
+    [supabase, comments, isAdmin, isDbSession, replyDraft, replyTimestampSeconds, sessionId, user?.id]
   );
 
   const handleSaveReplyEdit = useCallback(
@@ -973,7 +960,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!editReplyDraft.trim()) return;
       if (!isDbSession || !user?.id) return;
 
-      const supabase = createClient();
       setPostingReply(true);
       try {
         const markerState = videoPlayerRef.current?.getFrameMarkerState();
@@ -1023,13 +1009,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [editReplyDraft, isDbSession, user?.id]
+    [supabase, editReplyDraft, isDbSession, user?.id]
   );
 
   const handleDeleteReply = useCallback(
     async (parentCommentId: string, replyId: string) => {
       if (!isDbSession || !user?.id) return;
-      const supabase = createClient();
       setPostingReply(true);
       try {
         const ok = await deleteSessionCommentReply(supabase, replyId);
@@ -1046,7 +1031,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [isDbSession, user?.id]
+    [supabase, isDbSession, user?.id]
   );
 
   const filteredShots = useMemo(() => {
@@ -1454,7 +1439,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       });
       return;
     }
-    const supabase = createClient();
     const success = await deleteSessionComment(supabase, commentId);
     if (success) {
       setComments((prev) => prev.filter((c) => c.id !== commentId));
@@ -1476,7 +1460,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditDraft('');
       return;
     }
-    const supabase = createClient();
     const success = await updateSessionComment(supabase, commentId, newText);
     if (success) {
       setComments((prev) =>
