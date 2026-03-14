@@ -17,6 +17,27 @@ export interface InsertShotVideoParams {
 }
 
 /**
+ * Fetch shot video counts per shot_id for a student (for roadmap card badges and sorting).
+ */
+export async function fetchShotVideoCountsByShot(
+  supabase: SupabaseClient | null,
+  studentId: string
+): Promise<Record<string, number>> {
+  if (!supabase || !studentId) return {};
+  const { data, error } = await supabase
+    .from('shot_videos')
+    .select('shot_id')
+    .eq('student_id', studentId);
+  if (error) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    const id = (row as { shot_id: string }).shot_id;
+    if (id) counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/**
  * Fetch shot videos for a student and shot (for "Your Sessions" tab in ShotDetailView).
  */
 export async function fetchShotVideos(

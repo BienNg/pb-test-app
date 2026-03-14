@@ -5,7 +5,7 @@ import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
-import { fetchShotVideos, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
+import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
 import { parseCommentTextWithShots } from './commentText';
 import {
   IconUser,
@@ -1221,6 +1221,8 @@ export interface RoadmapSkillsChecklistProps {
   studentName?: string;
   /** When set (coach/admin viewing a student), passed to ShotDetailView so "Add video" can save to DB for that student. */
   studentId?: string;
+  /** Session (shot video) count per shot id for badge and sorting (descending by count). */
+  sessionCountByShotId?: Record<string, number>;
   /** When provided, called with true/false when shot detail opens/closes so parent can hide navbar. */
   onShotDetailOpenChange?: (open: boolean) => void;
   /** When provided, called when user taps "Watch Tutorial" in shot detail (e.g. switch to library tab). */
@@ -1234,16 +1236,17 @@ export interface RoadmapSkillsChecklistProps {
   onOpenShotVideo?: (session: TrainingSession) => void;
 }
 
-export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const filteredSkills = React.useMemo(() => {
-    if (!searchQuery.trim()) return ROADMAP_SKILLS;
-    const q = searchQuery.trim().toLowerCase();
-    return ROADMAP_SKILLS.filter((skill) =>
-      skill.title.toLowerCase().includes(q)
-    );
-  }, [searchQuery]);
+    const list = !searchQuery.trim()
+      ? [...ROADMAP_SKILLS]
+      : ROADMAP_SKILLS.filter((skill) =>
+          skill.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
+        );
+    return list.sort((a, b) => (sessionCountByShotId[b.id] ?? 0) - (sessionCountByShotId[a.id] ?? 0));
+  }, [searchQuery, sessionCountByShotId]);
 
   return (
     <div style={{ marginBottom: SPACING.xl }}>
@@ -1317,9 +1320,29 @@ export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpe
               >
                 {skill.icon}
               </div>
-              <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
-                {skill.title}
-              </h3>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
+                  {skill.title}
+                </h3>
+                {(sessionCountByShotId[skill.id] ?? 0) > 0 && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      marginTop: 4,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: SAGE_PRIMARY,
+                      backgroundColor: `${SAGE_PRIMARY}1A`,
+                      padding: '2px 8px',
+                      borderRadius: 6,
+                    }}
+                  >
+                    {sessionCountByShotId[skill.id] === 1
+                      ? '1 session'
+                      : `${sessionCountByShotId[skill.id]} sessions`}
+                  </span>
+                )}
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {skill.items.map((item) => (
@@ -1389,11 +1412,32 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   onAddSession,
   onOpenShotVideo,
 }) => {
+  const { user } = useAuth();
   const sessions = sessionsProp ?? [];
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
+  const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
+  const effectiveStudentId = studentId ?? user?.id ?? null;
+
+  // Shot video counts per shot for roadmap (badge + sort)
+  useEffect(() => {
+    if (!effectiveStudentId) {
+      setShotVideoCountByShotId({});
+      return;
+    }
+    const supabase = createClient();
+    if (!supabase) return;
+    let cancelled = false;
+    (async () => {
+      const counts = await fetchShotVideoCountsByShot(supabase, effectiveStudentId);
+      if (!cancelled) setShotVideoCountByShotId(counts);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [effectiveStudentId]);
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
   useEffect(() => {
@@ -1712,7 +1756,13 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
         )}
 
         {selectedSegment === 'roadmap' && (
-          <RoadmapSkillsChecklist studentName={studentName} studentId={studentId} onAddSession={onAddSession} onOpenShotVideo={onOpenShotVideo} />
+          <RoadmapSkillsChecklist
+            studentName={studentName}
+            studentId={studentId}
+            sessionCountByShotId={shotVideoCountByShotId}
+            onAddSession={onAddSession}
+            onOpenShotVideo={onOpenShotVideo}
+          />
         )}
       </div>
     </div>
