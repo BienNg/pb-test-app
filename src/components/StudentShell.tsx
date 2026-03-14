@@ -63,6 +63,7 @@ export function StudentShell() {
   const [activeTab, setActiveTab] = useState<TabId>('sessions');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
+  const [shotDetailOpen, setShotDetailOpen] = useState(false);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
@@ -91,7 +92,7 @@ export function StudentShell() {
   const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
   const showSessionOverlay = showSessions && activeTrainingSessionId != null;
-  const hideBottomNav = showSessionOverlay || viewingLessonDetail;
+  const hideBottomNav = showSessionOverlay || viewingLessonDetail || shotDetailOpen;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
@@ -148,7 +149,13 @@ export function StudentShell() {
         }}
         aria-hidden={!showRoadmap}
       >
-        <RoadmapSkillsChecklist />
+        <RoadmapSkillsChecklist
+          onShotDetailOpenChange={setShotDetailOpen}
+          onWatchTutorial={() => {
+            setShotDetailOpen(false);
+            setActiveTab('library');
+          }}
+        />
       </div>
       {/* My Sessions tab content */}
       <div

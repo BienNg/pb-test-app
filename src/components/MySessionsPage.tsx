@@ -13,6 +13,8 @@ import {
   IconArrowDownUp,
   IconZap,
   IconSearch,
+  IconArrowLeft,
+  IconPlay,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -317,6 +319,212 @@ const ROADMAP_SKILLS: Array<{
   },
 ];
 
+type RoadmapSkill = (typeof ROADMAP_SKILLS)[number];
+
+/** Icons for technique point cards (cycle by index to match reference variety). */
+const TECHNIQUE_ICONS = [
+  <IconTarget key="target" size={24} />,
+  <IconHand key="hand" size={24} />,
+  <IconArrowDownUp key="arrow" size={24} />,
+  <IconZap key="zap" size={24} />,
+];
+
+/** Full-screen shot detail view: header, hero, Technique Points. No navbar. */
+function ShotDetailView({
+  skill,
+  onClose,
+  onShotDetailOpenChange,
+  onWatchTutorial,
+}: {
+  skill: RoadmapSkill;
+  onClose: () => void;
+  onShotDetailOpenChange?: (open: boolean) => void;
+  onWatchTutorial?: () => void;
+}) {
+  useEffect(() => {
+    onShotDetailOpenChange?.(true);
+    return () => {
+      onShotDetailOpenChange?.(false);
+    };
+  }, [onShotDetailOpenChange]);
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 200,
+        backgroundColor: '#f6f8f8',
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      {/* Header: back, title — no share, no bottom nav */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 16px 8px',
+          borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
+          backgroundColor: '#f6f8f8',
+          flexShrink: 0,
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Back"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 48,
+            height: 48,
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            color: COLORS.textPrimary,
+          }}
+        >
+          <IconArrowLeft size={24} />
+        </button>
+        <h2
+          style={{
+            flex: 1,
+            textAlign: 'center',
+            fontSize: 18,
+            fontWeight: 700,
+            lineHeight: 1.3,
+            letterSpacing: '-0.015em',
+            margin: 0,
+            color: COLORS.textPrimary,
+          }}
+        >
+          {skill.title}
+        </h2>
+        <div style={{ width: 48 }} aria-hidden />
+      </div>
+
+      {/* Hero */}
+      <div
+        style={{
+          margin: 16,
+          marginTop: 12,
+          minHeight: 320,
+          borderRadius: 12,
+          overflow: 'hidden',
+          backgroundImage: `linear-gradient(0deg, rgba(16, 34, 32, 0.8) 0%, rgba(16, 34, 32, 0) 50%), url("https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800")`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-end',
+          padding: 24,
+        }}
+      >
+        <p style={{ color: '#fff', fontSize: 28, fontWeight: 700, lineHeight: 1.2, margin: 0 }}>
+          Master the {skill.title}
+        </p>
+        <button
+          type="button"
+          onClick={onWatchTutorial}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            alignSelf: 'flex-start',
+            marginTop: 16,
+            padding: '12px 24px',
+            borderRadius: 9999,
+            backgroundColor: SAGE_PRIMARY,
+            color: '#1C1C1E',
+            fontWeight: 700,
+            fontSize: 16,
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <IconPlay size={20} />
+          Watch Tutorial
+        </button>
+      </div>
+
+      {/* Technique Points */}
+      <div style={{ padding: '24px 16px 80px' }}>
+        <h2
+          style={{
+            fontSize: 22,
+            fontWeight: 700,
+            lineHeight: 1.3,
+            letterSpacing: '-0.015em',
+            color: COLORS.textPrimary,
+            marginBottom: 16,
+          }}
+        >
+          Technique Points
+        </h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {skill.items.map((item, idx) => (
+            <div
+              key={item.label}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 16,
+                padding: 16,
+                borderRadius: 12,
+                backgroundColor: COLORS.white,
+                border: `1px solid ${SAGE_PRIMARY}0D`,
+              }}
+            >
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  flexShrink: 0,
+                  borderRadius: 12,
+                  backgroundColor: `${SAGE_PRIMARY}1A`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: SAGE_PRIMARY,
+                }}
+              >
+                {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: COLORS.textPrimary,
+                    margin: 0,
+                  }}
+                >
+                  {item.label}
+                </h3>
+                <p
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    color: COLORS.textSecondary,
+                    margin: '4px 0 0',
+                  }}
+                >
+                  {item.completed ? 'Completed' : 'Focus on this in your next practice.'}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Reusable profile menu button with dropdown (Log out). Use in header or roadmap bar. */
 function ProfileMenuButton() {
   const { signOut } = useAuth();
@@ -408,8 +616,16 @@ function ProfileMenuButton() {
   );
 }
 
-export function RoadmapSkillsChecklist() {
+export interface RoadmapSkillsChecklistProps {
+  /** When provided, called with true/false when shot detail opens/closes so parent can hide navbar. */
+  onShotDetailOpenChange?: (open: boolean) => void;
+  /** When provided, called when user taps "Watch Tutorial" in shot detail (e.g. switch to library tab). */
+  onWatchTutorial?: () => void;
+}
+
+export function RoadmapSkillsChecklist({ onShotDetailOpenChange, onWatchTutorial }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const filteredSkills = React.useMemo(() => {
     if (!searchQuery.trim()) return ROADMAP_SKILLS;
     const q = searchQuery.trim().toLowerCase();
@@ -460,8 +676,13 @@ export function RoadmapSkillsChecklist() {
       >
         {filteredSkills.map((skill, index) => (
           <ScrollAnimatedCard key={skill.id} staggerIndex={index}>
-            <div
+            <button
+              type="button"
+              onClick={() => setSelectedSkill(skill)}
               style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
                 backgroundColor: COLORS.white,
                 borderRadius: 12,
                 padding: 24,
@@ -522,10 +743,19 @@ export function RoadmapSkillsChecklist() {
                 </div>
               ))}
             </div>
-          </div>
-        </ScrollAnimatedCard>
+            </button>
+          </ScrollAnimatedCard>
         ))}
       </div>
+
+      {selectedSkill && (
+        <ShotDetailView
+          skill={selectedSkill}
+          onClose={() => setSelectedSkill(null)}
+          onShotDetailOpenChange={onShotDetailOpenChange}
+          onWatchTutorial={onWatchTutorial}
+        />
+      )}
     </div>
   );
 }
