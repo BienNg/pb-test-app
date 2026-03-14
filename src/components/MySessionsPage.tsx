@@ -12,6 +12,7 @@ import {
   IconHand,
   IconArrowDownUp,
   IconZap,
+  IconSearch,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -316,33 +317,139 @@ const ROADMAP_SKILLS: Array<{
   },
 ];
 
+/** Reusable profile menu button with dropdown (Log out). Use in header or roadmap bar. */
+function ProfileMenuButton() {
+  const { signOut } = useAuth();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div style={{ position: 'relative', flexShrink: 0 }} ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Profile menu"
+        aria-expanded={open}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          border: '1px solid rgba(143, 185, 168, 0.3)',
+          background: 'rgba(143, 185, 168, 0.2)',
+          color: '#2d3a38',
+          cursor: 'pointer',
+          overflow: 'hidden',
+        }}
+      >
+        <IconUser size={22} />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 4,
+            minWidth: 140,
+            padding: 4,
+            background: COLORS.white,
+            borderRadius: 8,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+            zIndex: 10,
+          }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={async () => {
+              setOpen(false);
+              await signOut();
+              router.replace('/login');
+            }}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              border: 'none',
+              borderRadius: 6,
+              background: 'transparent',
+              color: COLORS.textPrimary,
+              ...TYPOGRAPHY.body,
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = COLORS.backgroundLight;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+            }}
+          >
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RoadmapSkillsChecklist() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const filteredSkills = React.useMemo(() => {
+    if (!searchQuery.trim()) return ROADMAP_SKILLS;
+    const q = searchQuery.trim().toLowerCase();
+    return ROADMAP_SKILLS.filter((skill) =>
+      skill.title.toLowerCase().includes(q)
+    );
+  }, [searchQuery]);
+
   return (
     <div style={{ marginBottom: SPACING.xl }}>
-      <header style={{ marginBottom: 40 }}>
-        <h2
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACING.sm,
+          marginBottom: 24,
+          padding: `${SPACING.sm}px ${SPACING.md}px`,
+          background: '#f2f7f5',
+          borderRadius: 12,
+          border: '1px solid rgba(0,0,0,0.04)',
+        }}
+      >
+        <IconSearch size={18} style={{ color: SAGE_PRIMARY, flexShrink: 0 }} />
+        <input
+          type="search"
+          placeholder="Search skills..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label="Search skills"
           style={{
-            fontSize: '1.875rem',
-            fontWeight: 700,
+            flex: 1,
+            border: 'none',
+            outline: 'none',
+            ...TYPOGRAPHY.bodySmall,
             color: COLORS.textPrimary,
-            margin: '0 0 8px',
-            letterSpacing: '-0.02em',
+            background: 'transparent',
           }}
-        >
-          My Skills Checklist
-        </h2>
-        <p
-          style={{
-            ...TYPOGRAPHY.body,
-            color: COLORS.textSecondary,
-            margin: 0,
-            maxWidth: 672,
-            lineHeight: 1.5,
-          }}
-        >
-          Track your progress across the fundamental pillars of pickleball. Focus on consistency and form to advance through each level.
-        </p>
-      </header>
+        />
+        <ProfileMenuButton />
+      </div>
 
       <div
         style={{
@@ -351,7 +458,7 @@ export function RoadmapSkillsChecklist() {
           gap: 24,
         }}
       >
-        {ROADMAP_SKILLS.map((skill, index) => (
+        {filteredSkills.map((skill, index) => (
           <ScrollAnimatedCard key={skill.id} staggerIndex={index}>
             <div
               style={{
@@ -433,15 +540,11 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   onOpenLibrary,
   hideSegmentSwitcher = false,
 }) => {
-  const { signOut } = useAuth();
-  const router = useRouter();
   const sessions = sessionsProp ?? [];
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   // For DB-backed sessions, load comments and derive unique shots from their texts
   useEffect(() => {
@@ -472,19 +575,6 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
 
     void load();
   }, [sessionsProp]);
-
-  useEffect(() => {
-    if (!profileMenuOpen) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
-        setProfileMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [profileMenuOpen]);
 
   return (
     <div
@@ -548,75 +638,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
             >
               {title ?? 'My Sessions'}
             </h1>
-            <div style={{ position: 'relative', flexShrink: 0 }} ref={profileMenuRef}>
-              <button
-                type="button"
-                onClick={() => setProfileMenuOpen((o) => !o)}
-                aria-label="Profile menu"
-                aria-expanded={profileMenuOpen}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  border: '1px solid rgba(143, 185, 168, 0.3)',
-                  background: 'rgba(143, 185, 168, 0.2)',
-                  color: '#2d3a38',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
-                }}
-              >
-                <IconUser size={22} />
-              </button>
-              {profileMenuOpen && (
-                <div
-                  role="menu"
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: '100%',
-                    marginTop: 4,
-                    minWidth: 140,
-                    padding: 4,
-                    background: COLORS.white,
-                    borderRadius: 8,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-                    zIndex: 10,
-                  }}
-                >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={async () => {
-                      setProfileMenuOpen(false);
-                      await signOut();
-                      router.replace('/login');
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      border: 'none',
-                      borderRadius: 6,
-                      background: 'transparent',
-                      color: COLORS.textPrimary,
-                      ...TYPOGRAPHY.body,
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = COLORS.backgroundLight;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    Log out
-                  </button>
-                </div>
-              )}
-            </div>
+            <ProfileMenuButton />
           </div>
 
           {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
