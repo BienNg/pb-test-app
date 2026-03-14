@@ -11,6 +11,7 @@ import type { StudentInfo } from './CoachStudentsPage';
 import type { TrainingSession } from './MySessionsPage';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent, fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
+import { insertShotVideo } from '@/lib/shotVideos';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
@@ -129,9 +130,21 @@ export const CoachApp: React.FC = () => {
         <MySessionsPage
           title={`${selectedStudent.name}'s Sessions`}
           studentName={selectedStudent.name}
+          studentId={selectedStudent.id}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
+          onAddSession={async (youtubeUrl, context) => {
+            if (!context) return;
+            const result = await insertShotVideo(createClient(), {
+              videoUrl: youtubeUrl,
+              studentId: context.studentId,
+              shotId: context.shotId,
+              shotTitle: context.shotTitle,
+            });
+            if ('error' in result) throw new Error(result.error);
+            await reloadSelectedStudentSessions();
+          }}
         />
       </div>
     );

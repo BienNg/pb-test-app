@@ -11,6 +11,7 @@ import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
+import { insertShotVideo } from '@/lib/shotVideos';
 
 type AdminTabId = 'overview' | 'students' | 'coaches' | 'library';
 
@@ -462,9 +463,21 @@ function AdminStudentsPage({ isDesktop }: { isDesktop: boolean }) {
         <MySessionsPage
           title={`${selectedStudent.name}'s Sessions`}
           studentName={selectedStudent.name}
+          studentId={selectedStudent.id}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => setActiveTrainingSessionId(sessionId)}
           sessions={loadingSessions ? [] : sessionsForStudent}
+          onAddSession={async (youtubeUrl, context) => {
+            if (!context) return;
+            const result = await insertShotVideo(createClient(), {
+              videoUrl: youtubeUrl,
+              studentId: context.studentId,
+              shotId: context.shotId,
+              shotTitle: context.shotTitle,
+            });
+            if ('error' in result) throw new Error(result.error);
+            await reloadSelectedStudentSessions();
+          }}
         />
       </div>
     );

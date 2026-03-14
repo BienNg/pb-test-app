@@ -45,3 +45,4 @@ Run these additional migrations in order (same process: SQL Editor → New query
 - `20260306000002_allow_authenticated_delete_session_students.sql` - Allow deleting session_students
 - `20260308000000_sessions_coach_nullable_and_session_type.sql` - Make coach_id nullable and add session_type
 - **`20260308100000_allow_authenticated_delete_sessions.sql` - Allow authenticated users to delete sessions** ← **REQUIRED for delete to work**
+- `20260314000000_create_shot_videos.sql` - Create shot_videos table (video URL, student, shot, date) for "Add video" in ShotDetailView

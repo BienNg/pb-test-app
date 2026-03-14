@@ -5,6 +5,7 @@ import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
+import { fetchShotVideos, type ShotVideoRow } from '@/lib/shotVideos';
 import { parseCommentTextWithShots } from './commentText';
 import {
   IconUser,
@@ -42,8 +43,13 @@ export interface MySessionsPageProps {
   hideSegmentSwitcher?: boolean;
   /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
   studentName?: string;
-  /** When provided (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
-  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
+  /** When set (coach/admin viewing a student), used when saving "Add video" to DB. */
+  studentId?: string;
+  /** When provided (admin/coach), called when admin submits a YouTube URL in the add-session modal. Context includes studentId, shotId, shotTitle when adding for a specific student/shot. */
+  onAddSession?: (
+    youtubeUrl: string,
+    context?: { studentId: string; shotId: string; shotTitle: string }
+  ) => void | Promise<void>;
 }
 
 export interface TrainingSession {
@@ -364,6 +370,7 @@ function AnimatedTabPanel({ children }: { children: React.ReactNode }) {
 function ShotDetailView({
   skill,
   studentName,
+  studentId,
   onClose,
   onShotDetailOpenChange,
   onWatchTutorial,
@@ -372,11 +379,16 @@ function ShotDetailView({
   skill: RoadmapSkill;
   /** When set (e.g. coach viewing a student), shown as first segment in the header breadcrumb. */
   studentName?: string;
+  /** When set (coach/admin viewing a student), passed to onAddSession so the video can be stored for that student/shot. */
+  studentId?: string;
   onClose: () => void;
   onShotDetailOpenChange?: (open: boolean) => void;
   onWatchTutorial?: () => void;
   /** When set (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
-  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
+  onAddSession?: (
+    youtubeUrl: string,
+    context?: { studentId: string; shotId: string; shotTitle: string }
+  ) => void | Promise<void>;
 }) {
   const [activeTab, setActiveTab] = useState<ShotDetailTab>('sessions');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
@@ -386,7 +398,29 @@ function ShotDetailView({
   const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(skill.items.map((item) => [item.label, item.completed]))
   );
+  const [shotVideos, setShotVideos] = useState<ShotVideoRow[]>([]);
+  const [loadingShotVideos, setLoadingShotVideos] = useState(false);
+  const { user } = useAuth();
   const isAdmin = Boolean(studentName);
+  const effectiveStudentId = studentId ?? user?.id ?? null;
+
+  const loadShotVideos = React.useCallback(async () => {
+    if (!effectiveStudentId || !skill.id) {
+      setShotVideos([]);
+      return;
+    }
+    setLoadingShotVideos(true);
+    try {
+      const list = await fetchShotVideos(createClient(), effectiveStudentId, skill.id);
+      setShotVideos(list);
+    } finally {
+      setLoadingShotVideos(false);
+    }
+  }, [effectiveStudentId, skill.id]);
+
+  useEffect(() => {
+    void loadShotVideos();
+  }, [loadShotVideos]);
 
   const handleAddSessionSubmit = async () => {
     const trimmed = addSessionYoutubeUrl.trim();
@@ -401,9 +435,13 @@ function ShotDetailView({
     setAddSessionError(null);
     setAddSessionSaving(true);
     try {
-      await onAddSession?.(trimmed);
+      await onAddSession?.(
+        trimmed,
+        studentId ? { studentId, shotId: skill.id, shotTitle: skill.title } : undefined
+      );
       setAddSessionModalOpen(false);
       setAddSessionYoutubeUrl('');
+      void loadShotVideos();
     } catch (e) {
       setAddSessionError(e instanceof Error ? e.message : 'Failed to add session');
     } finally {
@@ -587,178 +625,237 @@ function ShotDetailView({
 
       {activeTab === 'sessions' && (
         <AnimatedTabPanel>
-          {/* Your Sessions — empty state when no sessions for this shot */}
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 32,
-              textAlign: 'center',
-              minHeight: 320,
-            }}
-          >
-            <div style={{ position: 'relative', marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  width: 192,
-                  height: 192,
-                  borderRadius: '50%',
-                  backgroundColor: `${SAGE_PRIMARY}1A`,
-                }}
-              />
-              <div
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  width: 160,
-                  height: 160,
-                  backgroundColor: COLORS.white,
-                  borderRadius: 16,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  border: `1px solid ${COLORS.textMuted}40`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 24,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
+          {/* Your Sessions — shot videos for this student + shot, or empty state */}
+          {loadingShotVideos ? (
+            <div style={{ padding: 32, textAlign: 'center', color: COLORS.textSecondary }}>
+              Loading…
+            </div>
+          ) : shotVideos.length > 0 ? (
+            <div style={{ padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {shotVideos.map((sv) => {
+                const dateLabel =
+                  sv.created_at &&
+                  (() => {
+                    try {
+                      const d = new Date(sv.created_at);
+                      return d.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      });
+                    } catch {
+                      return '';
+                    }
+                  })();
+                return (
+                  <LessonCard
+                    key={sv.id}
+                    title={sv.shot_title}
+                    category="Shot video"
+                    videoUrl={sv.video_url}
+                    dateLabel={dateLabel}
+                    isVOD
+                    onClick={() => window.open(sv.video_url, '_blank', 'noopener,noreferrer')}
+                  />
+                );
+              })}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setAddSessionModalOpen(true)}
                   style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0.1,
-                  }}
-                >
-                  <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: SAGE_PRIMARY }} />
-                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, backgroundColor: SAGE_PRIMARY }} />
-                </div>
-                <div
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    backgroundColor: `${SAGE_PRIMARY}33`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    marginBottom: 8,
+                    gap: 8,
+                    width: '100%',
+                    maxWidth: 240,
+                    height: 56,
+                    padding: '0 24px',
+                    backgroundColor: 'transparent',
+                    color: SAGE_PRIMARY,
+                    border: `2px solid ${SAGE_PRIMARY}`,
+                    borderRadius: 12,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    alignSelf: 'center',
                   }}
                 >
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={SAGE_PRIMARY}
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ flexShrink: 0 }}
-                  >
-                    <circle cx="12" cy="12" r="8" />
-                    <path d="M12 4a8 8 0 0 1 0 16 8 8 0 0 1 0-16" />
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
                   </svg>
+                  <span>Add another video</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 32,
+                textAlign: 'center',
+                minHeight: 320,
+              }}
+            >
+              <div style={{ position: 'relative', marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    width: 192,
+                    height: 192,
+                    borderRadius: '50%',
+                    backgroundColor: `${SAGE_PRIMARY}1A`,
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'relative',
+                    zIndex: 1,
+                    width: 160,
+                    height: 160,
+                    backgroundColor: COLORS.white,
+                    borderRadius: 16,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    border: `1px solid ${COLORS.textMuted}40`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div style={{ position: 'absolute', inset: 0, opacity: 0.1 }}>
+                    <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: SAGE_PRIMARY }} />
+                    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, backgroundColor: SAGE_PRIMARY }} />
+                  </div>
+                  <div
+                    style={{
+                      width: 80,
+                      height: 80,
+                      borderRadius: '50%',
+                      backgroundColor: `${SAGE_PRIMARY}33`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <svg
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke={SAGE_PRIMARY}
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{ flexShrink: 0 }}
+                    >
+                      <circle cx="12" cy="12" r="8" />
+                      <path d="M12 4a8 8 0 0 1 0 16 8 8 0 0 1 0-16" />
+                    </svg>
+                  </div>
+                  <div style={{ width: 48, height: 8, backgroundColor: `${SAGE_PRIMARY}4D`, borderRadius: 4 }} />
                 </div>
-                <div style={{ width: 48, height: 8, backgroundColor: `${SAGE_PRIMARY}4D`, borderRadius: 4 }} />
               </div>
+              <div style={{ maxWidth: 320, marginBottom: 40 }}>
+                <h2
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: COLORS.textPrimary,
+                    margin: '0 0 12px',
+                  }}
+                >
+                  No sessions for {skill.title} yet
+                </h2>
+                <p
+                  style={{
+                    ...TYPOGRAPHY.bodySmall,
+                    color: COLORS.textSecondary,
+                    margin: 0,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {isAdmin
+                    ? `Add a session and attach a video for ${skill.title}. Paste a YouTube URL to add a video lesson.`
+                    : `Book a session and your coach can tag ${skill.title} in your feedback. In the meantime watch Video Lessons to improve your technique.`}
+                </p>
+              </div>
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => setAddSessionModalOpen(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    maxWidth: 240,
+                    height: 56,
+                    padding: '0 24px',
+                    backgroundColor: SAGE_PRIMARY,
+                    color: COLORS.white,
+                    border: 'none',
+                    borderRadius: 12,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  }}
+                  onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
+                  onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <span>Add a session</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onWatchTutorial?.()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    maxWidth: 240,
+                    height: 56,
+                    padding: '0 24px',
+                    backgroundColor: SAGE_PRIMARY,
+                    color: COLORS.white,
+                    border: 'none',
+                    borderRadius: 12,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                    cursor: onWatchTutorial ? 'pointer' : 'default',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  }}
+                  onMouseDown={(e) => onWatchTutorial && (e.currentTarget.style.transform = 'scale(0.98)')}
+                  onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  <span>Watch Video Lessons</span>
+                </button>
+              )}
             </div>
-            <div style={{ maxWidth: 320, marginBottom: 40 }}>
-              <h2
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: COLORS.textPrimary,
-                  margin: '0 0 12px',
-                }}
-              >
-                No sessions for {skill.title} yet
-              </h2>
-              <p
-                style={{
-                  ...TYPOGRAPHY.bodySmall,
-                  color: COLORS.textSecondary,
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
-                {isAdmin
-                  ? `Add a session and attach a video for ${skill.title}. Paste a YouTube URL to add a video lesson.`
-                  : `Book a session and your coach can tag ${skill.title} in your feedback. In the meantime watch Video Lessons to improve your technique.`}
-              </p>
-            </div>
-            {isAdmin ? (
-              <button
-                type="button"
-                onClick={() => setAddSessionModalOpen(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  width: '100%',
-                  maxWidth: 240,
-                  height: 56,
-                  padding: '0 24px',
-                  backgroundColor: SAGE_PRIMARY,
-                  color: COLORS.white,
-                  border: 'none',
-                  borderRadius: 12,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
-                  cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseDown={(e) => (e.currentTarget.style.transform = 'scale(0.98)')}
-                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>Add a session</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onWatchTutorial?.()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  width: '100%',
-                  maxWidth: 240,
-                  height: 56,
-                  padding: '0 24px',
-                  backgroundColor: SAGE_PRIMARY,
-                  color: COLORS.white,
-                  border: 'none',
-                  borderRadius: 12,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
-                  cursor: onWatchTutorial ? 'pointer' : 'default',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseDown={(e) => onWatchTutorial && (e.currentTarget.style.transform = 'scale(0.98)')}
-                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-                <span>Watch Video Lessons</span>
-              </button>
-            )}
-          </div>
+          )}
         </AnimatedTabPanel>
       )}
 
@@ -1115,15 +1212,20 @@ function ProfileMenuButton() {
 export interface RoadmapSkillsChecklistProps {
   /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
   studentName?: string;
+  /** When set (coach/admin viewing a student), passed to ShotDetailView so "Add video" can save to DB for that student. */
+  studentId?: string;
   /** When provided, called with true/false when shot detail opens/closes so parent can hide navbar. */
   onShotDetailOpenChange?: (open: boolean) => void;
   /** When provided, called when user taps "Watch Tutorial" in shot detail (e.g. switch to library tab). */
   onWatchTutorial?: () => void;
   /** When provided (admin/coach), called when admin submits a YouTube URL in the add-session modal. */
-  onAddSession?: (youtubeUrl: string) => void | Promise<void>;
+  onAddSession?: (
+    youtubeUrl: string,
+    context?: { studentId: string; shotId: string; shotTitle: string }
+  ) => void | Promise<void>;
 }
 
-export function RoadmapSkillsChecklist({ studentName, onShotDetailOpenChange, onWatchTutorial, onAddSession }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, onShotDetailOpenChange, onWatchTutorial, onAddSession }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const filteredSkills = React.useMemo(() => {
@@ -1252,6 +1354,7 @@ export function RoadmapSkillsChecklist({ studentName, onShotDetailOpenChange, on
         <ShotDetailView
           skill={selectedSkill}
           studentName={studentName}
+          studentId={studentId}
           onClose={() => setSelectedSkill(null)}
           onShotDetailOpenChange={onShotDetailOpenChange}
           onWatchTutorial={onWatchTutorial}
@@ -1272,6 +1375,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   onOpenLibrary,
   hideSegmentSwitcher = false,
   studentName,
+  studentId,
   onAddSession,
 }) => {
   const sessions = sessionsProp ?? [];
@@ -1597,7 +1701,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
         )}
 
         {selectedSegment === 'roadmap' && (
-          <RoadmapSkillsChecklist studentName={studentName} onAddSession={onAddSession} />
+          <RoadmapSkillsChecklist studentName={studentName} studentId={studentId} onAddSession={onAddSession} />
         )}
       </div>
     </div>
