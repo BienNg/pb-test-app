@@ -1,5 +1,3 @@
-import type React from 'react';
-
 // [[shot:Serve]] or [[mention:userId|Full Name]]
 export const INLINE_MARKER_REGEX = /\[\[(shot|mention):([^\]]+)\]\]/g;
 

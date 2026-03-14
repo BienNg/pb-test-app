@@ -2221,7 +2221,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           const canSeek = tsSeconds != null && !!session?.videoUrl;
                           const timestampLabel =
                             tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
-                          const isOwnReply = reply.role === 'You';
+                          const _isOwnReply = reply.role === 'You';
                           const isEditing = editingReplyId === reply.id;
                           const isMenuOpen = activeReplyMenuId === reply.id;
                           return (
