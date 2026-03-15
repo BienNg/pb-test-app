@@ -400,7 +400,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     }
   }, [isYoutube]);
 
-  const handleMuteToggle = useCallback(() => {
+  const _handleMuteToggle = useCallback(() => {
     if (isYoutube && playerRef.current) {
       const p = playerRef.current;
       if (typeof p.isMuted !== 'function') return;
