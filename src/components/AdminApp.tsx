@@ -6,7 +6,7 @@ import { Card, StatCard } from './BaseComponents';
 import { IconUsers, IconCircle, IconCalendar, IconCheck, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
-import { MySessionsPage, type TrainingSession } from './MySessionsPage';
+import { GameAnalyticsPage, type TrainingSession } from './GameAnalyticsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
@@ -493,8 +493,8 @@ function AdminStudentsPage({
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: COLORS.backgroundLibrary }}>
-        <MySessionsPage
-          title={`${selectedStudent.name}'s Sessions`}
+        <GameAnalyticsPage
+          title={`${selectedStudent.name}'s Game Analytics`}
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
           selectedSegment={studentSegment}
@@ -550,7 +550,7 @@ function AdminStudentsPage({
           title="Student Sessions"
           students={students}
           onSelectStudent={setSelectedStudent}
-          showMySessionsTab={false}
+          showGameAnalyticsTab={false}
         />
       )}
     </div>

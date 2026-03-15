@@ -5,10 +5,10 @@ import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
-import { MySessionsPage } from './MySessionsPage';
+import { GameAnalyticsPage } from './GameAnalyticsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
-import type { TrainingSession } from './MySessionsPage';
+import type { TrainingSession } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent, fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
 import { insertShotVideo } from '@/lib/shotVideos';
@@ -149,8 +149,8 @@ export const CoachApp: React.FC = () => {
   if (selectedStudent) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
-        <MySessionsPage
-          title={`${selectedStudent.name}'s Sessions`}
+        <GameAnalyticsPage
+          title={`${selectedStudent.name}'s Game Analytics`}
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
           selectedSegment={studentSegment}

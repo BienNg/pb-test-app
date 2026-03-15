@@ -1,4 +1,4 @@
-import type { TrainingSession } from '@/components/MySessionsPage';
+import type { TrainingSession } from '@/components/GameAnalyticsPage';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 function getYoutubeVideoId(url: string): string | null {
@@ -9,7 +9,7 @@ function getYoutubeVideoId(url: string): string | null {
   return null;
 }
 
-/** Map a DB session row to TrainingSession for MySessionsPage. */
+/** Map a DB session row to TrainingSession for GameAnalyticsPage. */
 export function mapDbSessionToTrainingSession(row: {
   id: string;
   date: string;

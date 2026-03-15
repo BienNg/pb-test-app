@@ -14,8 +14,8 @@ import {
   IconUser,
   IconX,
 } from './Icons';
-import type { SessionComment, TrainingSession } from './MySessionsPage';
-import { ROADMAP_SKILLS, TECHNIQUE_ICONS } from './MySessionsPage';
+import type { SessionComment, TrainingSession } from './GameAnalyticsPage';
+import { ROADMAP_SKILLS, TECHNIQUE_ICONS } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
 import { parseCommentTextWithShots, type CommentSegment } from './commentText';
 import {
@@ -52,7 +52,7 @@ declare const require: {
   };
 };
 
-import type { SessionCommentReply } from './MySessionsPage';
+import type { SessionCommentReply } from './GameAnalyticsPage';
 import {
   fetchSessionComments,
   fetchSessionCommentReplies,

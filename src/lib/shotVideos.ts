@@ -38,7 +38,7 @@ export async function fetchShotVideoCountsByShot(
 }
 
 /**
- * Fetch shot videos for a student and shot (for "Your Sessions" tab in ShotDetailView).
+ * Fetch shot videos for a student and shot (for "Your Game Analytics" tab in ShotDetailView).
  */
 export async function fetchShotVideos(
   supabase: SupabaseClient | null,
@@ -83,7 +83,7 @@ export async function insertShotVideo(
   return { id: (data as { id: string }).id };
 }
 
-/** Shape used to open a shot video in TrainingSessionDetail (matches TrainingSession from MySessionsPage). */
+/** Shape used to open a shot video in TrainingSessionDetail (matches TrainingSession from GameAnalyticsPage). */
 export interface ShotVideoAsSession {
   id: string;
   dateKey: string;

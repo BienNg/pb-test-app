@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
 import { IconUser, IconChevronRight, IconSearch } from './Icons';
 import { LessonCard } from './Cards';
-import type { TrainingSession } from './MySessionsPage';
+import type { TrainingSession } from './GameAnalyticsPage';
 
 export type StudentLevel = 'newbie' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
@@ -269,7 +269,7 @@ interface CoachStudentsPageProps {
   students?: StudentInfo[];
   onSelectStudent: (student: StudentInfo) => void;
   onOpenSession?: (sessionId: string) => void;
-  showMySessionsTab?: boolean;
+  showGameAnalyticsTab?: boolean;
   sessions?: TrainingSession[];
 }
 
@@ -280,7 +280,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   students = MOCK_STUDENTS,
   onSelectStudent,
   onOpenSession,
-  showMySessionsTab = true,
+  showGameAnalyticsTab = true,
   sessions = [],
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
@@ -291,7 +291,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isMobile, setIsMobile] = useState(false);
-  const showStudentsOnly = !showMySessionsTab;
+  const showStudentsOnly = !showGameAnalyticsTab;
 
   React.useEffect(() => {
     const checkMobile = () => {
@@ -456,7 +456,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                 }
               }}
             >
-              My Sessions
+              Game Analytics
             </button>
           </div>
           )}

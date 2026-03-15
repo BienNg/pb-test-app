@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
-import { MySessionsPage, RoadmapSkillsChecklist, type TrainingSession } from './MySessionsPage';
+import { GameAnalyticsPage, RoadmapSkillsChecklist, type TrainingSession } from './GameAnalyticsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
@@ -119,7 +119,7 @@ export function StudentShell() {
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
       id: 'sessions',
-      label: 'My Sessions',
+      label: 'Game Analytics',
       icon: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
@@ -186,7 +186,7 @@ export function StudentShell() {
           onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
         />
       </div>
-      {/* My Sessions tab content */}
+      {/* Game Analytics tab content */}
       <div
         style={{
           display: showSessions && !showSessionOverlay ? 'block' : 'none',
@@ -195,7 +195,7 @@ export function StudentShell() {
         }}
         aria-hidden={!showSessions}
       >
-        <MySessionsPage
+        <GameAnalyticsPage
           hideSegmentSwitcher
           onOpenSession={(sessionId) => {
             setOverrideSession(null);

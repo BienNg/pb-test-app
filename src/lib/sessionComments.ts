@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SessionComment, SessionCommentReply } from '@/components/MySessionsPage';
+import type { SessionComment, SessionCommentReply } from '@/components/GameAnalyticsPage';
 import { MOCK_COACHES } from '@/data/mockCoaches';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

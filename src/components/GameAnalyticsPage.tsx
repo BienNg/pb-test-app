@@ -23,8 +23,8 @@ import { useInView } from '@/hooks/useInView';
 
 const SAGE_PRIMARY = '#8FB9A8';
 
-export interface MySessionsPageProps {
-  /** Override page title (e.g. "Alex's Sessions" when coach views a student) */
+export interface GameAnalyticsPageProps {
+  /** Override page title (e.g. "Alex's Game Analytics" when coach views a student) */
   title?: string;
   /** When set, show a back button (e.g. in coach view) */
   onBack?: () => void;
@@ -38,7 +38,7 @@ export interface MySessionsPageProps {
   sessions: TrainingSession[];
   /** Optional callback when user taps "Watch Video Lessons" in the empty state (e.g. switch to library tab). */
   onOpenLibrary?: () => void;
-  /** When true, hide the "Your Sessions | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
+  /** When true, hide the "Your Game Analytics | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
   hideSegmentSwitcher?: boolean;
   /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
   studentName?: string;
@@ -49,7 +49,7 @@ export interface MySessionsPageProps {
     youtubeUrl: string,
     context?: { studentId: string; shotId: string; shotTitle: string }
   ) => void | Promise<void>;
-  /** When provided, called when user taps a shot video in the roadmap "Your Sessions" tab; opens that video in TrainingSessionDetail. */
+  /** When provided, called when user taps a shot video in the roadmap "Your Game Analytics" tab; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
   /** When set, open the shot detail for the skill with this title (e.g. when returning from session detail breadcrumb). */
   openShotTitle?: string | null;
@@ -639,7 +639,7 @@ function ShotDetailView({
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          Your Sessions
+          Your Game Analytics
         </button>
         <button
           type="button"
@@ -667,7 +667,7 @@ function ShotDetailView({
 
       {activeTab === 'sessions' && (
         <AnimatedTabPanel>
-          {/* Your Sessions — shot videos for this student + shot, or empty state */}
+          {/* Your Game Analytics — shot videos for this student + shot, or empty state */}
           {loadingShotVideos ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
               Loading…
@@ -1536,7 +1536,7 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
   );
 }
 
-export const MySessionsPage: React.FC<MySessionsPageProps> = ({
+export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   title,
   onBack,
   selectedSegment: selectedSegmentProp,
@@ -1669,7 +1669,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
                 margin: 0,
               }}
             >
-              {title ?? 'My Sessions'}
+              {title ?? 'Game Analytics'}
             </h1>
             {!hideSegmentSwitcher && <ProfileMenuButton />}
           </div>
@@ -1700,7 +1700,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
                   transition: 'all 0.2s',
                 }}
               >
-                Your Sessions
+                Your Game Analytics
               </button>
               <button
                 type="button"
