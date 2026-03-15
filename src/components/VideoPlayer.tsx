@@ -25,6 +25,8 @@ interface YTPlayer {
   mute: () => void;
   unMute: () => void;
   isMuted: () => boolean;
+  getVolume?: () => number;
+  setVolume?: (volume: number) => void;
 }
 
 /** Load YouTube IFrame API. Resolves when ready. */
@@ -166,6 +168,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1); // 0–1, used when unmuted
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -302,6 +306,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             const dur = p.getDuration();
             if (dur && isFinite(dur)) setVideoDuration(dur);
             setIsMuted(p.isMuted());
+            if (typeof p.getVolume === 'function') {
+              const v = p.getVolume();
+              if (Number.isFinite(v)) setVolume(v / 100);
+            }
             pollId = setInterval(() => {
               if (!playerRef.current) return;
               try {
@@ -398,6 +406,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       if (typeof p.isMuted !== 'function') return;
       if (p.isMuted()) {
         p.unMute();
+        if (typeof p.setVolume === 'function') p.setVolume(volume * 100);
         setIsMuted(false);
       } else {
         p.mute();
@@ -406,7 +415,43 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       return;
     }
     setIsMuted((m) => !m);
-  }, [isYoutube]);
+  }, [isYoutube, volume]);
+
+  // Apply volume to native video element and YouTube player
+  useEffect(() => {
+    if (isYoutube) {
+      const p = playerRef.current;
+      if (!p) return;
+      if (isMuted) {
+        if (typeof p.mute === 'function') p.mute();
+      } else {
+        if (typeof p.unMute === 'function') p.unMute();
+        if (typeof p.setVolume === 'function') p.setVolume(volume * 100);
+      }
+      return;
+    }
+    const v = videoRef.current;
+    if (!v) return;
+    v.volume = volume;
+    v.muted = isMuted;
+  }, [isYoutube, volume, isMuted]);
+
+  const handleVolumeChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const val = parseFloat(e.target.value);
+      const v = Math.max(0, Math.min(1, Number.isFinite(val) ? val : 0));
+      setVolume(v);
+      if (v > 0) setIsMuted(false);
+      else setIsMuted(true);
+      if (isYoutube && playerRef.current) {
+        const p = playerRef.current;
+        if (typeof p.setVolume === 'function') p.setVolume(v * 100);
+        if (v === 0 && typeof p.mute === 'function') p.mute();
+        else if (v > 0 && typeof p.unMute === 'function') p.unMute();
+      }
+    },
+    [isYoutube]
+  );
 
   const skipBy = useCallback(
     (deltaSeconds: number) => {
@@ -818,6 +863,49 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
                     {formatTimestamp(videoDuration)}
                   </span>
+                  <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    {showVolumeSlider && (
+                      <div style={{ position: 'absolute', bottom: '100%', marginBottom: 6, width: 24, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                          style={{
+                            width: 80,
+                            height: 24,
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center',
+                            accentColor: '#fff',
+                            cursor: 'pointer',
+                          }}
+                          aria-label="Volume"
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowVolumeSlider((s) => !s)}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
+                    >
+                      {isMuted ? <IconVolumeX size={14} /> : <IconVolume2 size={14} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1107,6 +1195,49 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
                     {formatTimestamp(videoDuration)}
                   </span>
+                  <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    {showVolumeSlider && (
+                      <div style={{ position: 'absolute', bottom: '100%', marginBottom: 6, width: 24, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.01}
+                          value={isMuted ? 0 : volume}
+                          onChange={handleVolumeChange}
+                          style={{
+                            width: 80,
+                            height: 24,
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center',
+                            accentColor: '#fff',
+                            cursor: 'pointer',
+                          }}
+                          aria-label="Volume"
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowVolumeSlider((s) => !s)}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
+                    >
+                      {isMuted ? <IconVolumeX size={14} /> : <IconVolume2 size={14} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1304,27 +1435,50 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 );
               })}
             </div>
-            <button
-              type="button"
-              onClick={handleMuteToggle}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                padding: 0,
-                flexShrink: 0,
-              }}
-              aria-label={isMuted ? 'Unmute' : 'Mute'}
-            >
-              {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
-            </button>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              {showVolumeSlider && (
+                <div style={{ position: 'absolute', bottom: '100%', marginBottom: 6, width: 24, height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', left: '50%', transform: 'translateX(-50%)', zIndex: 3 }}>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    style={{
+                      width: 80,
+                      height: 24,
+                      transform: 'rotate(-90deg)',
+                      transformOrigin: 'center',
+                      accentColor: '#FFFFFF',
+                      cursor: 'pointer',
+                    }}
+                    aria-label="Volume"
+                  />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowVolumeSlider((s) => !s)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+                aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
+              >
+                {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
+              </button>
+            </div>
           </div>
           {!isSessionDetail && (
           <div
