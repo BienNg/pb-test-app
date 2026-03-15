@@ -480,6 +480,49 @@ function ShotDetailView({
         flexDirection: 'column',
       }}
     >
+      {/* Back button header — return to roadmap */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: SPACING.sm,
+          padding: '12px 16px',
+          flexShrink: 0,
+          borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
+          backgroundColor: '#f6f8f8',
+        }}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: 40,
+            height: 40,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '50%',
+            border: 'none',
+            background: 'none',
+            color: '#475569',
+            cursor: 'pointer',
+          }}
+          aria-label="Back to Roadmap"
+        >
+          <IconArrowLeft size={22} />
+        </button>
+        <span
+          style={{
+            fontSize: 17,
+            fontWeight: 600,
+            letterSpacing: '-0.02em',
+            color: COLORS.textPrimary,
+          }}
+        >
+          {skill.title}
+        </span>
+      </div>
       {/* Tab switcher */}
       <div
         style={{
