@@ -1603,22 +1603,46 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               Your Roadmap
             </button>
             <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-            <span
-              aria-current="page"
+            <button
+              type="button"
+              onClick={onBack}
               style={{
                 fontSize: 14,
                 fontWeight: 600,
                 lineHeight: 1.3,
                 letterSpacing: '-0.015em',
-                color: COLORS.textPrimary,
+                color: COLORS.textSecondary,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
               }}
             >
               {breadcrumbFromRoadmap.shotTitle}
-              {session?.dateLabel ? ` · ${session.dateLabel}` : ''}
-            </span>
+            </button>
+            {session?.dateLabel ? (
+              <>
+                <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
+                <span
+                  aria-current="page"
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    lineHeight: 1.3,
+                    letterSpacing: '-0.015em',
+                    color: COLORS.textPrimary,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {session.dateLabel}
+                </span>
+              </>
+            ) : null}
           </nav>
         ) : (
           <h1

@@ -18,6 +18,7 @@ type CoachTabId = 'schedule' | 'students' | 'library';
 export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
+  const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -121,8 +122,12 @@ export const CoachApp: React.FC = () => {
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => {
+            const wasFromRoadmap = breadcrumbFromRoadmap != null;
             setActiveTrainingSessionId(null);
             setOverrideSession(null);
+            if (wasFromRoadmap) {
+              setStudentSegment('roadmap');
+            }
           }}
           sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
           onSessionUpdated={reloadSelectedStudentSessions}
@@ -141,6 +146,8 @@ export const CoachApp: React.FC = () => {
           title={`${selectedStudent.name}'s Sessions`}
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
+          selectedSegment={studentSegment}
+          onSelectedSegmentChange={setStudentSegment}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId: string) => {
             setOverrideSession(null);

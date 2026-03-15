@@ -930,7 +930,10 @@ function ShotDetailView({
           {/* Technique Points */}
           <div
             style={{
-              padding: `clamp(${SPACING.xxl}px, 5vw, 32px) clamp(${SPACING.lg}px, 4vw, 24px) clamp(80px, 15vh, 120px)`,
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              padding: `clamp(${SPACING.md}px, 5vw, ${SPACING.xxl}px) clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px) clamp(80px, 15vh, 120px)`,
             }}
           >
             <h2
@@ -947,9 +950,12 @@ function ShotDetailView({
             </h2>
             <div
               style={{
-                display: 'flex',
-                flexDirection: 'column',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))',
                 gap: 'clamp(12px, 2.5vw, 16px)',
+                width: '100%',
+                minWidth: 0,
+                maxWidth: '100%',
               }}
             >
               {skill.items.map((item, idx) => {
@@ -972,8 +978,8 @@ function ShotDetailView({
                   >
                     <div
                       style={{
-                        width: 'clamp(40px, 10vw, 48px)',
-                        height: 'clamp(40px, 10vw, 48px)',
+                        width: 'clamp(36px, 10vw, 48px)',
+                        height: 'clamp(36px, 10vw, 48px)',
                         flexShrink: 0,
                         borderRadius: 12,
                         backgroundColor: `${SAGE_PRIMARY}1A`,

@@ -226,8 +226,12 @@ export function StudentShell() {
           <TrainingSessionDetail
             sessionId={activeTrainingSessionId}
             onBack={() => {
+              const wasFromRoadmap = overrideSession != null;
               setActiveTrainingSessionId(null);
               setOverrideSession(null);
+              if (wasFromRoadmap) {
+                setActiveTab('roadmap');
+              }
             }}
             sessions={overrideSession ? [overrideSession] : sessionsForStudent}
             onSessionUpdated={reloadSessions}

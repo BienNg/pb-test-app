@@ -340,6 +340,7 @@ function AdminStudentsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
+  const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -463,8 +464,12 @@ function AdminStudentsPage({
         <TrainingSessionDetail
           sessionId={activeTrainingSessionId}
           onBack={() => {
+            const wasFromRoadmap = breadcrumbFromRoadmap != null;
             setActiveTrainingSessionId(null);
             setOverrideSession(null);
+            if (wasFromRoadmap) {
+              setStudentSegment('roadmap');
+            }
           }}
           sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
           onSaveVideoUrl={overrideSession ? undefined : handleSaveVideoUrl}
@@ -485,6 +490,8 @@ function AdminStudentsPage({
           title={`${selectedStudent.name}'s Sessions`}
           studentName={selectedStudent.name}
           studentId={selectedStudent.id}
+          selectedSegment={studentSegment}
+          onSelectedSegmentChange={setStudentSegment}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => {
             setOverrideSession(null);
