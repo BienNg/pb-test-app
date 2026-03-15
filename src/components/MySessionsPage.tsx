@@ -466,11 +466,16 @@ function ShotDetailView({
     };
   }, [onShotDetailOpenChange]);
 
+  const BOTTOM_NAV_HEIGHT = 80;
+
   return (
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: BOTTOM_NAV_HEIGHT,
         zIndex: 200,
         backgroundColor: '#f6f8f8',
         overflow: 'auto',
@@ -478,7 +483,7 @@ function ShotDetailView({
         flexDirection: 'column',
       }}
     >
-      {/* Header: back, title — no share, no bottom nav */}
+      {/* Header: back, title — bottom nav remains visible */}
       <div
         style={{
           display: 'flex',
@@ -604,7 +609,7 @@ function ShotDetailView({
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          Your Sessions
+          Your {skill.title} Sessions
         </button>
         <button
           type="button"
@@ -636,7 +641,15 @@ function ShotDetailView({
               Loading…
             </div>
           ) : shotVideos.length > 0 ? (
-            <div style={{ padding: '16px 16px 80px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div
+              style={{
+                padding: '16px 16px 80px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                gap: 16,
+                alignContent: 'start',
+              }}
+            >
               {shotVideos.map((sv) => {
                 const dateLabel =
                   sv.created_at &&
@@ -667,33 +680,34 @@ function ShotDetailView({
                 );
               })}
               {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => setAddSessionModalOpen(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    width: '100%',
-                    maxWidth: 240,
-                    height: 56,
-                    padding: '0 24px',
-                    backgroundColor: 'transparent',
-                    color: SAGE_PRIMARY,
-                    border: `2px solid ${SAGE_PRIMARY}`,
-                    borderRadius: 12,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    alignSelf: 'center',
-                  }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <span>Add another video</span>
-                </button>
+                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setAddSessionModalOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                      width: '100%',
+                      maxWidth: 240,
+                      height: 56,
+                      padding: '0 24px',
+                      backgroundColor: 'transparent',
+                      color: SAGE_PRIMARY,
+                      border: `2px solid ${SAGE_PRIMARY}`,
+                      borderRadius: 12,
+                      fontSize: 16,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    <span>Add another video</span>
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -914,20 +928,30 @@ function ShotDetailView({
           </div>
 
           {/* Technique Points */}
-          <div style={{ padding: '24px 16px 80px' }}>
+          <div
+            style={{
+              padding: `clamp(${SPACING.xxl}px, 5vw, 32px) clamp(${SPACING.lg}px, 4vw, 24px) clamp(80px, 15vh, 120px)`,
+            }}
+          >
             <h2
               style={{
-                fontSize: 22,
+                fontSize: 'clamp(18px, 4.5vw, 22px)',
                 fontWeight: 700,
                 lineHeight: 1.3,
                 letterSpacing: '-0.015em',
                 color: COLORS.textPrimary,
-                marginBottom: 16,
+                marginBottom: 'clamp(12px, 2.5vw, 16px)',
               }}
             >
               Technique Points
             </h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 'clamp(12px, 2.5vw, 16px)',
+              }}
+            >
               {skill.items.map((item, idx) => {
                 const mastered = isMastered(item.label);
                 return (
@@ -936,19 +960,20 @@ function ShotDetailView({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 16,
-                      padding: 16,
+                      gap: 'clamp(12px, 2.5vw, 16px)',
+                      padding: 'clamp(12px, 2.5vw, 16px)',
                       borderRadius: 12,
                       backgroundColor: COLORS.white,
                       border: `1px solid ${SAGE_PRIMARY}0D`,
                       opacity: 1,
                       animation: `shotDetailCardFadeIn ${TAB_PANEL_ANIMATION_MS}ms ease-out ${idx * 50}ms both`,
+                      minWidth: 0,
                     }}
                   >
                     <div
                       style={{
-                        width: 48,
-                        height: 48,
+                        width: 'clamp(40px, 10vw, 48px)',
+                        height: 'clamp(40px, 10vw, 48px)',
                         flexShrink: 0,
                         borderRadius: 12,
                         backgroundColor: `${SAGE_PRIMARY}1A`,
@@ -963,20 +988,22 @@ function ShotDetailView({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h3
                         style={{
-                          fontSize: 16,
+                          fontSize: 'clamp(14px, 3.5vw, 16px)',
                           fontWeight: 700,
                           color: COLORS.textPrimary,
                           margin: 0,
+                          wordBreak: 'break-word',
                         }}
                       >
                         {item.label}
                       </h3>
                       <p
                         style={{
-                          fontSize: 14,
+                          fontSize: 'clamp(13px, 3vw, 14px)',
                           lineHeight: 1.5,
                           color: COLORS.textSecondary,
                           margin: '4px 0 0',
+                          wordBreak: 'break-word',
                         }}
                       >
                         {mastered ? 'Completed' : 'Focus on this in your next practice.'}
@@ -987,8 +1014,8 @@ function ShotDetailView({
                       onClick={() => toggleMastered(item.label)}
                       aria-label={mastered ? `Mark "${item.label}" as not mastered` : `Mark "${item.label}" as mastered`}
                       style={{
-                        width: 24,
-                        height: 24,
+                        width: 'clamp(22px, 5vw, 24px)',
+                        height: 'clamp(22px, 5vw, 24px)',
                         flexShrink: 0,
                         borderRadius: '50%',
                         backgroundColor: mastered ? SAGE_PRIMARY : 'transparent',

@@ -113,7 +113,7 @@ export function StudentShell() {
   const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
   const showSessionOverlay = activeTrainingSessionId != null;
-  const hideBottomNav = showSessionOverlay || viewingLessonDetail || shotDetailOpen;
+  const hideBottomNav = showSessionOverlay || viewingLessonDetail;
 
   const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
