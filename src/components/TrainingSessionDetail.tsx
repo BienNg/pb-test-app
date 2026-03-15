@@ -3068,9 +3068,27 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   >
                     {shotSkill.items.map((item, idx) => {
                       const isChecked = isAdmin && (techniqueChecked[item.label] ?? item.completed);
+                      const toggleChecked = () =>
+                        setTechniqueChecked((prev) => ({
+                          ...prev,
+                          [item.label]: !(prev[item.label] ?? item.completed),
+                        }));
                       return (
                       <div
                         key={item.label}
+                        role={isAdmin ? 'button' : undefined}
+                        tabIndex={isAdmin ? 0 : undefined}
+                        onClick={isAdmin ? toggleChecked : undefined}
+                        onKeyDown={
+                          isAdmin
+                            ? (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  toggleChecked();
+                                }
+                              }
+                            : undefined
+                        }
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -3080,6 +3098,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           backgroundColor: COLORS.cardBg,
                           border: `1px solid ${REFERENCE_PRIMARY}1A`,
                           minWidth: 0,
+                          ...(isAdmin && { cursor: 'pointer' }),
                         }}
                       >
                         <div
@@ -3111,12 +3130,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         {isAdmin && (
                           <button
                             type="button"
-                            onClick={() =>
-                              setTechniqueChecked((prev) => ({
-                                ...prev,
-                                [item.label]: !(prev[item.label] ?? item.completed),
-                              }))
-                            }
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleChecked();
+                            }}
                             aria-label={isChecked ? `Mark "${item.label}" as not done` : `Mark "${item.label}" as done`}
                             style={{
                               width: 26,

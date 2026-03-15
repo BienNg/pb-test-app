@@ -13,6 +13,7 @@ import {
   IconTarget,
   IconHand,
   IconArrowDownUp,
+  IconArrowLeft,
   IconZap,
   IconSearch,
   IconPlay,
