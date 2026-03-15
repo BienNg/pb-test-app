@@ -1009,14 +1009,45 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const handleAddReply = useCallback(
     async (parentIdRaw: string | number) => {
       if (!replyDraft.trim()) return;
-      if (!isDbSession || !user?.id || !isAdmin) return;
+      if (!user?.id || !isAdmin) return;
       const parentId = String(parentIdRaw);
+      const parentComment = comments.find((c) => String(c.id) === parentId);
+      const timestampSeconds = replyTimestampSeconds ?? parentComment?.timestampSeconds ?? null;
+      const markerState = videoPlayerRef.current?.getFrameMarkerState();
+
+      // Shot sessions: add reply in-memory only (no DB persistence)
+      if (isShotVideo && !isDbSession) {
+        const localReply: SessionCommentReply = {
+          id: `local-reply-${Date.now()}`,
+          parentCommentId: parentId,
+          author: 'You',
+          role: 'You',
+          createdAt: 'Just now',
+          text: replyDraft.trim(),
+          timestampSeconds: timestampSeconds ?? undefined,
+          ...(markerState != null && {
+            markerXPercent: markerState.x,
+            markerYPercent: markerState.y,
+            markerRadiusX: markerState.radiusX,
+            markerRadiusY: markerState.radiusY,
+          }),
+        };
+        setRepliesByCommentId((prev) => {
+          const existing = prev[parentId] ?? [];
+          return { ...prev, [parentId]: [...existing, localReply] };
+        });
+        setReplyDraft('');
+        setReplyingToCommentId(null);
+        setReplyTimestampSeconds(null);
+        setFrameReplyPauseRequested(false);
+        setActiveFrameReplyId(null);
+        return;
+      }
+
+      if (!isDbSession) return;
 
       setPostingReply(true);
       try {
-        const parentComment = comments.find((c) => String(c.id) === parentId);
-        const timestampSeconds = replyTimestampSeconds ?? parentComment?.timestampSeconds ?? null;
-        const markerState = videoPlayerRef.current?.getFrameMarkerState();
         const marker: ReplyFrameMarker | undefined =
           markerState != null
             ? {
@@ -1056,7 +1087,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [supabase, comments, isAdmin, isDbSession, replyDraft, replyTimestampSeconds, sessionId, user?.id]
+    [supabase, comments, isAdmin, isDbSession, isShotVideo, replyDraft, replyTimestampSeconds, sessionId, user?.id]
   );
 
   const handleSaveReplyEdit = useCallback(
@@ -2273,7 +2304,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 overflow: 'hidden',
                               }}
                             >
-                              {isDbSession && user?.id && (
+                              {(isDbSession || isShotVideo) && user?.id && (
                                 <button
                                   type="button"
                                   onClick={() => {
