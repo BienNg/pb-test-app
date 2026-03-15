@@ -104,7 +104,7 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
-  title,
+  title: _title,
   category,
   thumbnail,
   videoUrl,

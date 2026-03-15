@@ -34,6 +34,7 @@ import {
   getReplyById,
   toFramePrecision,
   formatTimestamp,
+  FRAME_SEEK_EPSILON_SECONDS,
 } from './TrainingSessionDetail/utils';
 import { ExampleGifButton } from './TrainingSessionDetail/ExampleGifButton';
 import { FrameDetailCard } from './TrainingSessionDetail/FrameDetailCard';
@@ -291,7 +292,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     activeFrameReplyIdSetAtRef.current = Date.now();
     const reply = getReplyById(repliesByCommentId, activeFrameReplyId);
     if (reply?.timestampSeconds != null) {
-      const alreadyAtFrame = Math.abs(currentVideoTime - reply.timestampSeconds) <= 1;
+      const alreadyAtFrame = Math.abs(currentVideoTime - reply.timestampSeconds) <= FRAME_SEEK_EPSILON_SECONDS;
       if (!alreadyAtFrame) {
         setPendingSeekSeconds(reply.timestampSeconds);
         setFrameReplyPauseRequested(true);
@@ -332,7 +333,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     } else {
       setSelectedTechniqueSubId(null);
     }
-  }, [isShotVideo, session?.id, session?.title, isAdminView, techniqueVisibilityLoaded, techniqueVisibleSubIds]);
+  }, [isShotVideo, session, isAdminView, techniqueVisibilityLoaded, techniqueVisibleSubIds]);
 
   // Load technique checks from DB when viewing a shot video
   useEffect(() => {
@@ -929,11 +930,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setActiveCommentId(activeComment?.id ?? null);
   }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
 
-  /** Skip seeking if we're already within this many seconds of the target (avoids re-seeking when already on frame). */
-  const SEEK_SKIP_THRESHOLD_SECONDS = 1;
+  /** Skip seeking only when already at the same frame (exact timestamp), not when within a rounded second. */
   const seekToTimestampIfNeeded = useCallback(
     (seconds: number) => {
-      if (Math.abs(currentVideoTime - seconds) <= SEEK_SKIP_THRESHOLD_SECONDS) return;
+      if (Math.abs(currentVideoTime - seconds) <= FRAME_SEEK_EPSILON_SECONDS) return;
       setPendingSeekSeconds(seconds);
     },
     [currentVideoTime]
@@ -2314,7 +2314,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                       seekToTimestampIfNeeded(comment.timestampSeconds);
                                       setFrameReplyPauseRequested(true);
                                       setReplyTimestampSeconds(comment.timestampSeconds);
-                                      if (Math.abs(currentVideoTime - comment.timestampSeconds) > 1) {
+                                      if (Math.abs(currentVideoTime - comment.timestampSeconds) > FRAME_SEEK_EPSILON_SECONDS) {
                                         videoPlayerRef.current?.pause();
                                       }
                                     } else {

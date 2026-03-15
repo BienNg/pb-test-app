@@ -26,6 +26,9 @@ export function toFramePrecision(seconds: number): number {
   return Math.round(seconds * 10000) / 10000;
 }
 
+/** Epsilon (seconds) to treat two timestamps as the same frame. Used so timestamp clicks seek to exact frame, not rounded second. */
+export const FRAME_SEEK_EPSILON_SECONDS = 0.05;
+
 /** Format seconds as M:SS for display. */
 export function formatTimestamp(seconds: number): string {
   const m = Math.floor(seconds / 60);
