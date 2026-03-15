@@ -5,6 +5,8 @@ import {
   IconChevronRight,
   IconCheck,
   IconClock,
+  IconEye,
+  IconEyeOff,
   IconFilter,
   IconMoreVertical,
   IconPencil,
@@ -74,6 +76,10 @@ import {
   upsertShotTechniqueCheck,
   buildTechniqueKey,
 } from '@/lib/shotTechniqueChecks';
+import {
+  fetchShotTechniqueSubVisibility,
+  upsertShotTechniqueSubVisibility,
+} from '@/lib/shotTechniqueSubVisibility';
 
 /** When set, header shows breadcrumb "StudentName > Your Roadmap > ShotTitle" (e.g. when opened from shot video in roadmap). */
 export interface BreadcrumbFromRoadmap {
@@ -228,6 +234,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [techniqueChecked, setTechniqueChecked] = useState<Record<string, boolean>>({});
   /** Track whether we've loaded technique checks from DB for the current shot video. */
   const [techniqueChecksLoaded, setTechniqueChecksLoaded] = useState(false);
+  /** Per shot video: which sub-category IDs are visible to the student (from DB). Empty = use default (first only). */
+  const [techniqueVisibleSubIds, setTechniqueVisibleSubIds] = useState<string[]>([]);
+  const [techniqueVisibilityLoaded, setTechniqueVisibilityLoaded] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -305,19 +314,25 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
 
-  // When shot changes (shot video), sync selected technique sub-tab to the first sub if current shot has sub-categories
+  // When shot changes (shot video), sync selected technique sub-tab. Student: first visible sub; admin: first sub.
   useEffect(() => {
     if (!isShotVideo || !session) return;
     const shotSkill = ROADMAP_SKILLS.find((s) => s.title === session.title);
     const subs = shotSkill?.subCategories;
     if (subs?.length) {
-      setSelectedTechniqueSubId((prev) =>
-        prev && subs.some((s) => s.id === prev) ? prev : subs[0].id
-      );
+      const visibleIds =
+        techniqueVisibilityLoaded && techniqueVisibleSubIds.length > 0
+          ? techniqueVisibleSubIds.filter((id) => subs.some((s) => s.id === id))
+          : [subs[0].id];
+      const firstVisible = visibleIds[0] ?? subs[0].id;
+      setSelectedTechniqueSubId((prev) => {
+        if (isAdminView) return prev && subs.some((s) => s.id === prev) ? prev : subs[0].id;
+        return prev && visibleIds.includes(prev) ? prev : firstVisible;
+      });
     } else {
       setSelectedTechniqueSubId(null);
     }
-  }, [isShotVideo, session?.id, session?.title]);
+  }, [isShotVideo, session?.id, session?.title, isAdminView, techniqueVisibilityLoaded, techniqueVisibleSubIds]);
 
   // Load technique checks from DB when viewing a shot video
   useEffect(() => {
@@ -333,6 +348,27 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!cancelled) {
         setTechniqueChecked(checks);
         setTechniqueChecksLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isShotVideo, sessionId, supabase]);
+
+  // Load which sub-categories are visible to student (for shot technique tab)
+  useEffect(() => {
+    if (!isShotVideo || !sessionId) {
+      setTechniqueVisibleSubIds([]);
+      setTechniqueVisibilityLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    setTechniqueVisibilityLoaded(false);
+    (async () => {
+      const ids = await fetchShotTechniqueSubVisibility(supabase, sessionId);
+      if (!cancelled) {
+        setTechniqueVisibleSubIds(ids);
+        setTechniqueVisibilityLoaded(true);
       }
     })();
     return () => {
@@ -3083,13 +3119,40 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               }
               const subs = shotSkill.subCategories;
               const hasSubs = subs && subs.length > 0;
-              const effectiveSubId = hasSubs && selectedTechniqueSubId && subs.some((s) => s.id === selectedTechniqueSubId)
-                ? selectedTechniqueSubId
-                : (subs?.[0]?.id ?? null);
-              const techniqueItems = hasSubs && effectiveSubId
-                ? (subs!.find((s) => s.id === effectiveSubId)?.items ?? [])
-                : shotSkill.items;
+              // Student: only sub-categories marked visible (default: first only). Admin: all subs.
+              const visibleSubIdsForStudent =
+                hasSubs && techniqueVisibilityLoaded && techniqueVisibleSubIds.length > 0
+                  ? techniqueVisibleSubIds.filter((id) => subs!.some((s) => s.id === id))
+                  : hasSubs
+                    ? [subs![0].id]
+                    : [];
+              // Student sees only sub-categories marked visible (default: first). Admin sees all and can toggle.
+              const visibleSubs = hasSubs
+                ? (isAdminView ? subs! : subs!.filter((s) => visibleSubIdsForStudent.includes(s.id)))
+                : [];
+              const effectiveVisibleSubIds = visibleSubIdsForStudent.filter((id) => subs!.some((s) => s.id === id));
+              const fallbackFirst = effectiveVisibleSubIds[0] ?? subs?.[0]?.id ?? null;
+              const effectiveSubId =
+                hasSubs && selectedTechniqueSubId && visibleSubs.some((s) => s.id === selectedTechniqueSubId)
+                  ? selectedTechniqueSubId
+                  : fallbackFirst;
+              const techniqueItems =
+                hasSubs && effectiveSubId
+                  ? (subs!.find((s) => s.id === effectiveSubId)?.items ?? [])
+                  : shotSkill.items;
               const getCheckedKey = (label: string) => buildTechniqueKey(effectiveSubId, label);
+
+              const handleVisibilityToggle = (subId: string, currentlyVisible: boolean) => {
+                if (currentlyVisible && effectiveVisibleSubIds.length <= 1) return; // at least one must stay visible
+                const next = currentlyVisible
+                  ? effectiveVisibleSubIds.filter((id) => id !== subId)
+                  : [...effectiveVisibleSubIds, subId];
+                setTechniqueVisibleSubIds(next);
+                if (sessionId) {
+                  void upsertShotTechniqueSubVisibility(supabase, sessionId, next);
+                }
+              };
+
               return (
                 <div
                   style={{
@@ -3101,154 +3164,260 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     paddingBottom: SPACING.xxl + SPACING.lg,
                   }}
                 >
-                  {!techniqueChecksLoaded && (
-                    <div style={{ padding: SPACING.md, color: COLORS.textSecondary, fontSize: 13 }}>
+                  {(!techniqueChecksLoaded || (hasSubs && !techniqueVisibilityLoaded)) && (
+                    <div
+                      style={{
+                        padding: SPACING.lg,
+                        color: COLORS.textSecondary,
+                        fontSize: 13,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: SPACING.sm,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 20,
+                          height: 20,
+                          border: '2px solid currentColor',
+                          borderTopColor: 'transparent',
+                          borderRadius: '50%',
+                          animation: 'spin 0.8s linear infinite',
+                        }}
+                      />
                       Loading…
                     </div>
                   )}
-                  {hasSubs && (
+                  {hasSubs && (techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
+                    <div style={{ marginBottom: SPACING.sm }}>
+                      {isAdminView && (
+                        <p
+                          style={{
+                            margin: 0,
+                            marginBottom: 8,
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            color: COLORS.textMuted,
+                          }}
+                        >
+                          Categories · tap eye to show/hide for student
+                        </p>
+                      )}
                     <div
                       style={{
                         display: 'flex',
-                        gap: 0,
-                        borderBottom: `1px solid ${REFERENCE_PRIMARY}1A`,
-                        marginBottom: SPACING.md,
+                        flexWrap: 'wrap',
+                        gap: 6,
+                        padding: '4px 0',
                       }}
                     >
-                      {subs!.map((sub) => {
+                      {visibleSubs.map((sub) => {
                         const isSubSelected = effectiveSubId === sub.id;
+                        const isVisibleToStudent = isAdminView
+                          ? effectiveVisibleSubIds.includes(sub.id)
+                          : true;
+                        const canHide =
+                          isAdminView && effectiveVisibleSubIds.length > 1 && effectiveVisibleSubIds.includes(sub.id);
                         return (
-                          <button
+                          <div
                             key={sub.id}
-                            type="button"
-                            onClick={() => setSelectedTechniqueSubId(sub.id)}
                             style={{
-                              padding: '8px 12px',
-                              border: 'none',
-                              borderBottom: `3px solid ${isSubSelected ? REFERENCE_PRIMARY : 'transparent'}`,
-                              marginBottom: -1,
-                              background: 'none',
-                              fontSize: 13,
-                              fontWeight: isSubSelected ? 600 : 500,
-                              color: isSubSelected ? REFERENCE_PRIMARY : COLORS.textSecondary,
-                              cursor: 'pointer',
-                              borderRadius: 0,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              flexWrap: 'nowrap',
                             }}
                           >
-                            {sub.label}
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedTechniqueSubId(sub.id)}
+                              style={{
+                                padding: '10px 16px',
+                                border: 'none',
+                                borderRadius: 12,
+                                background: isSubSelected
+                                  ? `linear-gradient(135deg, ${REFERENCE_PRIMARY} 0%, #7ba892 100%)`
+                                  : 'rgba(143, 185, 168, 0.12)',
+                                fontSize: 13,
+                                fontWeight: isSubSelected ? 700 : 600,
+                                color: isSubSelected ? '#fff' : COLORS.textSecondary,
+                                cursor: 'pointer',
+                                boxShadow: isSubSelected
+                                  ? '0 2px 8px rgba(143, 185, 168, 0.35)'
+                                  : 'none',
+                                transition: 'background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
+                              }}
+                            >
+                              {sub.label}
+                            </button>
+                            {isAdminView && (
+                              <button
+                                type="button"
+                                onClick={() => handleVisibilityToggle(sub.id, isVisibleToStudent)}
+                                disabled={isVisibleToStudent && !canHide}
+                                title={
+                                  isVisibleToStudent
+                                    ? canHide
+                                      ? 'Hide this category from student'
+                                      : 'At least one category must be visible'
+                                    : 'Show this category to student'
+                                }
+                                aria-label={
+                                  isVisibleToStudent
+                                    ? 'Hide from student'
+                                    : 'Show to student'
+                                }
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  flexShrink: 0,
+                                  borderRadius: 10,
+                                  border: 'none',
+                                  background: isVisibleToStudent
+                                    ? 'rgba(143, 185, 168, 0.2)'
+                                    : 'rgba(148, 163, 184, 0.2)',
+                                  color: isVisibleToStudent ? REFERENCE_PRIMARY : COLORS.textMuted,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: canHide || !isVisibleToStudent ? 'pointer' : 'not-allowed',
+                                  opacity: isVisibleToStudent && !canHide ? 0.6 : 1,
+                                }}
+                              >
+                                {isVisibleToStudent ? (
+                                  <IconEye size={18} />
+                                ) : (
+                                  <IconEyeOff size={18} />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    </div>
+                  )}
+                  {(techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: SPACING.sm,
+                      }}
+                    >
+                      {techniqueItems.map((item, idx) => {
+                        const key = getCheckedKey(item.label);
+                        const isChecked = isAdminView && (techniqueChecked[key] ?? item.completed);
+                        const toggleChecked = () => {
+                          const nextChecked = !(techniqueChecked[key] ?? item.completed);
+                          setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
+                          if (isShotVideo && sessionId) {
+                            void upsertShotTechniqueCheck(supabase, {
+                              shotVideoId: sessionId,
+                              subCategoryId: effectiveSubId ?? null,
+                              itemLabel: item.label,
+                              checked: nextChecked,
+                            });
+                          }
+                        };
+                        return (
+                          <div
+                            key={item.label}
+                            role={isAdminView ? 'button' : undefined}
+                            tabIndex={isAdminView ? 0 : undefined}
+                            onClick={isAdminView ? toggleChecked : undefined}
+                            onKeyDown={
+                              isAdminView
+                                ? (e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                      e.preventDefault();
+                                      toggleChecked();
+                                    }
+                                  }
+                                : undefined
+                            }
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: SPACING.md,
+                              padding: SPACING.lg,
+                              borderRadius: 16,
+                              backgroundColor: COLORS.cardBg,
+                              border: `1px solid rgba(143, 185, 168, 0.2)`,
+                              minWidth: 0,
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                              ...(isAdminView && { cursor: 'pointer' }),
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 44,
+                                height: 44,
+                                flexShrink: 0,
+                                borderRadius: 14,
+                                background: `linear-gradient(145deg, rgba(143, 185, 168, 0.2) 0%, rgba(143, 185, 168, 0.08) 100%)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: REFERENCE_PRIMARY,
+                                fontSize: 20,
+                              }}
+                            >
+                              {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                            </div>
+                            <span
+                              style={{
+                                flex: 1,
+                                fontSize: 14,
+                                fontWeight: 600,
+                                color: COLORS.textPrimary,
+                                lineHeight: 1.4,
+                                wordBreak: 'break-word',
+                              }}
+                            >
+                              {item.label}
+                            </span>
+                            {isAdminView && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleChecked();
+                                }}
+                                aria-label={
+                                  isChecked
+                                    ? `Mark "${item.label}" as not done`
+                                    : `Mark "${item.label}" as done`
+                                }
+                                style={{
+                                  width: 28,
+                                  height: 28,
+                                  flexShrink: 0,
+                                  borderRadius: '50%',
+                                  border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
+                                  backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  cursor: 'pointer',
+                                  padding: 0,
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                                  transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                                }}
+                              >
+                                {isChecked && (
+                                  <IconCheck size={16} style={{ color: '#fff' }} />
+                                )}
+                              </button>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
                   )}
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: SPACING.sm,
-                    }}
-                  >
-                    {techniqueItems.map((item, idx) => {
-                      const key = getCheckedKey(item.label);
-                      const isChecked = isAdmin && (techniqueChecked[key] ?? item.completed);
-                      const toggleChecked = () => {
-                        const nextChecked = !(techniqueChecked[key] ?? item.completed);
-                        setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
-                        if (isShotVideo && sessionId) {
-                          void upsertShotTechniqueCheck(supabase, {
-                            shotVideoId: sessionId,
-                            subCategoryId: effectiveSubId ?? null,
-                            itemLabel: item.label,
-                            checked: nextChecked,
-                          });
-                        }
-                      };
-                      return (
-                      <div
-                        key={item.label}
-                        role={isAdmin ? 'button' : undefined}
-                        tabIndex={isAdmin ? 0 : undefined}
-                        onClick={isAdmin ? toggleChecked : undefined}
-                        onKeyDown={
-                          isAdmin
-                            ? (e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  toggleChecked();
-                                }
-                              }
-                            : undefined
-                        }
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: SPACING.md,
-                          padding: SPACING.md,
-                          borderRadius: 12,
-                          backgroundColor: COLORS.cardBg,
-                          border: `1px solid ${REFERENCE_PRIMARY}1A`,
-                          minWidth: 0,
-                          ...(isAdmin && { cursor: 'pointer' }),
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 40,
-                            height: 40,
-                            flexShrink: 0,
-                            borderRadius: 12,
-                            backgroundColor: `${REFERENCE_PRIMARY}1A`,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: REFERENCE_PRIMARY,
-                          }}
-                        >
-                          {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
-                        </div>
-                        <span
-                          style={{
-                            flex: 1,
-                            fontSize: 14,
-                            fontWeight: 600,
-                            color: COLORS.textPrimary,
-                            wordBreak: 'break-word',
-                          }}
-                        >
-                          {item.label}
-                        </span>
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleChecked();
-                            }}
-                            aria-label={isChecked ? `Mark "${item.label}" as not done` : `Mark "${item.label}" as done`}
-                            style={{
-                              width: 26,
-                              height: 26,
-                              flexShrink: 0,
-                              borderRadius: '50%',
-                              border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
-                              backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              cursor: 'pointer',
-                              padding: 0,
-                              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-                            }}
-                          >
-                            {isChecked && (
-                              <IconCheck size={14} style={{ color: '#fff' }} />
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    );
-                    })}
-                  </div>
                 </div>
               );
             })()}

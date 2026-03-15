@@ -35,6 +35,8 @@ import {
   X,
   Hand,
   Zap,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -235,5 +237,17 @@ export const IconHand: React.FC<{ size?: number; style?: React.CSSProperties }> 
 export const IconZap: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Zap size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconEye: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Eye size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconEyeOff: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <EyeOff size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

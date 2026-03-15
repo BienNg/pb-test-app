@@ -69,6 +69,12 @@ button:focus-visible {
   }
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Hide scrollbar while keeping scroll functionality */
 .scrollbar-hide {
   scrollbar-width: none;
