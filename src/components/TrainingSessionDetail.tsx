@@ -3309,9 +3309,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     >
                       {techniqueItems.map((item, idx) => {
                         const key = getCheckedKey(item.label);
-                        const isChecked = isAdminView && (techniqueChecked[key] ?? item.completed);
+                        const isChecked = techniqueChecked[key] ?? item.completed;
+                        const canEditChecks = isAdminView;
                         const toggleChecked = () => {
-                          const nextChecked = !(techniqueChecked[key] ?? item.completed);
+                          const nextChecked = !isChecked;
                           setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
                           if (isShotVideo && sessionId) {
                             void upsertShotTechniqueCheck(supabase, {
@@ -3322,14 +3323,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             });
                           }
                         };
+                        const checkboxStyle: React.CSSProperties = {
+                          width: 28,
+                          height: 28,
+                          flexShrink: 0,
+                          borderRadius: '50%',
+                          border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
+                          backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: 0,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                          transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                          ...(canEditChecks ? { cursor: 'pointer' } : { cursor: 'default', opacity: 0.9 }),
+                        };
                         return (
                           <div
                             key={item.label}
-                            role={isAdminView ? 'button' : undefined}
-                            tabIndex={isAdminView ? 0 : undefined}
-                            onClick={isAdminView ? toggleChecked : undefined}
+                            role={canEditChecks ? 'button' : undefined}
+                            tabIndex={canEditChecks ? 0 : undefined}
+                            onClick={canEditChecks ? toggleChecked : undefined}
                             onKeyDown={
-                              isAdminView
+                              canEditChecks
                                 ? (e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
@@ -3349,7 +3365,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               minWidth: 0,
                               boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                               transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-                              ...(isAdminView && { cursor: 'pointer' }),
+                              ...(canEditChecks && { cursor: 'pointer' }),
                             }}
                           >
                             <div
@@ -3380,7 +3396,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             >
                               {item.label}
                             </span>
-                            {isAdminView && (
+                            {canEditChecks ? (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -3392,26 +3408,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     ? `Mark "${item.label}" as not done`
                                     : `Mark "${item.label}" as done`
                                 }
-                                style={{
-                                  width: 28,
-                                  height: 28,
-                                  flexShrink: 0,
-                                  borderRadius: '50%',
-                                  border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
-                                  backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: 'pointer',
-                                  padding: 0,
-                                  boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                                  transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                                }}
+                                style={checkboxStyle}
                               >
                                 {isChecked && (
                                   <IconCheck size={16} style={{ color: '#fff' }} />
                                 )}
                               </button>
+                            ) : (
+                              <div
+                                aria-hidden
+                                style={checkboxStyle}
+                                title="Completed by coach"
+                              >
+                                {isChecked && (
+                                  <IconCheck size={16} style={{ color: '#fff' }} />
+                                )}
+                              </div>
                             )}
                           </div>
                         );
