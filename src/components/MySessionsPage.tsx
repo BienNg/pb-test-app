@@ -376,7 +376,7 @@ function ShotDetailView({
   skill,
   studentName,
   studentId,
-  onClose,
+  onClose: _onClose,
   onShotDetailOpenChange,
   onWatchTutorial,
   onAddSession,
@@ -494,7 +494,7 @@ function ShotDetailView({
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={_onClose}
           style={{
             width: 40,
             height: 40,
@@ -1222,7 +1222,7 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
   useEffect(() => {
     if (openShotTitle?.trim()) {
       const skill = ROADMAP_SKILLS.find((s) => s.title === openShotTitle?.trim());
-      if (skill) setSelectedSkill(skill);
+      if (skill) queueMicrotask(() => setSelectedSkill(skill));
       onOpenShotTitleConsumed?.();
     }
   }, [openShotTitle, onOpenShotTitleConsumed]);
@@ -1426,7 +1426,7 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   // Shot video counts per shot for roadmap (badge + sort)
   useEffect(() => {
     if (!effectiveStudentId) {
-      setShotVideoCountByShotId({});
+      queueMicrotask(() => setShotVideoCountByShotId({}));
       return;
     }
     const supabase = createClient();

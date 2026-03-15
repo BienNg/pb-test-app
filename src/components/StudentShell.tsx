@@ -65,7 +65,7 @@ export function StudentShell() {
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
-  const [shotDetailOpen, setShotDetailOpen] = useState(false);
+  const [_shotDetailOpen, setShotDetailOpen] = useState(false);
   const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);

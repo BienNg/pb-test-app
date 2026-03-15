@@ -726,7 +726,7 @@ const SHEET_TRANSITION_MS = 300;
 
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
-  const [breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
+  const [_breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
   const requestedSessions = MOCK_REQUESTED_SESSIONS_INITIAL;
   const isDesktop = useIsDesktop();
   const [sidebarOpen, setSidebarOpen] = useState(true);
