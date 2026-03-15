@@ -15,9 +15,7 @@ import {
   IconArrowDownUp,
   IconZap,
   IconSearch,
-  IconArrowLeft,
   IconPlay,
-  IconChevronRight,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -481,104 +479,6 @@ function ShotDetailView({
         flexDirection: 'column',
       }}
     >
-      {/* Header: back, title */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '16px 16px 8px',
-          borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
-          backgroundColor: '#f6f8f8',
-          flexShrink: 0,
-        }}
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Back"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 48,
-            height: 48,
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            color: COLORS.textPrimary,
-          }}
-        >
-          <IconArrowLeft size={24} />
-        </button>
-        <nav
-          aria-label="Breadcrumb"
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 6,
-            minWidth: 0,
-          }}
-        >
-          {studentName && (
-            <>
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  padding: 0,
-                  border: 'none',
-                  background: 'none',
-                  font: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  lineHeight: 1.3,
-                  letterSpacing: '-0.015em',
-                  color: COLORS.textSecondary,
-                  cursor: 'pointer',
-                }}
-              >
-                {studentName}
-              </button>
-              <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-            </>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: 0,
-              border: 'none',
-              background: 'none',
-              font: 'inherit',
-              fontSize: 14,
-              fontWeight: 600,
-              lineHeight: 1.3,
-              letterSpacing: '-0.015em',
-              color: studentName ? COLORS.textSecondary : COLORS.textPrimary,
-              cursor: 'pointer',
-            }}
-          >
-            Your Roadmap
-          </button>
-          <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              lineHeight: 1.3,
-              letterSpacing: '-0.015em',
-              color: COLORS.textPrimary,
-            }}
-          >
-            {skill.title}
-          </span>
-        </nav>
-        <div style={{ width: 48 }} aria-hidden />
-      </div>
-
       {/* Tab switcher */}
       <div
         style={{
