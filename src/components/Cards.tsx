@@ -247,21 +247,6 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             >
               {category}
             </span>
-            <h3
-              style={{
-                fontSize: isList ? 18 : 16,
-                fontWeight: 700,
-                color: COLORS.textPrimary,
-                margin: 0,
-                lineHeight: 1.3,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {title}
-            </h3>
             {dateLabel && (
               <p style={{ fontSize: 14, color: COLORS.textSecondary, margin: '4px 0 0' }}>
                 {dateLabel}
