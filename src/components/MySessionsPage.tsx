@@ -240,6 +240,21 @@ export const ROADMAP_SKILLS: Array<{
           { label: 'Recover to ready position', completed: false },
         ],
       },
+      {
+        id: 'short-hop',
+        label: 'Short Hop',
+        items: [
+          { label: 'Reach forward toward the ball (don\'t wait back)', completed: false },
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Balanced stance with bent knees', completed: false },
+          { label: 'Eyes on the ball', completed: false },
+          { label: 'Contact immediately after the bounce (short hop timing)', completed: false },
+          { label: 'Paddle below the ball', completed: false },
+          { label: 'No wrist movement', completed: false },
+          { label: 'Very short motion', completed: false },
+          { label: 'No backswing', completed: false },
+        ],
+      },
     ],
   },
   {
@@ -590,55 +605,62 @@ function ShotDetailView({
           {skill.title}
         </span>
       </div>
-      {/* Tab switcher */}
+      {/* Tab switcher — always one line; horizontal scroll on narrow screens if needed */}
       <div
         style={{
           display: 'flex',
+          flexWrap: 'nowrap',
           gap: 0,
           padding: '12px 16px 0',
           flexShrink: 0,
           borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
+          overflowX: 'auto',
+          minWidth: 0,
         }}
       >
         <button
           type="button"
           onClick={() => setActiveTab('sessions')}
           style={{
-            flex: 1,
+            flex: '0 0 auto',
             padding: '12px 16px',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'sessions' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
             background: 'transparent',
-            fontSize: 15,
+            fontSize: 'clamp(14px, 2.5vw, 15px)',
             fontWeight: activeTab === 'sessions' ? 600 : 400,
             color: activeTab === 'sessions' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
             borderRadius: 0,
+            whiteSpace: 'nowrap',
+            textAlign: 'left',
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          Your {skill.title} Sessions
+          Your Sessions
         </button>
         <button
           type="button"
           onClick={() => setActiveTab('technique')}
           style={{
-            flex: 1,
+            flex: '0 0 auto',
             padding: '12px 16px',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'technique' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
             background: 'transparent',
-            fontSize: 15,
+            fontSize: 'clamp(14px, 2.5vw, 15px)',
             fontWeight: activeTab === 'technique' ? 600 : 400,
             color: activeTab === 'technique' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
             borderRadius: 0,
+            whiteSpace: 'nowrap',
+            textAlign: 'left',
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          {skill.title} Technique
+          Technique
         </button>
       </div>
 
