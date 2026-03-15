@@ -471,6 +471,7 @@ function AdminStudentsPage({
           onSessionUpdated={handleSessionUpdated}
           onDeleteSession={overrideSession ? undefined : handleSessionUpdated}
           breadcrumbFromRoadmap={breadcrumbFromRoadmap}
+          isAdminView
         />
       </div>
     );

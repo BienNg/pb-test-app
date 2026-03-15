@@ -91,6 +91,8 @@ export interface TrainingSessionDetailProps {
   isTabVisible?: boolean;
   /** When set (e.g. opened from shot video in roadmap), header shows breadcrumb instead of date. */
   breadcrumbFromRoadmap?: BreadcrumbFromRoadmap;
+  /** When true (e.g. in Admin app), shot technique tab shows checkboxes. */
+  isAdminView?: boolean;
 }
 
 export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
@@ -102,13 +104,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onDeleteSession,
   isTabVisible = true,
   breadcrumbFromRoadmap,
+  isAdminView = false,
 }) => {
   const { user } = useAuth();
   const sessionList = sessionsProp ?? [];
   const session = sessionList.find((s) => s.id === sessionId);
   const hasVideoUrl = !!(session?.videoUrl?.trim());
   const canAddVideoUrl = !!onSaveVideoUrl;
-  const isAdmin = !!onSaveVideoUrl;
+  const isAdmin = !!onSaveVideoUrl || isAdminView;
   const isShotVideo = session?.session_type === 'shot_video';
   const isDbSession = sessionsProp != null && session != null && !isShotVideo;
   /** Show comment composer for admin (real sessions) or for shot videos (same UX as session detail). */
@@ -211,6 +214,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
   /** Tab for shot session detail: comments (default) or technique checklist. Only used when isShotVideo. */
   const [shotDetailTab, setShotDetailTab] = useState<'comments' | 'technique'>('comments');
+  /** In admin view, which technique points are checked (keyed by item label). */
+  const [techniqueChecked, setTechniqueChecked] = useState<Record<string, boolean>>({});
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -3030,7 +3035,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       gap: SPACING.sm,
                     }}
                   >
-                    {shotSkill.items.map((item, idx) => (
+                    {shotSkill.items.map((item, idx) => {
+                      const isChecked = isAdmin && (techniqueChecked[item.label] ?? item.completed);
+                      return (
                       <div
                         key={item.label}
                         style={{
@@ -3061,6 +3068,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         </div>
                         <span
                           style={{
+                            flex: 1,
                             fontSize: 14,
                             fontWeight: 600,
                             color: COLORS.textPrimary,
@@ -3069,8 +3077,39 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         >
                           {item.label}
                         </span>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setTechniqueChecked((prev) => ({
+                                ...prev,
+                                [item.label]: !(prev[item.label] ?? item.completed),
+                              }))
+                            }
+                            aria-label={isChecked ? `Mark "${item.label}" as not done` : `Mark "${item.label}" as done`}
+                            style={{
+                              width: 26,
+                              height: 26,
+                              flexShrink: 0,
+                              borderRadius: '50%',
+                              border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
+                              backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0,
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                            }}
+                          >
+                            {isChecked && (
+                              <IconCheck size={14} style={{ color: '#fff' }} />
+                            )}
+                          </button>
+                        )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               );
