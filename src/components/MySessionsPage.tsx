@@ -118,8 +118,8 @@ function ScrollAnimatedCard({ children, staggerIndex = 0 }: { children: React.Re
   );
 }
 
-/** Each shot is its own card with icon and checklist. */
-const ROADMAP_SKILLS: Array<{
+/** Each shot is its own card with icon and checklist. Exported for use in TrainingSessionDetail shot technique tab. */
+export const ROADMAP_SKILLS: Array<{
   id: string;
   title: string;
   icon: React.ReactNode;
@@ -335,8 +335,8 @@ const ROADMAP_SKILLS: Array<{
 
 type RoadmapSkill = (typeof ROADMAP_SKILLS)[number];
 
-/** Icons for technique point cards (cycle by index to match reference variety). */
-const TECHNIQUE_ICONS = [
+/** Icons for technique point cards (cycle by index to match reference variety). Exported for use in TrainingSessionDetail. */
+export const TECHNIQUE_ICONS = [
   <IconTarget key="target" size={24} />,
   <IconHand key="hand" size={24} />,
   <IconArrowDownUp key="arrow" size={24} />,

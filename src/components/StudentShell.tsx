@@ -12,7 +12,7 @@ import { useAuth } from './providers/AuthProvider';
 
 const SESSION_DETAIL_TRANSITION_MS = 280;
 
-/** Wraps session detail overlay and runs enter animation (slide-up + fade) when visible. */
+/** Wraps session detail overlay and runs enter animation (slide-up) when visible. Opaque immediately so the view switches. */
 function SessionDetailOverlay({
   visible,
   height,
@@ -47,9 +47,9 @@ function SessionDetailOverlay({
         flexDirection: 'column',
         backgroundColor: '#f6f8f8',
         zIndex: 50,
-        opacity: visible && entered ? 1 : 0,
+        opacity: visible ? 1 : 0,
         transform: visible && entered ? 'translateY(0)' : 'translateY(16px)',
-        transition: `opacity ${SESSION_DETAIL_TRANSITION_MS}ms ease-out, transform ${SESSION_DETAIL_TRANSITION_MS}ms ease-out`,
+        transition: `transform ${SESSION_DETAIL_TRANSITION_MS}ms ease-out`,
       }}
     >
       {children}
@@ -158,10 +158,10 @@ export function StudentShell() {
         backgroundColor: '#f6f8f8',
       }}
     >
-      {/* Roadmap tab content */}
+      {/* Roadmap tab content — hide when session overlay is open so view switches to detail */}
       <div
         style={{
-          display: showRoadmap ? 'block' : 'none',
+          display: showRoadmap && !showSessionOverlay ? 'block' : 'none',
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
           padding: 24,
@@ -206,9 +206,10 @@ export function StudentShell() {
           onOpenLibrary={() => setActiveTab('library')}
         />
       </div>
+      {/* Library tab — hide when session overlay is open so view switches to detail */}
       <div
         style={{
-          display: showLibrary ? 'block' : 'none',
+          display: showLibrary && !showSessionOverlay ? 'block' : 'none',
           height: hideBottomNav && viewingLessonDetail ? '100vh' : 'calc(100vh - 80px)',
           overflow: 'auto',
         }}

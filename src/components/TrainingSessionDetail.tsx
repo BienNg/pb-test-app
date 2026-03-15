@@ -13,6 +13,7 @@ import {
   IconX,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './MySessionsPage';
+import { ROADMAP_SKILLS, TECHNIQUE_ICONS } from './MySessionsPage';
 import { createClient } from '@/lib/supabase/client';
 import { parseCommentTextWithShots, type CommentSegment } from './commentText';
 import {
@@ -208,6 +209,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editReplyDraft, setEditReplyDraft] = useState('');
   /** When set, we're viewing this reply's frame (seek to timestamp, show marker read-only). */
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
+  /** Tab for shot session detail: comments (default) or technique checklist. Only used when isShotVideo. */
+  const [shotDetailTab, setShotDetailTab] = useState<'comments' | 'technique'>('comments');
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -1805,6 +1808,62 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               overflow: 'hidden',
             }}
           >
+            {isShotVideo && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 0,
+                  padding: `${SPACING.xs}px 0`,
+                  marginBottom: SPACING.sm,
+                  flexShrink: 0,
+                }}
+                role="tablist"
+                aria-label="Shot session tabs"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shotDetailTab === 'comments'}
+                  onClick={() => setShotDetailTab('comments')}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: 0,
+                    background: 'none',
+                    fontSize: 14,
+                    fontWeight: shotDetailTab === 'comments' ? 600 : 500,
+                    color: shotDetailTab === 'comments' ? REFERENCE_PRIMARY : COLORS.textSecondary,
+                    borderBottom: `3px solid ${shotDetailTab === 'comments' ? REFERENCE_PRIMARY : 'transparent'}`,
+                    marginBottom: -1,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Comments
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={shotDetailTab === 'technique'}
+                  onClick={() => setShotDetailTab('technique')}
+                  style={{
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRadius: 0,
+                    background: 'none',
+                    fontSize: 14,
+                    fontWeight: shotDetailTab === 'technique' ? 600 : 500,
+                    color: shotDetailTab === 'technique' ? REFERENCE_PRIMARY : COLORS.textSecondary,
+                    borderBottom: `3px solid ${shotDetailTab === 'technique' ? REFERENCE_PRIMARY : 'transparent'}`,
+                    marginBottom: -1,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Shot technique
+                </button>
+              </div>
+            )}
+            {(!isShotVideo || shotDetailTab === 'comments') && (
+              <>
             {/* Filter & Sort */}
             <div
               style={{
@@ -2922,6 +2981,100 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             </div>
             )}
             </div>
+              </>
+            )}
+            {isShotVideo && shotDetailTab === 'technique' && (() => {
+              const shotSkill = session ? ROADMAP_SKILLS.find((s) => s.title === session.title) : null;
+              if (!shotSkill) {
+                return (
+                  <div
+                    style={{
+                      flex: 1,
+                      minHeight: 0,
+                      overflowY: 'auto',
+                      padding: SPACING.lg,
+                      ...TYPOGRAPHY.bodySmall,
+                      color: COLORS.textSecondary,
+                    }}
+                  >
+                    Technique points for this shot are not available.
+                  </div>
+                );
+              }
+              return (
+                <div
+                  style={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: 'auto',
+                    paddingLeft: SPACING.sm,
+                    paddingRight: SPACING.sm,
+                    paddingBottom: SPACING.xxl + SPACING.lg,
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: 'clamp(16px, 4vw, 18px)',
+                      fontWeight: 700,
+                      letterSpacing: '-0.015em',
+                      color: COLORS.textPrimary,
+                      margin: `0 0 ${SPACING.md}px`,
+                    }}
+                  >
+                    Technique Points
+                  </h2>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: SPACING.sm,
+                    }}
+                  >
+                    {shotSkill.items.map((item, idx) => (
+                      <div
+                        key={item.label}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: SPACING.md,
+                          padding: SPACING.md,
+                          borderRadius: 12,
+                          backgroundColor: COLORS.cardBg,
+                          border: `1px solid ${REFERENCE_PRIMARY}1A`,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 40,
+                            height: 40,
+                            flexShrink: 0,
+                            borderRadius: 12,
+                            backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: REFERENCE_PRIMARY,
+                          }}
+                        >
+                          {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: COLORS.textPrimary,
+                            wordBreak: 'break-word',
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </div>
