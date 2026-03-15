@@ -19,6 +19,7 @@ export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
+  const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -133,6 +134,12 @@ export const CoachApp: React.FC = () => {
           onSessionUpdated={reloadSelectedStudentSessions}
           onDeleteSession={overrideSession ? undefined : async () => { await reloadSelectedStudentSessions(); }}
           breadcrumbFromRoadmap={breadcrumbFromRoadmap}
+          onBreadcrumbShotClick={(shotTitle) => {
+            setOpenShotTitle(shotTitle);
+            setActiveTrainingSessionId(null);
+            setOverrideSession(null);
+            setStudentSegment('roadmap');
+          }}
         />
       </div>
     );
@@ -169,6 +176,8 @@ export const CoachApp: React.FC = () => {
             if ('error' in result) throw new Error(result.error);
             await reloadSelectedStudentSessions();
           }}
+          openShotTitle={openShotTitle}
+          onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
         />
       </div>
     );

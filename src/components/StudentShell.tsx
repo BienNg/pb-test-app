@@ -66,6 +66,7 @@ export function StudentShell() {
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [shotDetailOpen, setShotDetailOpen] = useState(false);
+  const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
@@ -181,6 +182,8 @@ export function StudentShell() {
             setOverrideSession(session);
             setActiveTrainingSessionId(session.id);
           }}
+          openShotTitle={openShotTitle}
+          onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
         />
       </div>
       {/* My Sessions tab content */}
@@ -240,6 +243,12 @@ export function StudentShell() {
             breadcrumbFromRoadmap={
               overrideSession ? { shotTitle: overrideSession.title } : undefined
             }
+            onBreadcrumbShotClick={(shotTitle) => {
+              setOpenShotTitle(shotTitle);
+              setActiveTrainingSessionId(null);
+              setOverrideSession(null);
+              setActiveTab('roadmap');
+            }}
           />
         </SessionDetailOverlay>
       )}

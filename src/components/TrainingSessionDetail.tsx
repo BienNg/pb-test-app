@@ -91,6 +91,8 @@ export interface TrainingSessionDetailProps {
   isTabVisible?: boolean;
   /** When set (e.g. opened from shot video in roadmap), header shows breadcrumb instead of date. */
   breadcrumbFromRoadmap?: BreadcrumbFromRoadmap;
+  /** When provided, clicking the shot title in the breadcrumb calls this (e.g. open shot detail view) instead of onBack. */
+  onBreadcrumbShotClick?: (shotTitle: string) => void;
   /** When true (e.g. in Admin app), shot technique tab shows checkboxes. */
   isAdminView?: boolean;
 }
@@ -104,6 +106,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   onDeleteSession,
   isTabVisible = true,
   breadcrumbFromRoadmap,
+  onBreadcrumbShotClick,
   isAdminView = false,
 }) => {
   const { user } = useAuth();
@@ -1605,7 +1608,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
             <button
               type="button"
-              onClick={onBack}
+              onClick={() =>
+                onBreadcrumbShotClick
+                  ? onBreadcrumbShotClick(breadcrumbFromRoadmap.shotTitle)
+                  : onBack()
+              }
               style={{
                 fontSize: 14,
                 fontWeight: 600,

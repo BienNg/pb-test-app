@@ -341,6 +341,7 @@ function AdminStudentsPage({
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
+  const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
   const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
   const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
@@ -476,6 +477,12 @@ function AdminStudentsPage({
           onSessionUpdated={handleSessionUpdated}
           onDeleteSession={overrideSession ? undefined : handleSessionUpdated}
           breadcrumbFromRoadmap={breadcrumbFromRoadmap}
+          onBreadcrumbShotClick={(shotTitle) => {
+            setOpenShotTitle(shotTitle);
+            setActiveTrainingSessionId(null);
+            setOverrideSession(null);
+            setStudentSegment('roadmap');
+          }}
           isAdminView
         />
       </div>
@@ -513,6 +520,8 @@ function AdminStudentsPage({
             if ('error' in result) throw new Error(result.error);
             await reloadSelectedStudentSessions();
           }}
+          openShotTitle={openShotTitle}
+          onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
         />
       </div>
     );

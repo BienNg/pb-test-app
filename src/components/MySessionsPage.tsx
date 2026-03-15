@@ -52,6 +52,10 @@ export interface MySessionsPageProps {
   ) => void | Promise<void>;
   /** When provided, called when user taps a shot video in the roadmap "Your Sessions" tab; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
+  /** When set, open the shot detail for the skill with this title (e.g. when returning from session detail breadcrumb). */
+  openShotTitle?: string | null;
+  /** Called after opening shot detail from openShotTitle so parent can clear it. */
+  onOpenShotTitleConsumed?: () => void;
 }
 
 export interface TrainingSession {
@@ -1267,11 +1271,23 @@ export interface RoadmapSkillsChecklistProps {
   ) => void | Promise<void>;
   /** When provided, called when user taps a shot video in the roadmap; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
+  /** When set, open the shot detail for the skill with this title (e.g. when returning from session detail breadcrumb). */
+  openShotTitle?: string | null;
+  /** Called after opening shot detail from openShotTitle so parent can clear it. */
+  onOpenShotTitleConsumed?: () => void;
 }
 
-export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
+
+  useEffect(() => {
+    if (openShotTitle?.trim()) {
+      const skill = ROADMAP_SKILLS.find((s) => s.title === openShotTitle?.trim());
+      if (skill) setSelectedSkill(skill);
+      onOpenShotTitleConsumed?.();
+    }
+  }, [openShotTitle, onOpenShotTitleConsumed]);
   const filteredSkills = React.useMemo(() => {
     const list = !searchQuery.trim()
       ? [...ROADMAP_SKILLS]
@@ -1444,6 +1460,8 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
   studentId,
   onAddSession,
   onOpenShotVideo,
+  openShotTitle,
+  onOpenShotTitleConsumed,
 }) => {
   const { user } = useAuth();
   const sessions = sessionsProp ?? [];
@@ -1795,6 +1813,8 @@ export const MySessionsPage: React.FC<MySessionsPageProps> = ({
             sessionCountByShotId={shotVideoCountByShotId}
             onAddSession={onAddSession}
             onOpenShotVideo={onOpenShotVideo}
+            openShotTitle={openShotTitle}
+            onOpenShotTitleConsumed={onOpenShotTitleConsumed}
           />
         )}
       </div>
