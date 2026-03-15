@@ -568,10 +568,11 @@ function ShotDetailView({
           display: 'flex',
           alignItems: 'center',
           gap: SPACING.sm,
-          padding: '12px 16px',
+          padding: 0,
           flexShrink: 0,
           borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
           backgroundColor: '#f6f8f8',
+          height: 'fit-content',
         }}
       >
         <button
@@ -611,7 +612,7 @@ function ShotDetailView({
           display: 'flex',
           flexWrap: 'nowrap',
           gap: 0,
-          padding: '12px 16px 0',
+          padding: '12px 0 0',
           flexShrink: 0,
           borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
           overflowX: 'auto',
@@ -623,7 +624,7 @@ function ShotDetailView({
           onClick={() => setActiveTab('sessions')}
           style={{
             flex: '0 0 auto',
-            padding: '12px 16px',
+            padding: '12px 16px 12px 0',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'sessions' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -645,7 +646,7 @@ function ShotDetailView({
           onClick={() => setActiveTab('technique')}
           style={{
             flex: '0 0 auto',
-            padding: '12px 16px',
+            padding: '12px 0 12px 16px',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'technique' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -668,13 +669,13 @@ function ShotDetailView({
         <AnimatedTabPanel>
           {/* Your Sessions — shot videos for this student + shot, or empty state */}
           {loadingShotVideos ? (
-            <div style={{ padding: 32, textAlign: 'center', color: COLORS.textSecondary }}>
+            <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
               Loading…
             </div>
           ) : shotVideos.length > 0 ? (
             <div
               style={{
-                padding: '16px 16px 80px',
+                padding: '16px 0 80px',
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
                 gap: 16,
@@ -749,7 +750,7 @@ function ShotDetailView({
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: 32,
+                padding: '32px 0',
                 textAlign: 'center',
                 minHeight: 320,
               }}
@@ -916,8 +917,7 @@ function ShotDetailView({
           {/* Hero */}
           <div
             style={{
-              margin: 16,
-              marginTop: 12,
+              margin: '12px 0 16px',
               minHeight: 320,
               borderRadius: 12,
               overflow: 'hidden',
@@ -964,7 +964,7 @@ function ShotDetailView({
               style={{
                 display: 'flex',
                 gap: 0,
-                padding: '0 16px',
+                padding: 0,
                 flexShrink: 0,
                 borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
                 marginTop: 8,
@@ -1004,7 +1004,7 @@ function ShotDetailView({
               width: '100%',
               maxWidth: '100%',
               boxSizing: 'border-box',
-              padding: `clamp(${SPACING.md}px, 5vw, ${SPACING.xxl}px) clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px) clamp(80px, 15vh, 120px)`,
+              padding: `clamp(${SPACING.md}px, 5vw, ${SPACING.xxl}px) 0 clamp(80px, 15vh, 120px) 0`,
             }}
           >
             <h2
