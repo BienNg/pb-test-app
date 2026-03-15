@@ -121,12 +121,20 @@ function ScrollAnimatedCard({ children, staggerIndex = 0 }: { children: React.Re
   );
 }
 
+/** Sub-category for shots that have variants (e.g. Forehand Dink: Normal, Topspin, Slice). Each has its own checklist. */
+export type TechniqueSubCategory = {
+  id: string;
+  label: string;
+  items: { label: string; completed: boolean }[];
+};
+
 /** Each shot is its own card with icon and checklist. Exported for use in TrainingSessionDetail shot technique tab. */
 export const ROADMAP_SKILLS: Array<{
   id: string;
   title: string;
   icon: React.ReactNode;
   items: Array<{ label: string; completed: boolean }>;
+  subCategories?: TechniqueSubCategory[];
 }> = [
   {
     id: 'serve',
@@ -189,6 +197,49 @@ export const ROADMAP_SKILLS: Array<{
       { label: 'Small shoulder-driven swing', completed: false },
       { label: 'Lift low → high', completed: false },
       { label: 'Recover to ready position', completed: false },
+    ],
+    subCategories: [
+      {
+        id: 'normal',
+        label: 'Normal',
+        items: [
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Balanced stance with knees bent', completed: false },
+          { label: 'Eyes on ball', completed: false },
+          { label: 'Contact in front and low', completed: false },
+          { label: 'Slightly open paddle face', completed: false },
+          { label: 'Soft grip pressure', completed: false },
+          { label: 'Small shoulder-driven swing', completed: false },
+          { label: 'Lift low → high', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
+      {
+        id: 'topspin',
+        label: 'Topspin',
+        items: [
+          { label: 'Brush up the back of the ball', completed: false },
+          { label: 'Slightly closed paddle face at contact', completed: false },
+          { label: 'Wrist snap for spin', completed: false },
+          { label: 'Contact in front and low', completed: false },
+          { label: 'Short, quick stroke', completed: false },
+          { label: 'Ball dips over net', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
+      {
+        id: 'slice',
+        label: 'Slice',
+        items: [
+          { label: 'High-to-low paddle path', completed: false },
+          { label: 'Slightly open paddle face', completed: false },
+          { label: 'Soft hands through contact', completed: false },
+          { label: 'Contact in front and low', completed: false },
+          { label: 'Backspin on the ball', completed: false },
+          { label: 'Ball stays low', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
     ],
   },
   {
@@ -403,8 +454,20 @@ function ShotDetailView({
   const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
   const [addSessionError, setAddSessionError] = useState<string | null>(null);
   const [addSessionSaving, setAddSessionSaving] = useState(false);
-  const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(skill.items.map((item) => [item.label, item.completed]))
+  const [completedItems, setCompletedItems] = useState<Record<string, boolean>>(() => {
+    if (skill.subCategories) {
+      const entries: [string, boolean][] = [];
+      for (const sub of skill.subCategories) {
+        for (const item of sub.items) {
+          entries.push([`${sub.id}:${item.label}`, item.completed]);
+        }
+      }
+      return Object.fromEntries(entries);
+    }
+    return Object.fromEntries(skill.items.map((item) => [item.label, item.completed]));
+  });
+  const [selectedTechniqueSubId, setSelectedTechniqueSubId] = useState<string | null>(() =>
+    skill.subCategories?.[0]?.id ?? null
   );
   const [shotVideos, setShotVideos] = useState<ShotVideoRow[]>([]);
   const [loadingShotVideos, setLoadingShotVideos] = useState(false);
@@ -457,9 +520,13 @@ function ShotDetailView({
     }
   };
 
-  const isMastered = (label: string) => completedItems[label] ?? false;
-  const toggleMastered = (label: string) => {
-    setCompletedItems((prev) => ({ ...prev, [label]: !(prev[label] ?? false) }));
+  const getCompletedKey = (label: string, subId: string | null) =>
+    subId ? `${subId}:${label}` : label;
+  const isMastered = (label: string, subId?: string | null) =>
+    completedItems[getCompletedKey(label, subId ?? selectedTechniqueSubId)] ?? false;
+  const toggleMastered = (label: string, subId?: string | null) => {
+    const key = getCompletedKey(label, subId ?? selectedTechniqueSubId);
+    setCompletedItems((prev) => ({ ...prev, [key]: !(prev[key] ?? false) }));
   };
 
   useEffect(() => {
@@ -869,6 +936,46 @@ function ShotDetailView({
             </button>
           </div>
 
+          {/* Sub-category subtabs (e.g. Forehand Dink: Normal, Topspin, Slice) */}
+          {skill.subCategories && skill.subCategories.length > 0 && (
+            <div
+              style={{
+                display: 'flex',
+                gap: 0,
+                padding: '0 16px',
+                flexShrink: 0,
+                borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
+                marginTop: 8,
+              }}
+            >
+              {skill.subCategories.map((sub) => {
+                const isSelected = selectedTechniqueSubId === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => setSelectedTechniqueSubId(sub.id)}
+                    style={{
+                      padding: '12px 16px',
+                      border: 'none',
+                      borderBottom: `3px solid ${isSelected ? '#6a9a95' : 'transparent'}`,
+                      marginBottom: -1,
+                      background: 'transparent',
+                      fontSize: 14,
+                      fontWeight: isSelected ? 600 : 400,
+                      color: isSelected ? COLORS.textPrimary : '#6a9a95',
+                      cursor: 'pointer',
+                      borderRadius: 0,
+                      transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+                    }}
+                  >
+                    {sub.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {/* Technique Points */}
           <div
             style={{
@@ -889,6 +996,12 @@ function ShotDetailView({
               }}
             >
               Technique Points
+              {skill.subCategories && selectedTechniqueSubId && (
+                <span style={{ fontWeight: 500, color: COLORS.textSecondary }}>
+                  {' '}
+                  · {skill.subCategories.find((s) => s.id === selectedTechniqueSubId)?.label}
+                </span>
+              )}
             </h2>
             <div
               style={{
@@ -900,7 +1013,10 @@ function ShotDetailView({
                 maxWidth: '100%',
               }}
             >
-              {skill.items.map((item, idx) => {
+              {(skill.subCategories && selectedTechniqueSubId
+                ? skill.subCategories.find((s) => s.id === selectedTechniqueSubId)?.items ?? []
+                : skill.items
+              ).map((item, idx) => {
                 const mastered = isMastered(item.label);
                 return (
                   <div

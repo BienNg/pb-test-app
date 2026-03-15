@@ -117,8 +117,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const isAdmin = !!onSaveVideoUrl || isAdminView;
   const isShotVideo = session?.session_type === 'shot_video';
   const isDbSession = sessionsProp != null && session != null && !isShotVideo;
-  /** Show comment composer for admin (real sessions) or for shot videos (same UX as session detail). */
-  const showCommentComposer = isAdmin || isShotVideo;
+  /** Show comment composer only in admin view. */
+  const showCommentComposer = isAdminView;
 
   // Debug logging
   console.log('[TrainingSessionDetail] Rendered:', {
@@ -217,7 +217,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
   /** Tab for shot session detail: comments (default) or technique checklist. Only used when isShotVideo. */
   const [shotDetailTab, setShotDetailTab] = useState<'comments' | 'technique'>('comments');
-  /** In admin view, which technique points are checked (keyed by item label). */
+  /** When shot has sub-categories (e.g. Forehand Dink: Normal, Topspin, Slice), which sub is selected. */
+  const [selectedTechniqueSubId, setSelectedTechniqueSubId] = useState<string | null>(null);
+  /** In admin view, which technique points are checked (keyed by item label, or "subId:label" when using sub-categories). */
   const [techniqueChecked, setTechniqueChecked] = useState<Record<string, boolean>>({});
 
   const supabase = useMemo(() => createClient(), []);
@@ -295,6 +297,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setActiveFrameReplyId(null);
     }
   }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
+
+  // When shot changes (shot video), sync selected technique sub-tab to the first sub if current shot has sub-categories
+  useEffect(() => {
+    if (!isShotVideo || !session) return;
+    const shotSkill = ROADMAP_SKILLS.find((s) => s.title === session.title);
+    const subs = shotSkill?.subCategories;
+    if (subs?.length) {
+      setSelectedTechniqueSubId((prev) =>
+        prev && subs.some((s) => s.id === prev) ? prev : subs[0].id
+      );
+    } else {
+      setSelectedTechniqueSubId(null);
+    }
+  }, [isShotVideo, session?.id, session?.title]);
 
   const shotExampleGifs = useMemo(() => {
     try {
@@ -3037,6 +3053,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   </div>
                 );
               }
+              const subs = shotSkill.subCategories;
+              const hasSubs = subs && subs.length > 0;
+              const effectiveSubId = hasSubs && selectedTechniqueSubId && subs.some((s) => s.id === selectedTechniqueSubId)
+                ? selectedTechniqueSubId
+                : (subs?.[0]?.id ?? null);
+              const techniqueItems = hasSubs && effectiveSubId
+                ? (subs!.find((s) => s.id === effectiveSubId)?.items ?? [])
+                : shotSkill.items;
+              const getCheckedKey = (label: string) => (effectiveSubId ? `${effectiveSubId}:${label}` : label);
               return (
                 <div
                   style={{
@@ -3048,17 +3073,41 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     paddingBottom: SPACING.xxl + SPACING.lg,
                   }}
                 >
-                  <h2
-                    style={{
-                      fontSize: 'clamp(16px, 4vw, 18px)',
-                      fontWeight: 700,
-                      letterSpacing: '-0.015em',
-                      color: COLORS.textPrimary,
-                      margin: `0 0 ${SPACING.md}px`,
-                    }}
-                  >
-                    Technique Points
-                  </h2>
+                  {hasSubs && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 0,
+                        borderBottom: `1px solid ${REFERENCE_PRIMARY}1A`,
+                        marginBottom: SPACING.md,
+                      }}
+                    >
+                      {subs!.map((sub) => {
+                        const isSubSelected = effectiveSubId === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            type="button"
+                            onClick={() => setSelectedTechniqueSubId(sub.id)}
+                            style={{
+                              padding: '8px 12px',
+                              border: 'none',
+                              borderBottom: `3px solid ${isSubSelected ? REFERENCE_PRIMARY : 'transparent'}`,
+                              marginBottom: -1,
+                              background: 'none',
+                              fontSize: 13,
+                              fontWeight: isSubSelected ? 600 : 500,
+                              color: isSubSelected ? REFERENCE_PRIMARY : COLORS.textSecondary,
+                              cursor: 'pointer',
+                              borderRadius: 0,
+                            }}
+                          >
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div
                     style={{
                       display: 'flex',
@@ -3066,12 +3115,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       gap: SPACING.sm,
                     }}
                   >
-                    {shotSkill.items.map((item, idx) => {
-                      const isChecked = isAdmin && (techniqueChecked[item.label] ?? item.completed);
+                    {techniqueItems.map((item, idx) => {
+                      const key = getCheckedKey(item.label);
+                      const isChecked = isAdmin && (techniqueChecked[key] ?? item.completed);
                       const toggleChecked = () =>
                         setTechniqueChecked((prev) => ({
                           ...prev,
-                          [item.label]: !(prev[item.label] ?? item.completed),
+                          [key]: !(prev[key] ?? item.completed),
                         }));
                       return (
                       <div
