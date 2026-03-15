@@ -470,24 +470,18 @@ function ShotDetailView({
     };
   }, [onShotDetailOpenChange]);
 
-  const BOTTOM_NAV_HEIGHT = 80;
-
   return (
     <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: BOTTOM_NAV_HEIGHT,
-        zIndex: 200,
+        flex: 1,
+        minHeight: 0,
         backgroundColor: '#f6f8f8',
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
       }}
     >
-      {/* Header: back, title — bottom nav remains visible */}
+      {/* Header: back, title */}
       <div
         style={{
           display: 'flex',
@@ -1297,6 +1291,32 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
     return list.sort((a, b) => (sessionCountByShotId[b.id] ?? 0) - (sessionCountByShotId[a.id] ?? 0));
   }, [searchQuery, sessionCountByShotId]);
 
+  // When a skill is selected, show shot detail as the full view (replaces list, no overlay)
+  if (selectedSkill) {
+    return (
+      <div
+        style={{
+          height: '100%',
+          minHeight: 'calc(100vh - 80px)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        <ShotDetailView
+          skill={selectedSkill}
+          studentName={studentName}
+          studentId={studentId}
+          onClose={() => setSelectedSkill(null)}
+          onShotDetailOpenChange={onShotDetailOpenChange}
+          onWatchTutorial={onWatchTutorial}
+          onAddSession={onAddSession}
+          onOpenShotVideo={onOpenShotVideo}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={{ marginBottom: SPACING.xl }}>
       <div
@@ -1430,19 +1450,6 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
           </ScrollAnimatedCard>
         ))}
       </div>
-
-      {selectedSkill && (
-        <ShotDetailView
-          skill={selectedSkill}
-          studentName={studentName}
-          studentId={studentId}
-          onClose={() => setSelectedSkill(null)}
-          onShotDetailOpenChange={onShotDetailOpenChange}
-          onWatchTutorial={onWatchTutorial}
-          onAddSession={onAddSession}
-          onOpenShotVideo={onOpenShotVideo}
-        />
-      )}
     </div>
   );
 }
