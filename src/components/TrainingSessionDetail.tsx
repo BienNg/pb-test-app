@@ -69,6 +69,11 @@ import {
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
 import { MOCK_COACHES } from '../data/mockCoaches';
+import {
+  fetchShotTechniqueChecks,
+  upsertShotTechniqueCheck,
+  buildTechniqueKey,
+} from '@/lib/shotTechniqueChecks';
 
 /** When set, header shows breadcrumb "StudentName > Your Roadmap > ShotTitle" (e.g. when opened from shot video in roadmap). */
 export interface BreadcrumbFromRoadmap {
@@ -221,6 +226,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [selectedTechniqueSubId, setSelectedTechniqueSubId] = useState<string | null>(null);
   /** In admin view, which technique points are checked (keyed by item label, or "subId:label" when using sub-categories). */
   const [techniqueChecked, setTechniqueChecked] = useState<Record<string, boolean>>({});
+  /** Track whether we've loaded technique checks from DB for the current shot video. */
+  const [techniqueChecksLoaded, setTechniqueChecksLoaded] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -311,6 +318,27 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setSelectedTechniqueSubId(null);
     }
   }, [isShotVideo, session?.id, session?.title]);
+
+  // Load technique checks from DB when viewing a shot video
+  useEffect(() => {
+    if (!isShotVideo || !sessionId) {
+      setTechniqueChecked({});
+      setTechniqueChecksLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    setTechniqueChecksLoaded(false);
+    (async () => {
+      const checks = await fetchShotTechniqueChecks(supabase, sessionId);
+      if (!cancelled) {
+        setTechniqueChecked(checks);
+        setTechniqueChecksLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isShotVideo, sessionId, supabase]);
 
   const shotExampleGifs = useMemo(() => {
     try {
@@ -3061,7 +3089,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               const techniqueItems = hasSubs && effectiveSubId
                 ? (subs!.find((s) => s.id === effectiveSubId)?.items ?? [])
                 : shotSkill.items;
-              const getCheckedKey = (label: string) => (effectiveSubId ? `${effectiveSubId}:${label}` : label);
+              const getCheckedKey = (label: string) => buildTechniqueKey(effectiveSubId, label);
               return (
                 <div
                   style={{
@@ -3073,6 +3101,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     paddingBottom: SPACING.xxl + SPACING.lg,
                   }}
                 >
+                  {!techniqueChecksLoaded && (
+                    <div style={{ padding: SPACING.md, color: COLORS.textSecondary, fontSize: 13 }}>
+                      Loading…
+                    </div>
+                  )}
                   {hasSubs && (
                     <div
                       style={{
@@ -3118,11 +3151,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     {techniqueItems.map((item, idx) => {
                       const key = getCheckedKey(item.label);
                       const isChecked = isAdmin && (techniqueChecked[key] ?? item.completed);
-                      const toggleChecked = () =>
-                        setTechniqueChecked((prev) => ({
-                          ...prev,
-                          [key]: !(prev[key] ?? item.completed),
-                        }));
+                      const toggleChecked = () => {
+                        const nextChecked = !(techniqueChecked[key] ?? item.completed);
+                        setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
+                        if (isShotVideo && sessionId) {
+                          void upsertShotTechniqueCheck(supabase, {
+                            shotVideoId: sessionId,
+                            subCategoryId: effectiveSubId ?? null,
+                            itemLabel: item.label,
+                            checked: nextChecked,
+                          });
+                        }
+                      };
                       return (
                       <div
                         key={item.label}
