@@ -1,7 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { SessionCommentWithAuthor } from '@/lib/sessionComments';
-import { mapDbCommentToSessionComment } from '@/lib/sessionComments';
+import {
+  mapDbCommentToSessionComment,
+  mapDbReplyToSessionCommentReply,
+  type ReplyFrameMarker,
+} from '@/lib/sessionComments';
 import type { SessionComment } from '@/components/GameAnalyticsPage';
+import type { SessionCommentReply } from '@/components/GameAnalyticsPage';
 import { MOCK_COACHES } from '@/data/mockCoaches';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -121,4 +126,166 @@ export function mapShotVideoCommentToSessionComment(
   currentUserId: string | null
 ): SessionComment {
   return mapDbCommentToSessionComment(row as unknown as SessionCommentWithAuthor, currentUserId);
+}
+
+// --- Shot video comment replies (mirror session_comment_replies) ---
+
+export type ShotVideoCommentReplyRow = {
+  id: string;
+  shot_video_id: string;
+  parent_comment_id: string;
+  author_id: string;
+  text: string;
+  timestamp_seconds: number | null;
+  example_gif: string | null;
+  created_at: string;
+  marker_x_percent: number | null;
+  marker_y_percent: number | null;
+  marker_radius_x: number | null;
+  marker_radius_y: number | null;
+};
+
+export type ShotVideoCommentReplyWithAuthor = ShotVideoCommentReplyRow & {
+  author?: { id: string; full_name: string | null; role: string | null } | null;
+};
+
+/** Fetch all replies for a shot video's comments. Returns [] on error. */
+export async function fetchShotVideoCommentReplies(
+  supabase: SupabaseClient | null,
+  shotVideoId: string,
+  currentUserId: string | null
+): Promise<SessionCommentReply[]> {
+  if (!supabase) return [];
+  const { data: replies, error } = await supabase
+    .from('shot_video_comment_replies')
+    .select(
+      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y'
+    )
+    .eq('shot_video_id', shotVideoId)
+    .order('created_at', { ascending: true });
+  if (error || !replies) return [];
+  const rows = replies as ShotVideoCommentReplyRow[];
+  if (rows.length === 0) return [];
+
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const validAuthorIds = authorIds.filter((id) => UUID_REGEX.test(id));
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) for (const p of profiles) profileMap.set(p.id, p);
+  for (const id of authorIds) {
+    if (!profileMap.has(id)) {
+      const mockCoach = MOCK_COACHES.find((c) => c.id === id);
+      if (mockCoach) {
+        profileMap.set(id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+      }
+    }
+  }
+
+  return rows.map((r) => {
+    const withAuthor: ShotVideoCommentReplyWithAuthor = {
+      ...r,
+      author: profileMap.get(r.author_id) ?? null,
+    };
+    return mapDbReplyToSessionCommentReply(
+      { ...withAuthor, session_id: withAuthor.shot_video_id } as Parameters<typeof mapDbReplyToSessionCommentReply>[0],
+      currentUserId
+    );
+  });
+}
+
+/** Insert a reply to a shot video comment. Returns the new reply as SessionCommentReply or null on error. */
+export async function insertShotVideoCommentReply(
+  supabase: SupabaseClient | null,
+  shotVideoId: string,
+  parentCommentId: string,
+  authorId: string,
+  text: string,
+  timestampSeconds: number | null,
+  marker?: ReplyFrameMarker | null
+): Promise<SessionCommentReply | null> {
+  if (!supabase) return null;
+  const insertPayload: Record<string, unknown> = {
+    shot_video_id: shotVideoId,
+    parent_comment_id: parentCommentId,
+    author_id: authorId,
+    text,
+    timestamp_seconds: timestampSeconds,
+  };
+  if (marker != null) {
+    insertPayload.marker_x_percent = marker.markerXPercent;
+    insertPayload.marker_y_percent = marker.markerYPercent;
+    insertPayload.marker_radius_x = marker.markerRadiusX;
+    insertPayload.marker_radius_y = marker.markerRadiusY;
+  }
+  const { data: inserted, error } = await supabase
+    .from('shot_video_comment_replies')
+    .insert(insertPayload)
+    .select(
+      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y'
+    )
+    .single();
+  if (error || !inserted) return null;
+  const row = inserted as ShotVideoCommentReplyRow;
+  const authorIds = [row.author_id];
+  const validAuthorIds = authorIds.filter((id) => UUID_REGEX.test(id));
+  let profiles: { id: string; full_name: string | null; role: string | null }[] | null = null;
+  if (validAuthorIds.length > 0) {
+    const { data } = await supabase.from('profiles').select('id, full_name, role').in('id', validAuthorIds);
+    profiles = data as { id: string; full_name: string | null; role: string | null }[];
+  }
+  const profileMap = new Map<string, { id: string; full_name: string | null; role: string | null }>();
+  if (profiles) for (const p of profiles) profileMap.set(p.id, p);
+  if (!profileMap.has(row.author_id)) {
+    const mockCoach = MOCK_COACHES.find((c) => c.id === row.author_id);
+    if (mockCoach) {
+      profileMap.set(row.author_id, { id: mockCoach.id, full_name: mockCoach.name, role: 'coach' });
+    }
+  }
+  const withAuthor: ShotVideoCommentReplyWithAuthor = {
+    ...row,
+    author: profileMap.get(row.author_id) ?? null,
+  };
+  return mapDbReplyToSessionCommentReply(
+    { ...withAuthor, session_id: withAuthor.shot_video_id } as Parameters<typeof mapDbReplyToSessionCommentReply>[0],
+    authorId
+  );
+}
+
+/** Update a shot video comment reply (text and optional frame marker). Returns true on success. */
+export async function updateShotVideoCommentReply(
+  supabase: SupabaseClient | null,
+  replyId: string,
+  text: string,
+  marker?: ReplyFrameMarker | null
+): Promise<boolean> {
+  if (!supabase) return false;
+  const updatePayload: Record<string, unknown> = { text };
+  if (marker != null) {
+    updatePayload.marker_x_percent = marker.markerXPercent;
+    updatePayload.marker_y_percent = marker.markerYPercent;
+    updatePayload.marker_radius_x = marker.markerRadiusX;
+    updatePayload.marker_radius_y = marker.markerRadiusY;
+  }
+  const { error } = await supabase
+    .from('shot_video_comment_replies')
+    .update(updatePayload)
+    .eq('id', replyId);
+  return !error;
+}
+
+/** Delete a shot video comment reply. Returns true on success. */
+export async function deleteShotVideoCommentReply(
+  supabase: SupabaseClient | null,
+  replyId: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('shot_video_comment_replies').delete().eq('id', replyId);
+  return !error;
 }

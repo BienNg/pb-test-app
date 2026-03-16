@@ -71,8 +71,12 @@ import {
 } from '@/lib/sessionComments';
 import {
   fetchShotVideoComments,
+  fetchShotVideoCommentReplies,
   insertShotVideoComment,
+  insertShotVideoCommentReply,
   mapShotVideoCommentToSessionComment,
+  updateShotVideoCommentReply,
+  deleteShotVideoCommentReply,
 } from '@/lib/shotVideoComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
@@ -561,9 +565,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       : isShotVideo
         ? fetchShotVideoComments(supabase, sessionId)
         : Promise.resolve([]);
-    const repliesPromise = isDbSession
-      ? fetchSessionCommentReplies(supabase, sessionId)
-      : Promise.resolve([]);
+    const repliesPromise =
+      isDbSession
+        ? fetchSessionCommentReplies(supabase, sessionId)
+        : isShotVideo
+          ? fetchShotVideoCommentReplies(supabase, sessionId, user?.id ?? null)
+          : Promise.resolve([]);
     Promise.all([
       commentsPromise,
       repliesPromise,
@@ -580,7 +587,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           setComments(mapped);
         }
         if (Array.isArray(replyRows) && replyRows.length > 0) {
-          const mappedReplies = replyRows.map((r) => mapDbReplyToSessionCommentReply(r, user?.id ?? null));
+          const mappedReplies = isDbSession
+            ? (replyRows as Parameters<typeof mapDbReplyToSessionCommentReply>[0][]).map((r) =>
+                mapDbReplyToSessionCommentReply(r, user?.id ?? null)
+              )
+            : (replyRows as SessionCommentReply[]);
           const grouped: Record<string, SessionCommentReply[]> = {};
           for (const reply of mappedReplies) {
             const key = reply.parentCommentId;
@@ -1061,48 +1072,44 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const timestampSeconds = replyTimestampSeconds ?? parentComment?.timestampSeconds ?? null;
       const markerState = videoPlayerRef.current?.getFrameMarkerState();
 
-      // Shot sessions: add reply in-memory only (no DB persistence)
-      if (isShotVideo && !isDbSession) {
-        const localReply: SessionCommentReply = {
-          id: `local-reply-${Date.now()}`,
-          parentCommentId: parentId,
-          author: 'You',
-          role: 'You',
-          createdAt: 'Just now',
-          text: replyDraft.trim(),
-          timestampSeconds: timestampSeconds ?? undefined,
-          ...(markerState != null && {
-            markerXPercent: markerState.x,
-            markerYPercent: markerState.y,
-            markerRadiusX: markerState.radiusX,
-            markerRadiusY: markerState.radiusY,
-          }),
-        };
-        setRepliesByCommentId((prev) => {
-          const existing = prev[parentId] ?? [];
-          return { ...prev, [parentId]: [...existing, localReply] };
-        });
-        setReplyDraft('');
-        setReplyingToCommentId(null);
-        setReplyTimestampSeconds(null);
-        setFrameReplyPauseRequested(false);
-        setActiveFrameReplyId(null);
-        return;
-      }
-
-      if (!isDbSession) return;
+      const marker: ReplyFrameMarker | undefined =
+        markerState != null
+          ? {
+              markerXPercent: markerState.x,
+              markerYPercent: markerState.y,
+              markerRadiusX: markerState.radiusX,
+              markerRadiusY: markerState.radiusY,
+            }
+          : undefined;
 
       setPostingReply(true);
       try {
-        const marker: ReplyFrameMarker | undefined =
-          markerState != null
-            ? {
-                markerXPercent: markerState.x,
-                markerYPercent: markerState.y,
-                markerRadiusX: markerState.radiusX,
-                markerRadiusY: markerState.radiusY,
-              }
-            : undefined;
+        if (isShotVideo) {
+          const inserted = await insertShotVideoCommentReply(
+            supabase,
+            sessionId,
+            parentId,
+            user.id,
+            replyDraft.trim(),
+            timestampSeconds,
+            marker
+          );
+          if (inserted) {
+            setRepliesByCommentId((prev) => {
+              const key = inserted.parentCommentId;
+              const existing = prev[key] ?? [];
+              return { ...prev, [key]: [...existing, inserted] };
+            });
+            setReplyDraft('');
+            setReplyingToCommentId(null);
+            setReplyTimestampSeconds(null);
+            setFrameReplyPauseRequested(false);
+            setActiveFrameReplyId(null);
+          }
+          return;
+        }
+
+        if (!isDbSession) return;
 
         const inserted = await insertSessionCommentReply(
           supabase,
@@ -1138,8 +1145,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
   const handleSaveReplyEdit = useCallback(
     async (parentCommentId: string, replyId: string) => {
-      if (!editReplyDraft.trim()) return;
-      if (!isDbSession || !user?.id) return;
+      if (!editReplyDraft.trim() || !user?.id) return;
+      if (!isDbSession && !isShotVideo) return;
 
       setPostingReply(true);
       try {
@@ -1153,12 +1160,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 markerRadiusY: markerState.radiusY,
               }
             : undefined;
-        const ok = await updateSessionCommentReply(
-          supabase,
-          replyId,
-          editReplyDraft.trim(),
-          marker
-        );
+        const ok = isShotVideo
+          ? await updateShotVideoCommentReply(supabase, replyId, editReplyDraft.trim(), marker)
+          : await updateSessionCommentReply(supabase, replyId, editReplyDraft.trim(), marker);
         if (ok) {
           setRepliesByCommentId((prev) => {
             const existing = prev[parentCommentId] ?? [];
@@ -1190,15 +1194,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [supabase, editReplyDraft, isDbSession, user?.id]
+    [supabase, editReplyDraft, isDbSession, isShotVideo, user?.id]
   );
 
   const handleDeleteReply = useCallback(
     async (parentCommentId: string, replyId: string) => {
-      if (!isDbSession || !user?.id) return;
+      if ((!isDbSession && !isShotVideo) || !user?.id) return;
       setPostingReply(true);
       try {
-        const ok = await deleteSessionCommentReply(supabase, replyId);
+        const ok = isShotVideo
+          ? await deleteShotVideoCommentReply(supabase, replyId)
+          : await deleteSessionCommentReply(supabase, replyId);
         if (ok) {
           setRepliesByCommentId((prev) => {
             const existing = prev[parentCommentId] ?? [];
@@ -1212,7 +1218,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setPostingReply(false);
       }
     },
-    [supabase, isDbSession, user?.id]
+    [supabase, isDbSession, isShotVideo, user?.id]
   );
 
   const filteredShots = useMemo(() => {
