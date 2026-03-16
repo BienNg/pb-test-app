@@ -336,13 +336,12 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                   <span
                     key={name}
                     style={{
-                      padding: '4px 12px',
-                      backgroundColor: COLORS.backgroundLibrary || '#f6f8f8',
-                      color: COLORS.textSecondary,
+                      padding: '6px 14px',
+                      backgroundColor: '#ECF5EF',
+                      color: '#588E6E',
                       fontSize: 12,
-                      fontWeight: 500,
-                      borderRadius: 8,
-                      border: `1px solid #e1e9e7`,
+                      fontWeight: 600,
+                      borderRadius: 9999,
                     }}
                   >
                     {name}
