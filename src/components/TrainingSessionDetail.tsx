@@ -68,6 +68,7 @@ import {
   updateSessionCommentReply,
   deleteSessionCommentReply,
   type ReplyFrameMarker,
+  type SessionCommentWithAuthor,
 } from '@/lib/sessionComments';
 import {
   fetchShotVideoComments,
