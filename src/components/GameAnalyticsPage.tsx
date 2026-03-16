@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
 import { parseCommentTextWithShots } from './commentText';
+import { Breadcrumb } from './Breadcrumb';
 import {
   IconUser,
   IconCheck,
@@ -661,84 +662,14 @@ function ShotDetailView({
       }}
     >
       {/* Back button + breadcrumbs — return to roadmap */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: SPACING.sm,
-          padding: 0,
-          flexShrink: 0,
-          borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
-          backgroundColor: '#f6f8f8',
-          height: 'fit-content',
-        }}
-      >
-        <button
-          type="button"
-          onClick={_onClose}
-          style={{
-            width: 40,
-            height: 40,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '50%',
-            border: 'none',
-            background: 'none',
-            color: '#475569',
-            cursor: 'pointer',
-          }}
-          aria-label="Back to Roadmap"
-        >
-          <IconArrowLeft size={22} />
-        </button>
-        <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-          <button
-            type="button"
-            onClick={_onClose}
-            style={{
-              padding: 0,
-              border: 'none',
-              background: 'none',
-              fontSize: 17,
-              fontWeight: 500,
-              letterSpacing: '-0.02em',
-              color: '#6a9a95',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '50vw',
-            }}
-          >
-            {studentName ?? 'Your Roadmap'}
-          </button>
-          <span
-            style={{
-              fontSize: 17,
-              color: '#94a3b8',
-              flexShrink: 0,
-            }}
-            aria-hidden
-          >
-            /
-          </span>
-          <span
-            style={{
-              fontSize: 17,
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              color: COLORS.textPrimary,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {skill.title}
-          </span>
-        </nav>
-      </div>
+      <Breadcrumb
+        onBack={_onClose}
+        items={[
+          { label: studentName ?? 'Your Roadmap', onClick: _onClose },
+          { label: skill.title },
+        ]}
+        ariaLabel="Breadcrumb"
+      />
       {/* Tab switcher — always one line; horizontal scroll on narrow screens if needed */}
       <div
         style={{

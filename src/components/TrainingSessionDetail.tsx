@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS } from '../styles/theme';
 import {
   IconArrowLeft,
-  IconChevronRight,
   IconCheck,
   IconClock,
   IconEye,
@@ -36,6 +35,7 @@ import {
   formatTimestamp,
   FRAME_SEEK_EPSILON_SECONDS,
 } from './TrainingSessionDetail/utils';
+import { Breadcrumb } from './Breadcrumb';
 import { ExampleGifButton } from './TrainingSessionDetail/ExampleGifButton';
 import { FrameDetailCard } from './TrainingSessionDetail/FrameDetailCard';
 import { ShotSuggestionsDropdown } from './TrainingSessionDetail/ShotSuggestionsDropdown';
@@ -1758,178 +1758,133 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           flexShrink: 0,
         }}
       >
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            width: 40,
-            height: 40,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: '50%',
-            border: 'none',
-            background: 'none',
-            color: '#475569',
-            cursor: 'pointer',
-          }}
-          aria-label="Back"
-        >
-          <IconArrowLeft size={22} />
-        </button>
         {breadcrumbFromRoadmap ? (
-          <nav
-            aria-label="Breadcrumb"
-            style={{
+          <Breadcrumb
+            onBack={onBack}
+            variant="centered"
+            containerStyle={{
               flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              minWidth: 0,
-              overflow: 'hidden',
+              borderBottom: 'none',
+              backgroundColor: 'transparent',
             }}
-          >
-            {breadcrumbFromRoadmap.studentName && (
-              <>
-                <button
-                  type="button"
-                  onClick={onBack}
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    lineHeight: 1.3,
-                    letterSpacing: '-0.015em',
-                    color: COLORS.textSecondary,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {breadcrumbFromRoadmap.studentName}
-                </button>
-                <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-              </>
-            )}
+            items={[
+              ...(breadcrumbFromRoadmap.studentName
+                ? [{ label: breadcrumbFromRoadmap.studentName, onClick: onBack }]
+                : []),
+              { label: 'Your Roadmap', onClick: onBack },
+              {
+                label: breadcrumbFromRoadmap.shotTitle,
+                onClick: () =>
+                  onBreadcrumbShotClick
+                    ? onBreadcrumbShotClick(breadcrumbFromRoadmap.shotTitle)
+                    : onBack(),
+              },
+              ...(session?.dateLabel ? [{ label: session.dateLabel }] : []),
+            ]}
+            rightSlot={
+              <div
+                style={{
+                  width: 40,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                {isAdminView && (isDbSession || isShotVideo) && (
+                  <button
+                    type="button"
+                    onClick={() => setShowEditSession(true)}
+                    aria-label="Edit session"
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: COLORS.textSecondary,
+                    }}
+                  >
+                    <IconPencil size={18} />
+                  </button>
+                )}
+              </div>
+            }
+          />
+        ) : (
+          <>
             <button
               type="button"
               onClick={onBack}
               style={{
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.3,
-                letterSpacing: '-0.015em',
-                color: breadcrumbFromRoadmap.studentName ? COLORS.textSecondary : COLORS.textPrimary,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-              }}
-            >
-              Your Roadmap
-            </button>
-            <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-            <button
-              type="button"
-              onClick={() =>
-                onBreadcrumbShotClick
-                  ? onBreadcrumbShotClick(breadcrumbFromRoadmap.shotTitle)
-                  : onBack()
-              }
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1.3,
-                letterSpacing: '-0.015em',
-                color: COLORS.textSecondary,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-              }}
-            >
-              {breadcrumbFromRoadmap.shotTitle}
-            </button>
-            {session?.dateLabel ? (
-              <>
-                <IconChevronRight size={14} style={{ color: COLORS.textSecondary, flexShrink: 0 }} aria-hidden />
-                <span
-                  aria-current="page"
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 600,
-                    lineHeight: 1.3,
-                    letterSpacing: '-0.015em',
-                    color: COLORS.textPrimary,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {session.dateLabel}
-                </span>
-              </>
-            ) : null}
-          </nav>
-        ) : (
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 'clamp(15px, 4.5vw, 18px)',
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              color: COLORS.textPrimary,
-              minWidth: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {session?.dateLabel}
-          </h1>
-        )}
-        <div
-          style={{
-            width: 40,
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-          }}
-        >
-          {isAdminView && (isDbSession || isShotVideo) && (
-            <button
-              type="button"
-              onClick={() => setShowEditSession(true)}
-              aria-label="Edit session"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                border: 'none',
-                backgroundColor: 'transparent',
+                width: 40,
+                height: 40,
+                flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                borderRadius: '50%',
+                border: 'none',
+                background: 'none',
+                color: '#475569',
                 cursor: 'pointer',
-                color: COLORS.textSecondary,
+              }}
+              aria-label="Back"
+            >
+              <IconArrowLeft size={22} />
+            </button>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 'clamp(15px, 4.5vw, 18px)',
+                fontWeight: 700,
+                letterSpacing: '-0.02em',
+                color: COLORS.textPrimary,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
-              <IconPencil size={18} />
-            </button>
-          )}
-        </div>
+              {session?.dateLabel}
+            </h1>
+            <div
+              style={{
+                width: 40,
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+              }}
+            >
+              {isAdminView && (isDbSession || isShotVideo) && (
+                <button
+                  type="button"
+                  onClick={() => setShowEditSession(true)}
+                  aria-label="Edit session"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  <IconPencil size={18} />
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </header>
       <div
         style={{
