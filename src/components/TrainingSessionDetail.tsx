@@ -585,20 +585,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         : isShotVideo
           ? fetchShotVideoCommentReplies(supabase, sessionId, user?.id ?? null)
           : Promise.resolve([]);
-    Promise.all([
-      commentsPromise,
-      repliesPromise,
-      fetchSessionTaggableProfiles(supabase, sessionId),
-    ])
+    Promise.all([commentsPromise, repliesPromise, fetchSessionTaggableProfiles(supabase, sessionId)])
       .then(([rows, replyRows, taggable]) => {
-        if (Array.isArray(rows)) {
-          const mapped =
-            rows.length > 0
-              ? isShotVideo
-                ? rows.map((r) => mapShotVideoCommentToSessionComment(r, user?.id ?? null))
-                : rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null))
-              : [];
+        if (Array.isArray(rows) && rows.length > 0) {
+          const mapped = isShotVideo
+            ? (rows as ShotVideoCommentWithAuthor[]).map((r) =>
+                mapShotVideoCommentToSessionComment(r, user?.id ?? null)
+              )
+            : (rows as SessionCommentWithAuthor[]).map((r) =>
+                mapDbCommentToSessionComment(r, user?.id ?? null)
+              );
           setComments(mapped);
+        } else {
+          setComments([]);
         }
         if (Array.isArray(replyRows) && replyRows.length > 0) {
           const mappedReplies = isDbSession
