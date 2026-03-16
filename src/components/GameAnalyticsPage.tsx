@@ -201,7 +201,7 @@ export const ROADMAP_SKILLS: Array<{
     subCategories: [
       {
         id: 'normal',
-        label: 'Normal',
+        label: 'Basic',
         items: [
           { label: 'Paddle in front of body', completed: false },
           { label: 'Balanced stance with knees bent', completed: false },
@@ -232,7 +232,7 @@ export const ROADMAP_SKILLS: Array<{
           { label: 'Motion mainly from the shoulder, not wrist', completed: false },
           { label: 'Think smooth lift, not roll or flick', completed: false },
           { label: 'Optional cue: small C-shape with elbow to accelerate upward', completed: false },
-          { label: 'Don\'t reach for the ball', completed: false },
+          { label: 'Don\'t reach for the ball. Hit the ball while it is falling down.', completed: false },
         ],
       },
       {

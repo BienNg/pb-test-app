@@ -90,6 +90,7 @@ import {
   fetchShotTechniqueSubVisibility,
   upsertShotTechniqueSubVisibility,
 } from '@/lib/shotTechniqueSubVisibility';
+import { updateShotVideo, deleteShotVideo } from '@/lib/shotVideos';
 
 /** When set, header shows breadcrumb "StudentName > Your Roadmap > ShotTitle" (e.g. when opened from shot video in roadmap). */
 export interface BreadcrumbFromRoadmap {
@@ -263,6 +264,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [editDate, setEditDate] = useState<string>(session?.dateKey ?? '');
   const [editTitle, setEditTitle] = useState<string>(session?.title ?? '');
   const [editCoachId, setEditCoachId] = useState<string>('');
+
+  // Shot video edit state (when isAdminView && isShotVideo)
+  const [editShotVideoUrl, setEditShotVideoUrl] = useState<string>(session?.videoUrl ?? '');
+  const [editShotVideoTitle, setEditShotVideoTitle] = useState<string>(session?.title ?? '');
 
   // Any overlay/modal state; used to pause video playback when true
   const anyModalOpen =
@@ -706,6 +711,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [session?.id, session?.videoUrl]);
 
+  // When opening edit modal for shot video, sync form from current session
+  useEffect(() => {
+    if (showEditSession && isShotVideo && session) {
+      setEditShotVideoUrl(session.videoUrl ?? '');
+      setEditShotVideoTitle(session.title ?? '');
+    }
+  }, [showEditSession, isShotVideo, session?.id, session?.videoUrl, session?.title]);
+
   // Lazy-load session details and student list for admin editing
   useEffect(() => {
     if (!isDbSession || !showEditSession || editSessionLoadedRef.current === true) return;
@@ -832,11 +845,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [supabase, isDbSession, editDate, editCoachId, editSessionType, editTitle, editStudentIds, sessionId, onSessionUpdated]);
 
-  const handleDeleteSession = useCallback(async () => {
-    if (!isDbSession) {
-      setEditSessionError('This session cannot be deleted.');
+  const handleSaveShotVideoDetails = useCallback(async () => {
+    if (!isShotVideo || !supabase) return;
+    const url = editShotVideoUrl?.trim();
+    if (!url) {
+      setEditSessionError('Video URL is required');
       return;
     }
+    setEditSessionSaving(true);
+    setEditSessionError(null);
+    try {
+      const result = await updateShotVideo(supabase, sessionId, {
+        videoUrl: url,
+        shotTitle: editShotVideoTitle?.trim() || session?.title || '',
+      });
+      if (result.error) throw new Error(result.error);
+      await onSessionUpdated?.();
+      setShowEditSession(false);
+    } catch (err) {
+      setEditSessionError(err instanceof Error ? err.message : 'Failed to save');
+    } finally {
+      setEditSessionSaving(false);
+    }
+  }, [supabase, isShotVideo, sessionId, editShotVideoUrl, editShotVideoTitle, session?.title, onSessionUpdated]);
+
+  const handleDeleteSession = useCallback(async () => {
     if (!supabase) {
       setEditSessionError('Supabase not configured');
       return;
@@ -844,26 +877,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     setEditSessionDeleting(true);
     setEditSessionError(null);
     try {
-      console.log('[TrainingSessionDetail] Deleting session:', sessionId);
-      const { error: deleteError } = await supabase
-        .from('sessions')
-        .delete()
-        .eq('id', sessionId);
-      if (deleteError) {
-        console.error('[TrainingSessionDetail] Delete error:', deleteError);
-        throw deleteError;
+      if (isShotVideo) {
+        const result = await deleteShotVideo(supabase, sessionId);
+        if (result.error) throw new Error(result.error);
+        setShowEditSession(false);
+        setShowDeleteConfirm(false);
+        await onSessionUpdated?.();
+        onBack();
+      } else if (isDbSession) {
+        console.log('[TrainingSessionDetail] Deleting session:', sessionId);
+        const { error: deleteError } = await supabase
+          .from('sessions')
+          .delete()
+          .eq('id', sessionId);
+        if (deleteError) {
+          console.error('[TrainingSessionDetail] Delete error:', deleteError);
+          throw deleteError;
+        }
+        console.log('[TrainingSessionDetail] Session deleted successfully');
+        setShowEditSession(false);
+        await onDeleteSession?.(sessionId);
+        onBack();
+      } else {
+        setEditSessionError('This session cannot be deleted.');
       }
-      console.log('[TrainingSessionDetail] Session deleted successfully');
-      setShowEditSession(false);
-      await onDeleteSession?.(sessionId);
-      onBack();
     } catch (err) {
       console.error('[TrainingSessionDetail] Delete failed:', err);
       setEditSessionError(err instanceof Error ? err.message : 'Failed to delete session');
-      setEditSessionDeleting(false);
       setShowDeleteConfirm(false);
+    } finally {
+      setEditSessionDeleting(false);
     }
-  }, [supabase, isDbSession, sessionId, onDeleteSession, onBack]);
+  }, [supabase, isDbSession, isShotVideo, sessionId, onDeleteSession, onSessionUpdated, onBack]);
 
   const sortedCommentTimestamps = useMemo(
     () =>
@@ -1863,7 +1908,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             justifyContent: 'flex-end',
           }}
         >
-          {isAdmin && isDbSession && (
+          {isAdminView && (isDbSession || isShotVideo) && (
             <button
               type="button"
               onClick={() => setShowEditSession(true)}
@@ -3894,7 +3939,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         </div>
       </div>
 
-      {isAdmin && isDbSession && showEditSession && (
+      {isAdminView && showEditSession && (isDbSession || isShotVideo) && (
         <div
           role="presentation"
           onClick={() => {
@@ -3915,7 +3960,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           <div
             role="dialog"
-            aria-label="Edit session details"
+            aria-label={isShotVideo ? 'Edit shot video' : 'Edit session details'}
             onClick={(e) => e.stopPropagation()}
             style={{
               width: 'min(560px, 100%)',
@@ -3939,7 +3984,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               }}
             >
               <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
-                Edit session
+                {isShotVideo ? 'Edit shot video' : 'Edit session'}
               </h3>
               <button
                 type="button"
@@ -3981,6 +4026,68 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               </div>
             )}
 
+            {isShotVideo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+                <div>
+                  <label
+                    htmlFor="edit-shot-video-url"
+                    style={{
+                      display: 'block',
+                      ...TYPOGRAPHY.label,
+                      color: COLORS.textSecondary,
+                      marginBottom: SPACING.xs,
+                    }}
+                  >
+                    Video URL
+                  </label>
+                  <input
+                    id="edit-shot-video-url"
+                    type="url"
+                    value={editShotVideoUrl}
+                    onChange={(e) => setEditShotVideoUrl(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      ...TYPOGRAPHY.body,
+                      color: COLORS.textPrimary,
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="edit-shot-video-title"
+                    style={{
+                      display: 'block',
+                      ...TYPOGRAPHY.label,
+                      color: COLORS.textSecondary,
+                      marginBottom: SPACING.xs,
+                    }}
+                  >
+                    Title (shot / drill name)
+                  </label>
+                  <input
+                    id="edit-shot-video-title"
+                    type="text"
+                    value={editShotVideoTitle}
+                    onChange={(e) => setEditShotVideoTitle(e.target.value)}
+                    placeholder="e.g. Forehand Drive"
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: SPACING.sm,
+                      borderRadius: RADIUS.md,
+                      border: `1px solid ${COLORS.backgroundLight}`,
+                      ...TYPOGRAPHY.body,
+                      color: COLORS.textPrimary,
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
               <div>
                 <label
@@ -4206,6 +4313,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </div>
               </div>
             </div>
+            )}
 
             <div
               style={{
@@ -4231,7 +4339,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   cursor: editSessionSaving || editSessionDeleting ? 'not-allowed' : 'pointer',
                 }}
               >
-                Delete session
+                {isShotVideo ? 'Delete shot video' : 'Delete session'}
               </button>
               <div style={{ display: 'flex', gap: SPACING.sm }}>
                 <button
@@ -4253,7 +4361,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={handleSaveSessionDetails}
+                  onClick={isShotVideo ? handleSaveShotVideoDetails : handleSaveSessionDetails}
                   disabled={editSessionSaving || editSessionDeleting}
                   style={{
                     padding: `${SPACING.sm}px ${SPACING.lg}px`,
@@ -4276,10 +4384,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         </div>
       )}
 
-      {isAdmin && isDbSession && showDeleteConfirm && (
+      {isAdminView && (isDbSession || isShotVideo) && showDeleteConfirm && (
         <div
           role="presentation"
-          onClick={() => setShowDeleteConfirm(false)}
+          onClick={() => !editSessionDeleting && setShowDeleteConfirm(false)}
           style={{
             position: 'fixed',
             inset: 0,
@@ -4293,7 +4401,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         >
           <div
             role="dialog"
-            aria-label="Confirm delete session"
+            aria-label={isShotVideo ? 'Confirm delete shot video' : 'Confirm delete session'}
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: COLORS.white,
@@ -4307,11 +4415,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             }}
           >
             <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
-              Delete session?
+              {isShotVideo ? 'Delete shot video?' : 'Delete session?'}
             </h3>
             <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
-              This will permanently remove the session and its links to students. Comments on the
-              video will remain.
+              {isShotVideo
+                ? 'This will permanently remove this shot video and its comments.'
+                : 'This will permanently remove the session and its links to students. Comments on the video will remain.'}
             </p>
             <div
               style={{

@@ -83,6 +83,37 @@ export async function insertShotVideo(
   return { id: (data as { id: string }).id };
 }
 
+/**
+ * Update an existing shot video (video URL and/or title).
+ */
+export async function updateShotVideo(
+  supabase: SupabaseClient | null,
+  id: string,
+  params: { videoUrl?: string; shotTitle?: string }
+): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Database client not configured' };
+  const updates: { video_url?: string; shot_title?: string } = {};
+  if (params.videoUrl !== undefined) updates.video_url = params.videoUrl;
+  if (params.shotTitle !== undefined) updates.shot_title = params.shotTitle;
+  if (Object.keys(updates).length === 0) return {};
+  const { error } = await supabase.from('shot_videos').update(updates).eq('id', id);
+  if (error) return { error: error.message };
+  return {};
+}
+
+/**
+ * Delete a shot video by id.
+ */
+export async function deleteShotVideo(
+  supabase: SupabaseClient | null,
+  id: string
+): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Database client not configured' };
+  const { error } = await supabase.from('shot_videos').delete().eq('id', id);
+  if (error) return { error: error.message };
+  return {};
+}
+
 /** Shape used to open a shot video in TrainingSessionDetail (matches TrainingSession from GameAnalyticsPage). */
 export interface ShotVideoAsSession {
   id: string;
