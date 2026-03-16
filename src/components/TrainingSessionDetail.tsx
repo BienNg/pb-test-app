@@ -69,6 +69,11 @@ import {
   deleteSessionCommentReply,
   type ReplyFrameMarker,
 } from '@/lib/sessionComments';
+import {
+  fetchShotVideoComments,
+  insertShotVideoComment,
+  mapShotVideoCommentToSessionComment,
+} from '@/lib/shotVideoComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
 import { MOCK_COACHES } from '../data/mockCoaches';
@@ -128,6 +133,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const canAddVideoUrl = !!onSaveVideoUrl;
   const isAdmin = !!onSaveVideoUrl || isAdminView;
   const isShotVideo = session?.session_type === 'shot_video';
+  /** DB-backed session (sessions table); shot videos use shot_video_comments instead. */
   const isDbSession = sessionsProp != null && session != null && !isShotVideo;
   /** Show comment composer only in admin view. */
   const showCommentComposer = isAdminView;
@@ -546,18 +552,32 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return () => window.removeEventListener('scroll', checkUnstick);
   }, [isNarrow, videoStickyBox]);
 
-  // Load comments and taggable profiles when viewing a DB session
+  // Load comments and taggable profiles when viewing a DB session or shot video
   useEffect(() => {
     if (!sessionId) return;
     setCommentsLoading(true);
+    const commentsPromise = isDbSession
+      ? fetchSessionComments(supabase, sessionId)
+      : isShotVideo
+        ? fetchShotVideoComments(supabase, sessionId)
+        : Promise.resolve([]);
+    const repliesPromise = isDbSession
+      ? fetchSessionCommentReplies(supabase, sessionId)
+      : Promise.resolve([]);
     Promise.all([
-      isDbSession ? fetchSessionComments(supabase, sessionId) : Promise.resolve([]),
-      isDbSession ? fetchSessionCommentReplies(supabase, sessionId) : Promise.resolve([]),
+      commentsPromise,
+      repliesPromise,
       fetchSessionTaggableProfiles(supabase, sessionId),
     ])
       .then(([rows, replyRows, taggable]) => {
-        if (Array.isArray(rows) && rows.length > 0) {
-          setComments(rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null)));
+        if (Array.isArray(rows)) {
+          const mapped =
+            rows.length > 0
+              ? isShotVideo
+                ? rows.map((r) => mapShotVideoCommentToSessionComment(r, user?.id ?? null))
+                : rows.map((r) => mapDbCommentToSessionComment(r, user?.id ?? null))
+              : [];
+          setComments(mapped);
         }
         if (Array.isArray(replyRows) && replyRows.length > 0) {
           const mappedReplies = replyRows.map((r) => mapDbReplyToSessionCommentReply(r, user?.id ?? null));
@@ -574,7 +594,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         setTaggableProfiles(taggable);
       })
       .finally(() => setCommentsLoading(false));
-  }, [supabase, isDbSession, sessionId, user?.id]);
+  }, [supabase, isDbSession, isShotVideo, sessionId, user?.id]);
 
   // Video player keyboard shortcuts when comment section / any edit box is not focused
   useEffect(() => {
@@ -956,6 +976,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const currentTime = currentVideoTime ?? 0;
     const timestampSeconds = includeTimestamp ? toFramePrecision(currentTime) : null;
 
+    // Shot video: persist to shot_video_comments (sessionId is shot_video_id)
+    if (isShotVideo && user?.id) {
+      setPostingComment(true);
+      try {
+        const inserted = await insertShotVideoComment(
+          supabase,
+          sessionId,
+          user.id,
+          commentDraft.trim(),
+          timestampSeconds,
+          pendingNewCommentGif
+        );
+        if (inserted) {
+          const mapped = mapShotVideoCommentToSessionComment(inserted, user.id);
+          setComments((prev) => [...prev, mapped]);
+          setCommentDraft('');
+          setSelectedMentionIds([]);
+          setPendingNewCommentGif(null);
+        }
+      } finally {
+        setPostingComment(false);
+      }
+      return;
+    }
+
     if (isDbSession && user?.id) {
       setPostingComment(true);
       try {
@@ -999,6 +1044,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     currentVideoTime,
     includeTimestamp,
     isDbSession,
+    isShotVideo,
     pendingNewCommentGif,
     selectedMentionIds,
     sessionId,
