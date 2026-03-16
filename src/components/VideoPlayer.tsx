@@ -561,6 +561,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
       const handleUp = (ev: MouseEvent | TouchEvent) => {
         ev.preventDefault();
+        onControlPressed?.();
         window.removeEventListener('mousemove', handleMove as EventListener);
         window.removeEventListener('mouseup', handleUp as EventListener);
         window.removeEventListener('touchmove', handleMove as EventListener);
@@ -574,7 +575,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       window.addEventListener('touchend', handleUp as EventListener);
       window.addEventListener('touchcancel', handleUp as EventListener);
     },
-    [seekTo, videoDuration]
+    [seekTo, videoDuration, onControlPressed]
   );
 
   // Apply external seek requests from parent

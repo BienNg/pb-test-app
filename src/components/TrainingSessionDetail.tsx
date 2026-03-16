@@ -637,6 +637,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (active && editInputRef.current?.contains(active)) return true;
       return false;
     };
+    const exitFrameDetailView = () => {
+      setActiveFrameReplyId(null);
+      setPendingSeekSeconds(null);
+      setFrameReplyPauseRequested(false);
+    };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isTypingInInput(e)) return;
       const key = e.key;
@@ -644,46 +649,55 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!player) return;
       if (key === ' ') {
         e.preventDefault();
+        exitFrameDetailView();
         player.playPause();
         return;
       }
       if (key === 'q' || key === 'Q') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(-1);
         return;
       }
       if (key === 'w' || key === 'W') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(1);
         return;
       }
       if (key === 'a' || key === 'A') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(-5);
         return;
       }
       if (key === 's' || key === 'S') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(5);
         return;
       }
       if (key === 'y' || key === 'Y') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(-10);
         return;
       }
       if (key === 'x' || key === 'X') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(10);
         return;
       }
       if (key === 'ArrowLeft') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(-1 / 30);
         return;
       }
       if (key === 'ArrowRight') {
         e.preventDefault();
+        exitFrameDetailView();
         player.skipBy(1 / 30);
         return;
       }
