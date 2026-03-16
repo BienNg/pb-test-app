@@ -38,7 +38,7 @@ export interface GameAnalyticsPageProps {
   sessions: TrainingSession[];
   /** Optional callback when user taps "Watch Video Lessons" in the empty state (e.g. switch to library tab). */
   onOpenLibrary?: () => void;
-  /** When true, hide the "Your Game Analytics | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
+  /** When true, hide the "Your Shot Analytics | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
   hideSegmentSwitcher?: boolean;
   /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
   studentName?: string;
@@ -49,7 +49,7 @@ export interface GameAnalyticsPageProps {
     youtubeUrl: string,
     context?: { studentId: string; shotId: string; shotTitle: string }
   ) => void | Promise<void>;
-  /** When provided, called when user taps a shot video in the roadmap "Your Game Analytics" tab; opens that video in TrainingSessionDetail. */
+  /** When provided, called when user taps a shot video in the roadmap "Your Shot Analytics" tab; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
   /** When set, open the shot detail for the skill with this title (e.g. when returning from session detail breadcrumb). */
   openShotTitle?: string | null;
@@ -286,6 +286,89 @@ export const ROADMAP_SKILLS: Array<{
       { label: 'Compact shoulder swing', completed: false },
       { label: 'Lift low → high', completed: false },
       { label: 'Recover to ready position', completed: false },
+    ],
+    subCategories: [
+      {
+        id: 'basic',
+        label: 'Basic',
+        items: [
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Balanced stance with knees bent', completed: false },
+          { label: 'Eyes on ball', completed: false },
+          { label: 'Contact in front and low', completed: false },
+          { label: 'Slight open paddle face', completed: false },
+          { label: 'Soft hands', completed: false },
+          { label: 'Compact shoulder swing', completed: false },
+          { label: 'Lift low → high', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
+      {
+        id: 'slice',
+        label: 'Slice',
+        items: [
+          { label: 'Feet aligned with target (line from feet → target)', completed: false },
+          { label: 'Balanced stance with bent knees', completed: false },
+          { label: 'Dominant shoulder angled downward toward the ball', completed: false },
+          { label: 'Eyes on the ball', completed: false },
+          { label: 'Continental or slight backhand grip', completed: false },
+          { label: 'Wrist locked and stable (no flicking)', completed: false },
+          { label: 'Elbow extended / arm mostly straight', completed: false },
+          { label: 'Contact in front of body', completed: false },
+          { label: "Don't reach for the ball. Hit the ball while falling down", completed: false },
+          { label: 'Start swing just in front of back hip like a pendulum', completed: false },
+          { label: 'Move paddle forward with slight lift', completed: false },
+          { label: 'Use shoulders and body rotation, not wrist', completed: false },
+          { label: 'Extend paddle toward the target', completed: false },
+          { label: 'Do not chop or hack at the ball', completed: false },
+          { label: 'Stay low through contact', completed: false },
+          { label: 'Keep head stable', completed: false },
+          { label: 'Finish balanced', completed: false },
+        ],
+      },
+      {
+        id: 'volley',
+        label: 'Volley',
+        items: [
+          { label: 'Paddle in front of chest (ready position)', completed: false },
+          { label: 'Balanced stance at kitchen line', completed: false },
+          { label: 'Eyes on ball', completed: false },
+          { label: 'Contact in front of body', completed: false },
+          { label: 'Short punch motion', completed: false },
+          { label: 'Soft hands when needed', completed: false },
+          { label: "Aim low or at opponent's feet", completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
+      {
+        id: 'two-handed',
+        label: 'Two Handed',
+        items: [
+          { label: 'Both hands on paddle', completed: false },
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Balanced stance with knees bent', completed: false },
+          { label: 'Eyes on ball', completed: false },
+          { label: 'Contact in front and low', completed: false },
+          { label: 'Slight open paddle face', completed: false },
+          { label: 'Compact shoulder swing', completed: false },
+          { label: 'Lift low → high', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
+      {
+        id: 'short-hop',
+        label: 'Short Hop',
+        items: [
+          { label: 'Read the short hop early', completed: false },
+          { label: 'Move in quickly', completed: false },
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Contact ball early off the bounce', completed: false },
+          { label: 'Soft hands', completed: false },
+          { label: 'Compact stroke', completed: false },
+          { label: 'Lift low → high', completed: false },
+          { label: 'Recover to ready position', completed: false },
+        ],
+      },
     ],
   },
   {
@@ -577,7 +660,7 @@ function ShotDetailView({
         flexDirection: 'column',
       }}
     >
-      {/* Back button header — return to roadmap */}
+      {/* Back button + breadcrumbs — return to roadmap */}
       <div
         style={{
           display: 'flex',
@@ -610,16 +693,51 @@ function ShotDetailView({
         >
           <IconArrowLeft size={22} />
         </button>
-        <span
-          style={{
-            fontSize: 17,
-            fontWeight: 600,
-            letterSpacing: '-0.02em',
-            color: COLORS.textPrimary,
-          }}
-        >
-          {skill.title}
-        </span>
+        <nav aria-label="Breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <button
+            type="button"
+            onClick={_onClose}
+            style={{
+              padding: 0,
+              border: 'none',
+              background: 'none',
+              fontSize: 17,
+              fontWeight: 500,
+              letterSpacing: '-0.02em',
+              color: '#6a9a95',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '50vw',
+            }}
+          >
+            {studentName ?? 'Your Roadmap'}
+          </button>
+          <span
+            style={{
+              fontSize: 17,
+              color: '#94a3b8',
+              flexShrink: 0,
+            }}
+            aria-hidden
+          >
+            /
+          </span>
+          <span
+            style={{
+              fontSize: 17,
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: COLORS.textPrimary,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {skill.title}
+          </span>
+        </nav>
       </div>
       {/* Tab switcher — always one line; horizontal scroll on narrow screens if needed */}
       <div
@@ -654,7 +772,7 @@ function ShotDetailView({
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          Your Game Analytics
+          Your Shot Analytics
         </button>
         <button
           type="button"
@@ -682,7 +800,7 @@ function ShotDetailView({
 
       {activeTab === 'sessions' && (
         <AnimatedTabPanel>
-          {/* Your Game Analytics — shot videos for this student + shot, or empty state */}
+          {/* Your Shot Analytics — shot videos for this student + shot, or empty state */}
           {loadingShotVideos ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
               Loading…
@@ -1715,7 +1833,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
                   transition: 'all 0.2s',
                 }}
               >
-                Your Game Analytics
+                Your Shot Analytics
               </button>
               <button
                 type="button"

@@ -3461,7 +3461,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         gap: SPACING.sm,
                       }}
                     >
-                      {techniqueItems.map((item, idx) => {
+                      {([...techniqueItems]
+                        .sort((a, b) => {
+                          const aChecked = techniqueChecked[getCheckedKey(a.label)] ?? a.completed;
+                          const bChecked = techniqueChecked[getCheckedKey(b.label)] ?? b.completed;
+                          if (aChecked === bChecked) return 0;
+                          return aChecked ? 1 : -1; // unchecked first
+                        })
+                        .map((item, idx) => {
                         const key = getCheckedKey(item.label);
                         const isChecked = techniqueChecked[key] ?? item.completed;
                         const canEditChecks = isAdminView;
@@ -3581,7 +3588,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             )}
                           </div>
                         );
-                      })}
+                      }))}
                     </div>
                   )}
                 </div>
