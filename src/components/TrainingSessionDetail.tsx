@@ -77,6 +77,7 @@ import {
   mapShotVideoCommentToSessionComment,
   updateShotVideoCommentReply,
   deleteShotVideoCommentReply,
+  type ShotVideoCommentWithAuthor,
 } from '@/lib/shotVideoComments';
 import { useAuth } from './providers/AuthProvider';
 import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
