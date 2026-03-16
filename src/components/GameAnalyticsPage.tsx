@@ -1711,7 +1711,8 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
                 cursor: 'pointer',
               }}
             >
-              ← Back
+              <IconArrowLeft size={16} />
+              <span>Back</span>
             </button>
           )}
           <div

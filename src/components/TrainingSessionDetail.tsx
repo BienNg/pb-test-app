@@ -317,15 +317,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (reply?.timestampSeconds != null) {
       // Read via ref so this effect only fires when activeFrameReplyId changes,
       // not on every video time update (which was causing snap-back after skipping).
-      const alreadyAtFrame = Math.abs(currentVideoTimeRef.current - reply.timestampSeconds) <= FRAME_SEEK_EPSILON_SECONDS;
+      const alreadyAtFrame =
+        Math.abs(currentVideoTimeRef.current - reply.timestampSeconds) <= FRAME_SEEK_EPSILON_SECONDS;
       if (!alreadyAtFrame) {
         setPendingSeekSeconds(reply.timestampSeconds);
         setFrameReplyPauseRequested(true);
         videoPlayerRef.current?.pause();
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFrameReplyId, repliesByCommentId]);
+  }, [activeFrameReplyId, repliesByCommentId, currentVideoTimeRef]);
 
   // Hide frame reply overlay when video is played or when playback time moves away from the reply's timestamp
   useEffect(() => {
@@ -710,7 +710,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [session?.id, session?.videoUrl]);
+  }, [session]);
 
   // When opening edit modal for shot video, sync form from current session
   useEffect(() => {
