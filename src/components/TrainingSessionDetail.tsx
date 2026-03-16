@@ -161,6 +161,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const videoPlayerRef = useRef<VideoPlayerHandle>(null);
   const videoPlayerWrapperRef = useRef<HTMLDivElement>(null);
   const activeFrameReplyIdSetAtRef = useRef<number>(0);
+  /** Always reflects the latest currentVideoTime without being a reactive dep in the seek effect. */
+  const currentVideoTimeRef = useRef<number>(0);
   const videoStickySentinelRef = useRef<HTMLDivElement>(null);
   const videoStickySpacerRef = useRef<HTMLDivElement>(null);
 
@@ -297,19 +299,26 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return { frameDetailMarkerInitial: null, frameDetailMarkerReadOnly: readOnly };
   }, [activeReplyForMarkerId, activeFrameReplyId, repliesByCommentId]);
 
+  // Keep ref in sync with state every render so the seek effect can read the current time
+  // without needing it as a reactive dependency (which would cause re-seeks on every time update).
+  currentVideoTimeRef.current = currentVideoTime;
+
   useEffect(() => {
     if (activeFrameReplyId == null) return;
     activeFrameReplyIdSetAtRef.current = Date.now();
     const reply = getReplyById(repliesByCommentId, activeFrameReplyId);
     if (reply?.timestampSeconds != null) {
-      const alreadyAtFrame = Math.abs(currentVideoTime - reply.timestampSeconds) <= FRAME_SEEK_EPSILON_SECONDS;
+      // Read via ref so this effect only fires when activeFrameReplyId changes,
+      // not on every video time update (which was causing snap-back after skipping).
+      const alreadyAtFrame = Math.abs(currentVideoTimeRef.current - reply.timestampSeconds) <= FRAME_SEEK_EPSILON_SECONDS;
       if (!alreadyAtFrame) {
         setPendingSeekSeconds(reply.timestampSeconds);
         setFrameReplyPauseRequested(true);
         videoPlayerRef.current?.pause();
       }
     }
-  }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeFrameReplyId, repliesByCommentId]);
 
   // Hide frame reply overlay when video is played or when playback time moves away from the reply's timestamp
   useEffect(() => {
@@ -1959,7 +1968,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   frameDetailMarkerInitial={frameDetailMarkerInitial}
                   frameDetailMarkerReadOnly={frameDetailMarkerReadOnly}
                   onPlay={() => setActiveFrameReplyId(null)}
-                  onControlPressed={() => setActiveFrameReplyId(null)}
+                  onControlPressed={() => {
+                    // When user uses time controls (±1s, ±5s, frames, play/pause), exit any active frame-detail view
+                    // and clear pending seek so the video does not snap back to the previous frame timestamp.
+                    setActiveFrameReplyId(null);
+                    setPendingSeekSeconds(null);
+                    setFrameReplyPauseRequested(false);
+                  }}
                   markers={
                     comments
                       .filter((c) => c.timestampSeconds != null)
