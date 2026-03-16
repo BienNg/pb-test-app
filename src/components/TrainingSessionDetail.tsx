@@ -2166,6 +2166,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       onClick={
                         canSeekToTimestamp
                           ? () => {
+                              setActiveFrameReplyId(null);
                               seekToTimestampIfNeeded(comment.timestampSeconds!);
                               setActiveCommentId(comment.id);
                             }
@@ -2176,6 +2177,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           ? (e) => {
                               if (e.key === 'Enter') {
                                 e.preventDefault();
+                                setActiveFrameReplyId(null);
                                 seekToTimestampIfNeeded(comment.timestampSeconds!);
                                 setActiveCommentId(comment.id);
                               }
@@ -2290,6 +2292,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setActiveFrameReplyId(null);
                                   seekToTimestampIfNeeded(comment.timestampSeconds!);
                                   setActiveCommentId(comment.id);
                                 }}
@@ -2356,16 +2359,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   onClick={() => {
                                     setActiveFrameReplyId(null);
                                     setReplyingToCommentId(String(comment.id));
-                                    if (comment.timestampSeconds != null) {
-                                      seekToTimestampIfNeeded(comment.timestampSeconds);
-                                      setFrameReplyPauseRequested(true);
-                                      setReplyTimestampSeconds(comment.timestampSeconds);
-                                      if (Math.abs(currentVideoTime - comment.timestampSeconds) > FRAME_SEEK_EPSILON_SECONDS) {
-                                        videoPlayerRef.current?.pause();
-                                      }
-                                    } else {
-                                      setReplyTimestampSeconds(toFramePrecision(currentVideoTime));
-                                    }
+                                    // Add frame comment at current frame; do not seek to the parent comment's timestamp.
+                                    setReplyTimestampSeconds(toFramePrecision(currentVideoTime));
+                                    setFrameReplyPauseRequested(true);
+                                    videoPlayerRef.current?.pause();
                                     setReplyDraft('');
                                     setActiveCommentMenu(null);
                                   }}
