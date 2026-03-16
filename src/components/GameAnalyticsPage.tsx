@@ -238,7 +238,22 @@ export const ROADMAP_SKILLS: Array<{
       {
         id: 'slice',
         label: 'Slice',
-        items: [],
+        items: [
+          { label: 'Continental grip', completed: false },
+          { label: "Lead leg behind the ball (don\u2019t reach)", completed: false },
+          { label: 'Paddle in front of body', completed: false },
+          { label: 'Balanced stance with bent knees', completed: false },
+          { label: 'Eyes on the ball', completed: false },
+          { label: 'Head stable (don\u2019t rise during contact)', completed: false },
+          { label: 'Imagine a roof above your head (don\u2019t pop up)', completed: false },
+          { label: 'Paddle face open (tilted upward)', completed: false },
+          { label: 'Wrist set and stable', completed: false },
+          { label: 'Paddle angle stays the same throughout the shot', completed: false },
+          { label: 'Contact in front of body', completed: false },
+          { label: 'Smooth controlled swing (no hacking or chopping)', completed: false },
+          { label: 'Swing driven by shoulders and hips, not wrist', completed: false },
+          { label: 'Think Nike swoosh shape swing path', completed: false },
+        ],
       },
       {
         id: 'short-hop',
