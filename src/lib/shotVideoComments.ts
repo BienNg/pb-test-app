@@ -303,3 +303,13 @@ export async function deleteShotVideoCommentReply(
   const { error } = await supabase.from('shot_video_comment_replies').delete().eq('id', replyId);
   return !error;
 }
+
+/** Delete a shot video comment. Returns true on success. */
+export async function deleteShotVideoComment(
+  supabase: SupabaseClient | null,
+  commentId: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase.from('shot_video_comments').delete().eq('id', commentId);
+  return !error;
+}

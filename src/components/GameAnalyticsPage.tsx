@@ -571,6 +571,10 @@ function ShotDetailView({
   /** When true, hide the "Your Shot Analytics" tab (e.g. for student and admin views). */
   hideShotAnalyticsTab?: boolean;
 }) {
+  const heroImageUrl =
+    skill.id === 'backhand-dink'
+      ? 'https://cdn.pickleball.com/news/1738690596502/psxuRaIs.jpeg?width=1320&height=528&optimizer=image'
+      : 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800';
   const [activeTab, setActiveTab] = useState<ShotDetailTab>(hideShotAnalyticsTab ? 'sessions' : 'analytics');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
   const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
@@ -1126,7 +1130,7 @@ function ShotDetailView({
               minHeight: 320,
               borderRadius: 12,
               overflow: 'hidden',
-              backgroundImage: `linear-gradient(0deg, rgba(16, 34, 32, 0.8) 0%, rgba(16, 34, 32, 0) 50%), url("https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800")`,
+              backgroundImage: `linear-gradient(0deg, rgba(16, 34, 32, 0.8) 0%, rgba(16, 34, 32, 0) 50%), url("${heroImageUrl}")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               display: 'flex',

@@ -76,6 +76,7 @@ import {
   mapShotVideoCommentToSessionComment,
   updateShotVideoComment,
   updateShotVideoCommentReply,
+  deleteShotVideoComment,
   deleteShotVideoCommentReply,
   type ShotVideoCommentWithAuthor,
 } from '@/lib/shotVideoComments';
@@ -1701,13 +1702,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
     // Shot video comments use their own table
     if (isShotVideo) {
-      // TODO: add deleteShotVideoComment when backend endpoint/table is ready.
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-      setRepliesByCommentId((prev) => {
-        const next = { ...prev };
-        delete next[commentId];
-        return next;
-      });
+      const success = await deleteShotVideoComment(supabase, commentId);
+      if (success) {
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
+        setRepliesByCommentId((prev) => {
+          const next = { ...prev };
+          delete next[commentId];
+          return next;
+        });
+      }
       return;
     }
 
