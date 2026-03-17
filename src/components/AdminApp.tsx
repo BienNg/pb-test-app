@@ -332,9 +332,11 @@ function AdminOverviewPage({
 function AdminStudentsPage({
   isDesktop,
   onBreadcrumbTailChange,
+  onShotSessionViewChange,
 }: {
   isDesktop: boolean;
   onBreadcrumbTailChange?: (segments: string[]) => void;
+  onShotSessionViewChange?: (isInShotSession: boolean) => void;
 }) {
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -350,6 +352,11 @@ function AdminStudentsPage({
   useEffect(() => {
     onBreadcrumbTailChange?.(selectedStudent ? ['Students', selectedStudent.name] : []);
   }, [selectedStudent, onBreadcrumbTailChange]);
+
+  useEffect(() => {
+    onShotSessionViewChange?.(activeTrainingSessionId != null);
+    return () => onShotSessionViewChange?.(false);
+  }, [activeTrainingSessionId, onShotSessionViewChange]);
 
   const reloadStudents = React.useCallback(async () => {
     const supabase = createClient();
@@ -728,6 +735,7 @@ const SHEET_TRANSITION_MS = 300;
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
   const [_breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
+  const [isInShotSessionView, setIsInShotSessionView] = useState(false);
   const requestedSessions = MOCK_REQUESTED_SESSIONS_INITIAL;
   const isDesktop = useIsDesktop();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -889,6 +897,7 @@ export const AdminApp: React.FC = () => {
           <AdminStudentsPage
             isDesktop={isDesktop}
             onBreadcrumbTailChange={setBreadcrumbTail}
+            onShotSessionViewChange={setIsInShotSessionView}
           />
         );
       case 'coaches':
@@ -1027,7 +1036,7 @@ export const AdminApp: React.FC = () => {
       style={{
         width: '100%',
         minHeight: '100vh',
-        paddingBottom: isDesktop ? SPACING.xl : 80,
+        paddingBottom: isDesktop ? SPACING.xl : isInShotSessionView ? 0 : 80,
         paddingLeft: isDesktop ? (sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH) : 0,
         boxSizing: 'border-box',
         position: 'relative',
@@ -1131,7 +1140,7 @@ export const AdminApp: React.FC = () => {
         <div style={{ flex: 1, minHeight: 0 }}>{renderContent()}</div>
       </div>
 
-      {!isDesktop && (
+      {!isDesktop && !isInShotSessionView && (
         <nav
           aria-label="Admin navigation"
           style={{
