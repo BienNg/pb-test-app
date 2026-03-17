@@ -56,6 +56,8 @@ export interface GameAnalyticsPageProps {
   openShotTitle?: string | null;
   /** Called after opening shot detail from openShotTitle so parent can clear it. */
   onOpenShotTitleConsumed?: () => void;
+  /** When true, hide the "Your Shot Analytics" tab in shot detail (e.g. for student and admin views). */
+  hideShotAnalyticsTab?: boolean;
 }
 
 export interface TrainingSession {
@@ -549,6 +551,7 @@ function ShotDetailView({
   onWatchTutorial,
   onAddSession,
   onOpenShotVideo,
+  hideShotAnalyticsTab = false,
 }: {
   skill: RoadmapSkill;
   /** When set (e.g. coach viewing a student), shown as first segment in the header breadcrumb. */
@@ -565,8 +568,10 @@ function ShotDetailView({
   ) => void | Promise<void>;
   /** When provided, called when user taps a shot video card; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
+  /** When true, hide the "Your Shot Analytics" tab (e.g. for student and admin views). */
+  hideShotAnalyticsTab?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<ShotDetailTab>('analytics');
+  const [activeTab, setActiveTab] = useState<ShotDetailTab>(hideShotAnalyticsTab ? 'sessions' : 'analytics');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
   const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
   const [addSessionError, setAddSessionError] = useState<string | null>(null);
@@ -733,28 +738,30 @@ function ShotDetailView({
           minWidth: 0,
         }}
       >
-        <button
-          type="button"
-          onClick={() => setActiveTab('analytics')}
-          style={{
-            flex: 1,
-            padding: '12px 0',
-            border: 'none',
-            borderBottom: `3px solid ${activeTab === 'analytics' ? '#6a9a95' : 'transparent'}`,
-            marginBottom: -1,
-            background: 'transparent',
-            fontSize: 'clamp(14px, 2.5vw, 15px)',
-            fontWeight: activeTab === 'analytics' ? 600 : 400,
-            color: activeTab === 'analytics' ? COLORS.textPrimary : '#6a9a95',
-            cursor: 'pointer',
-            borderRadius: 0,
-            textAlign: 'center',
-            transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
-            wordBreak: 'break-word',
-          }}
-        >
-          Your Shot Analytics
-        </button>
+        {!hideShotAnalyticsTab && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('analytics')}
+            style={{
+              flex: 1,
+              padding: '12px 0',
+              border: 'none',
+              borderBottom: `3px solid ${activeTab === 'analytics' ? '#6a9a95' : 'transparent'}`,
+              marginBottom: -1,
+              background: 'transparent',
+              fontSize: 'clamp(14px, 2.5vw, 15px)',
+              fontWeight: activeTab === 'analytics' ? 600 : 400,
+              color: activeTab === 'analytics' ? COLORS.textPrimary : '#6a9a95',
+              cursor: 'pointer',
+              borderRadius: 0,
+              textAlign: 'center',
+              transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+              wordBreak: 'break-word',
+            }}
+          >
+            Your Shot Analytics
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setActiveTab('sessions')}
@@ -1560,9 +1567,11 @@ export interface RoadmapSkillsChecklistProps {
   openShotTitle?: string | null;
   /** Called after opening shot detail from openShotTitle so parent can clear it. */
   onOpenShotTitleConsumed?: () => void;
+  /** When true, hide the "Your Shot Analytics" tab in shot detail (e.g. for student and admin views). */
+  hideShotAnalyticsTab?: boolean;
 }
 
-export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed, hideShotAnalyticsTab }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
 
@@ -1603,6 +1612,7 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
           onWatchTutorial={onWatchTutorial}
           onAddSession={onAddSession}
           onOpenShotVideo={onOpenShotVideo}
+          hideShotAnalyticsTab={hideShotAnalyticsTab}
         />
       </div>
     );
@@ -1760,9 +1770,11 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   onOpenShotVideo,
   openShotTitle,
   onOpenShotTitleConsumed,
+  hideShotAnalyticsTab = false,
 }) => {
   const { user } = useAuth();
   const sessions = sessionsProp ?? [];
+  const isAdminView = Boolean(studentName);
   const [internalSelectedSegment, setInternalSelectedSegment] = useState<'videos' | 'roadmap'>('videos');
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
@@ -2002,37 +2014,39 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
                 Book your first session and wait for the Academy to upload your recording. In the meantime watch our Video Lessons to improve your skills.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => onOpenLibrary?.()}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                width: '100%',
-                maxWidth: 240,
-                height: 56,
-                padding: '0 24px',
-                backgroundColor: SAGE_PRIMARY,
-                color: COLORS.white,
-                border: 'none',
-                borderRadius: 12,
-                fontSize: 16,
-                fontWeight: 700,
-                boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
-                cursor: onOpenLibrary ? 'pointer' : 'default',
-                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-              }}
-              onMouseDown={(e) => onOpenLibrary && (e.currentTarget.style.transform = 'scale(0.98)')}
-              onMouseUp={(e) => (e.currentTarget.style.transform = '')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polygon points="5 3 19 12 5 21 5 3" />
-              </svg>
-              <span>Watch Video Lessons</span>
-            </button>
+            {!isAdminView && (
+              <button
+                type="button"
+                onClick={() => onOpenLibrary?.()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  width: '100%',
+                  maxWidth: 240,
+                  height: 56,
+                  padding: '0 24px',
+                  backgroundColor: SAGE_PRIMARY,
+                  color: COLORS.white,
+                  border: 'none',
+                  borderRadius: 12,
+                  fontSize: 16,
+                  fontWeight: 700,
+                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
+                  cursor: onOpenLibrary ? 'pointer' : 'default',
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                }}
+                onMouseDown={(e) => onOpenLibrary && (e.currentTarget.style.transform = 'scale(0.98)')}
+                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>Watch Video Lessons</span>
+              </button>
+            )}
           </div>
         )}
         {selectedSegment === 'videos' && sessions.length > 0 && (
@@ -2075,6 +2089,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
             onOpenShotVideo={onOpenShotVideo}
             openShotTitle={openShotTitle}
             onOpenShotTitleConsumed={onOpenShotTitleConsumed}
+            hideShotAnalyticsTab={hideShotAnalyticsTab}
           />
         )}
       </div>

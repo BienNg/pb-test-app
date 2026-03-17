@@ -184,6 +184,7 @@ export function StudentShell() {
           }}
           openShotTitle={openShotTitle}
           onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
+          hideShotAnalyticsTab
         />
       </div>
       {/* Game Analytics tab content */}

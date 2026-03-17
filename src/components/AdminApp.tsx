@@ -522,6 +522,7 @@ function AdminStudentsPage({
           }}
           openShotTitle={openShotTitle}
           onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
+          hideShotAnalyticsTab
         />
       </div>
     );
