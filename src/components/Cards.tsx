@@ -360,7 +360,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                           height: 14,
                           minWidth: 14,
                           borderRadius: '50%',
-                          border: `2px solid ${COLORS.textMuted}`,
+                          border: '1px solid rgba(199, 199, 204, 0.5)',
                           flexShrink: 0,
                         }}
                         aria-hidden

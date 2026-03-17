@@ -326,7 +326,7 @@ export function StudentShell() {
                           width: 18,
                           height: 2,
                           borderRadius: 999,
-                          backgroundColor: COLORS.primary,
+                          backgroundColor: COLORS.libraryPrimary,
                         }}
                       />
                     )}
