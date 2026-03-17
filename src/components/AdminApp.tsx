@@ -981,7 +981,7 @@ export const AdminApp: React.FC = () => {
         style={{
           width: isDesktop ? '100%' : undefined,
           flex: isDesktop ? undefined : 1,
-          background: isActive && isDesktop ? COLORS.primaryLight : 'none',
+          background: isActive && isDesktop ? COLORS.libraryPrimaryLight : 'none',
           border: 'none',
           outline: 'none',
           padding: isDesktop ? (iconOnly ? SPACING.sm : SPACING.md) : SPACING.xs,
@@ -1013,7 +1013,7 @@ export const AdminApp: React.FC = () => {
             {tab.label}
           </span>
         )}
-        {!isDesktop && (
+          {!isDesktop && (
           <div style={{ height: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {isActive && (
               <div
@@ -1021,7 +1021,7 @@ export const AdminApp: React.FC = () => {
                   width: 20,
                   height: 2,
                   borderRadius: 999,
-                  backgroundColor: COLORS.primary,
+                  backgroundColor: COLORS.libraryPrimary,
                 }}
               />
             )}
@@ -1118,13 +1118,13 @@ export const AdminApp: React.FC = () => {
               gap: sidebarOpen ? SPACING.sm : 0,
               padding: sidebarOpen ? SPACING.md : SPACING.sm,
               borderRadius: RADIUS.md,
-              backgroundColor: COLORS.primary,
+              backgroundColor: COLORS.libraryPrimary,
               color: COLORS.white,
               border: 'none',
               ...TYPOGRAPHY.label,
               fontWeight: 600,
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(49, 203, 0, 0.3)',
+              boxShadow: '0 4px 12px rgba(143, 185, 168, 0.3)',
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1210,7 +1210,7 @@ export const AdminApp: React.FC = () => {
                           width: 18,
                           height: 2,
                           borderRadius: 999,
-                          backgroundColor: COLORS.primary,
+                          backgroundColor: COLORS.libraryPrimary,
                         }}
                       />
                     )}
@@ -1240,12 +1240,12 @@ export const AdminApp: React.FC = () => {
                   width: 58,
                   height: 58,
                   borderRadius: '50%',
-                  backgroundColor: COLORS.primary,
+                  backgroundColor: COLORS.libraryPrimary,
                   border: 'none',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 4px 12px rgba(49, 203, 0, 0.4)',
+                  boxShadow: '0 4px 12px rgba(143, 185, 168, 0.4)',
                   cursor: 'pointer',
                 }}
               >
@@ -1296,7 +1296,7 @@ export const AdminApp: React.FC = () => {
                           width: 18,
                           height: 2,
                           borderRadius: 999,
-                          backgroundColor: COLORS.primary,
+                          backgroundColor: COLORS.libraryPrimary,
                         }}
                       />
                     )}

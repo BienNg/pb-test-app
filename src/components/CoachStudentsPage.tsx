@@ -860,30 +860,6 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
               </div>
             )}
 
-            {/* Mobile FAB */}
-            {isMobile && (
-              <button
-                style={{
-                  position: 'fixed',
-                  bottom: '96px',
-                  right: '24px',
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: '#8FB9A8',
-                  color: 'white',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(143, 185, 168, 0.4)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                }}
-              >
-                <span>+</span>
-              </button>
-            )}
           </div>
         )}
 
