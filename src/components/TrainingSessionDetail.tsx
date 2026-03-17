@@ -2308,10 +2308,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: 16,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: REFERENCE_PRIMARY,
                             }}
                           >
-                            {isCoach ? '🎓' : '🙂'}
+                            {(comment.author || '')
+                              .trim()
+                              .split(/\s+/)
+                              .map((n) => n[0])
+                              .join('')
+                              .slice(0, 2)
+                              .toUpperCase() || '?'}
                           </div>
                           <span
                             style={{
