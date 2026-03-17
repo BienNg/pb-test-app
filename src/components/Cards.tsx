@@ -234,27 +234,6 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             <IconCheck size={40} />
           </div>
         )}
-        {['shot video', 'game'].includes(category.toLowerCase()) && (
-          <span
-            style={{
-              position: 'absolute',
-              bottom: 8,
-              right: 8,
-              display: 'inline-block',
-              padding: '4px 10px',
-              borderRadius: 6,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              backgroundColor: 'rgba(0, 0, 0, 0.75)',
-              color: COLORS.white,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-            }}
-          >
-            {category.toUpperCase()}
-          </span>
-        )}
       </div>
 
       {/* Content */}
@@ -300,19 +279,39 @@ export const LessonCard: React.FC<LessonCardProps> = ({
               </p>
             )}
           </div>
-          {isList && (
-            <span
-              style={{
-                color: COLORS.textMuted,
-                fontSize: 18,
-                flexShrink: 0,
-              }}
-              onClick={(e) => e.stopPropagation()}
-              role="button"
-              aria-label="More options"
-            >
-              ⋮
-            </span>
+          {(['shot video', 'game'].includes(category.toLowerCase()) || isList) && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flexShrink: 0 }}>
+              {['shot video', 'game'].includes(category.toLowerCase()) && (
+                <span
+                  style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
+                    backgroundColor: accent,
+                    color: COLORS.white,
+                  }}
+                >
+                  {category.toUpperCase()}
+                </span>
+              )}
+              {isList && (
+                <span
+                  style={{
+                    color: COLORS.textMuted,
+                    fontSize: 18,
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  role="button"
+                  aria-label="More options"
+                >
+                  ⋮
+                </span>
+              )}
+            </div>
           )}
         </div>
 
