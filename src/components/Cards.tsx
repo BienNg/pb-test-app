@@ -1,7 +1,7 @@
 import React from 'react';
 import { COLORS, SPACING, RADIUS, SHADOWS, TYPOGRAPHY } from '../styles/theme';
 import { Card, Badge } from './BaseComponents';
-import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers } from './Icons';
+import { IconUser, IconPlay, IconCheck, IconClock, IconCalendar, IconCalendarDays, IconGraduationCap, IconMapPin, IconUsers, IconChevronDown } from './Icons';
 import { getYoutubeVideoId as getYoutubeIdFromUrl } from '@/lib/youtube';
 
 interface TrainerCardProps {
@@ -119,6 +119,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   techniquePointsToImproveBySubcategory,
 }) => {
   const [pressed, setPressed] = React.useState(false);
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
 
   const isList = variant === 'list';
@@ -339,7 +340,10 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                     borderLeft: `2px solid ${accentLight}`,
                   }}
                 >
-                  {group.items.slice(0, 4).map((item) => (
+                  {(expandedGroups.has(group.subcategoryLabel)
+                    ? group.items
+                    : group.items.slice(0, 4)
+                  ).map((item) => (
                     <div
                       key={item}
                       style={{
@@ -365,16 +369,78 @@ export const LessonCard: React.FC<LessonCardProps> = ({
                       <span>{item}</span>
                     </div>
                   ))}
-                  {group.items.length > 4 && (
+                  {group.items.length > 4 && !expandedGroups.has(group.subcategoryLabel) && (
                     <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedGroups((prev) => new Set(prev).add(group.subcategoryLabel));
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setExpandedGroups((prev) => new Set(prev).add(group.subcategoryLabel));
+                        }
+                      }}
                       style={{
                         fontSize: 11,
-                        color: COLORS.textMuted,
+                        color: accent,
                         fontStyle: 'italic',
                         paddingLeft: 22,
+                        cursor: 'pointer',
+                        alignSelf: 'flex-start',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        textDecoration: 'underline',
                       }}
+                      aria-label={`Show ${group.items.length - 4} more items`}
                     >
+                      <IconChevronDown size={12} />
                       +{group.items.length - 4} more
+                    </div>
+                  )}
+                  {group.items.length > 4 && expandedGroups.has(group.subcategoryLabel) && (
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedGroups((prev) => {
+                          const next = new Set(prev);
+                          next.delete(group.subcategoryLabel);
+                          return next;
+                        });
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setExpandedGroups((prev) => {
+                            const next = new Set(prev);
+                            next.delete(group.subcategoryLabel);
+                            return next;
+                          });
+                        }
+                      }}
+                      style={{
+                        fontSize: 11,
+                        color: accent,
+                        fontStyle: 'italic',
+                        paddingLeft: 22,
+                        cursor: 'pointer',
+                        alignSelf: 'flex-start',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        textDecoration: 'underline',
+                      }}
+                      aria-label="Show fewer items"
+                    >
+                      <IconChevronDown size={12} style={{ transform: 'rotate(180deg)' }} />
+                      Show less
                     </div>
                   )}
                 </div>
