@@ -341,7 +341,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
 
   // When shot changes (shot video), sync selected technique sub-tab.
-  // Student: first visible sub; admin: first active (visible) sub.
+  // Always focus the first active tab by default: first in display order (subs) that is visible/active.
   useEffect(() => {
     if (!isShotVideo || !session) return;
     const shotSkill = ROADMAP_SKILLS.find((s) => s.title === session.title);
@@ -351,10 +351,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         techniqueVisibilityLoaded && techniqueVisibleSubIds.length > 0
           ? techniqueVisibleSubIds.filter((id) => subs.some((s) => s.id === id))
           : [subs[0].id];
-      const firstVisible = visibleIds[0] ?? subs[0].id;
+      // First active = first tab in UI order (subs) that is in the visible set
+      const firstActive =
+        subs.find((s) => visibleIds.includes(s.id))?.id ?? visibleIds[0] ?? subs[0].id;
       setSelectedTechniqueSubId((prev) => {
-        if (isAdminView) return prev && subs.some((s) => s.id === prev) ? prev : firstVisible;
-        return prev && visibleIds.includes(prev) ? prev : firstVisible;
+        // Only keep prev if it's visible to student (in visibleIds); otherwise default to first active tab
+        if (isAdminView) return prev && visibleIds.includes(prev) ? prev : firstActive;
+        return prev && visibleIds.includes(prev) ? prev : firstActive;
       });
     } else {
       setSelectedTechniqueSubId(null);
@@ -3302,6 +3305,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 hasSubs && selectedTechniqueSubId && visibleSubs.some((s) => s.id === selectedTechniqueSubId)
                   ? selectedTechniqueSubId
                   : fallbackFirst;
+              const isCategoryVisibleToStudent = !hasSubs || (effectiveSubId != null && effectiveVisibleSubIds.includes(effectiveSubId));
               const techniqueItems =
                 hasSubs && effectiveSubId
                   ? (subs!.find((s) => s.id === effectiveSubId)?.items ?? [])
@@ -3477,6 +3481,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         display: 'flex',
                         flexDirection: 'column',
                         gap: SPACING.sm,
+                        opacity: isCategoryVisibleToStudent ? 1 : 0.5,
+                        pointerEvents: isCategoryVisibleToStudent ? undefined : 'none',
+                        transition: 'opacity 0.2s ease',
                       }}
                     >
                       {([...techniqueItems]
@@ -3489,7 +3496,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         .map((item, idx) => {
                         const key = getCheckedKey(item.label);
                         const isChecked = techniqueChecked[key] ?? item.completed;
-                        const canEditChecks = isAdminView;
+                        const canEditChecks = isAdminView && isCategoryVisibleToStudent;
                         const toggleChecked = () => {
                           const nextChecked = !isChecked;
                           setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));

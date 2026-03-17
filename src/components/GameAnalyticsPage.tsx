@@ -15,7 +15,6 @@ import {
   IconTarget,
   IconHand,
   IconArrowDownUp,
-  IconArrowLeft,
   IconZap,
   IconSearch,
   IconPlay,
@@ -1838,52 +1837,14 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        {/* Header */}
-        <div>
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                marginBottom: SPACING.md,
-                display: 'flex',
-                alignItems: 'center',
-                gap: SPACING.xs,
-                color: COLORS.textSecondary,
-                ...TYPOGRAPHY.bodySmall,
-                cursor: 'pointer',
-              }}
-            >
-              <IconArrowLeft size={16} />
-              <span>Back</span>
-            </button>
-          )}
-          <div
-            style={{
-              margin: 0,
-              marginBottom: 24,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: SPACING.md,
-            }}
-          >
-            <h1
-              style={{
-                fontSize: 24,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                color: '#2d3a38',
-                margin: 0,
-              }}
-            >
-              {title ?? 'Game Analytics'}
-            </h1>
-            {!hideSegmentSwitcher && <ProfileMenuButton />}
-          </div>
+        {/* Header — breadcrumb with usual back button (same as other screens) */}
+        <Breadcrumb
+          onBack={onBack}
+          items={[{ label: title ?? 'Game Analytics' }]}
+          ariaLabel="Breadcrumb"
+          rightSlot={!hideSegmentSwitcher ? <ProfileMenuButton /> : undefined}
+          containerStyle={{ marginBottom: 24 }}
+        />
 
           {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
           {!hideSegmentSwitcher && (
@@ -1933,7 +1894,6 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
               </button>
             </div>
           )}
-        </div>
 
         {/* Content based on selected segment */}
         {selectedSegment === 'videos' && sessions.length === 0 && (

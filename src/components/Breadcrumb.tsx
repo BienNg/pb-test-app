@@ -59,7 +59,13 @@ export function Breadcrumb({
     gap: 6,
     minWidth: 0,
     overflow: 'hidden',
-    ...(isCentered ? { flex: 1, justifyContent: 'center' } : onBack == null ? { flex: 1 } : {}),
+    ...(isCentered
+      ? { flex: 1, justifyContent: 'center' }
+      : rightSlot != null
+        ? { flex: 1 }
+        : onBack == null
+          ? { flex: 1 }
+          : {}),
   };
 
   return (
