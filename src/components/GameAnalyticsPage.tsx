@@ -719,7 +719,7 @@ function ShotDetailView({
         ]}
         ariaLabel="Breadcrumb"
       />
-      {/* Tab switcher — always one line; horizontal scroll on narrow screens if needed */}
+      {/* Tab switcher */}
       <div
         style={{
           display: 'flex',
@@ -728,7 +728,6 @@ function ShotDetailView({
           padding: '12px 0 0',
           flexShrink: 0,
           borderBottom: `1px solid ${SAGE_PRIMARY}1A`,
-          overflowX: 'auto',
           minWidth: 0,
         }}
       >
@@ -736,8 +735,8 @@ function ShotDetailView({
           type="button"
           onClick={() => setActiveTab('analytics')}
           style={{
-            flex: '0 0 auto',
-            padding: '12px 16px 12px 0',
+            flex: 1,
+            padding: '12px 0',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'analytics' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -747,9 +746,9 @@ function ShotDetailView({
             color: activeTab === 'analytics' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
             borderRadius: 0,
-            whiteSpace: 'nowrap',
-            textAlign: 'left',
+            textAlign: 'center',
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+            wordBreak: 'break-word',
           }}
         >
           Your Shot Analytics
@@ -758,8 +757,8 @@ function ShotDetailView({
           type="button"
           onClick={() => setActiveTab('sessions')}
           style={{
-            flex: '0 0 auto',
-            padding: '12px 16px',
+            flex: 1,
+            padding: '12px 0',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'sessions' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -769,9 +768,9 @@ function ShotDetailView({
             color: activeTab === 'sessions' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
             borderRadius: 0,
-            whiteSpace: 'nowrap',
-            textAlign: 'left',
+            textAlign: 'center',
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+            wordBreak: 'break-word',
           }}
         >
           Your {skill.title} Sessions
@@ -780,8 +779,8 @@ function ShotDetailView({
           type="button"
           onClick={() => setActiveTab('technique')}
           style={{
-            flex: '0 0 auto',
-            padding: '12px 0 12px 16px',
+            flex: 1,
+            padding: '12px 0',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'technique' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -791,9 +790,9 @@ function ShotDetailView({
             color: activeTab === 'technique' ? COLORS.textPrimary : '#6a9a95',
             cursor: 'pointer',
             borderRadius: 0,
-            whiteSpace: 'nowrap',
-            textAlign: 'left',
+            textAlign: 'center',
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+            wordBreak: 'break-word',
           }}
         >
           Technique
