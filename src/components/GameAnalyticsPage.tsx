@@ -236,7 +236,6 @@ export const ROADMAP_SKILLS: Array<{
           { label: 'Paddle tip drops below the ball. Butt cap facing upward → confirms paddle head is low', completed: false },
           { label: 'Paddle face slightly open', completed: false },
           { label: 'Contact Ball in front of body', completed: false },
-          { label: 'Contact low and let the ball bounce down', completed: false },
           { label: 'Brush up the back of the ball for topspin', completed: false },
           { label: 'Swing low → high', completed: false },
           { label: 'Motion mainly from the shoulder, not wrist', completed: false },
