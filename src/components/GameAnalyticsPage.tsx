@@ -1765,7 +1765,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
                   transition: 'all 0.2s',
                 }}
               >
-                Your Shot Analytics
+                Your Game Analytics
               </button>
               <button
                 type="button"
