@@ -4,8 +4,6 @@ import {
   IconArrowLeft,
   IconCheck,
   IconClock,
-  IconEye,
-  IconEyeOff,
   IconFilter,
   IconMoreVertical,
   IconPencil,
@@ -341,7 +339,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   }, [activeFrameReplyId, currentVideoTime, repliesByCommentId]);
 
-  // When shot changes (shot video), sync selected technique sub-tab. Student: first visible sub; admin: first sub.
+  // When shot changes (shot video), sync selected technique sub-tab.
+  // Student: first visible sub; admin: first active (visible) sub.
   useEffect(() => {
     if (!isShotVideo || !session) return;
     const shotSkill = ROADMAP_SKILLS.find((s) => s.title === session.title);
@@ -353,7 +352,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           : [subs[0].id];
       const firstVisible = visibleIds[0] ?? subs[0].id;
       setSelectedTechniqueSubId((prev) => {
-        if (isAdminView) return prev && subs.some((s) => s.id === prev) ? prev : subs[0].id;
+        if (isAdminView) return prev && subs.some((s) => s.id === prev) ? prev : firstVisible;
         return prev && visibleIds.includes(prev) ? prev : firstVisible;
       });
     } else {
@@ -3236,12 +3235,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   : hasSubs
                     ? [subs![0].id]
                     : [];
-              // Student sees only sub-categories marked visible (default: first). Admin sees all and can toggle.
+              // Effective list of sub-category IDs that are visible to the student, guaranteeing at least one.
+              const effectiveVisibleSubIdsBase = visibleSubIdsForStudent.filter((id) =>
+                subs!.some((s) => s.id === id)
+              );
+              const fallbackFirst = effectiveVisibleSubIdsBase[0] ?? subs?.[0]?.id ?? null;
+              const effectiveVisibleSubIds =
+                effectiveVisibleSubIdsBase.length > 0 && fallbackFirst
+                  ? Array.from(new Set([fallbackFirst, ...effectiveVisibleSubIdsBase]))
+                  : fallbackFirst
+                    ? [fallbackFirst]
+                    : [];
+              // Student sees only sub-categories marked visible (default: first). Admin sees all and can toggle visibility.
               const visibleSubs = hasSubs
                 ? (isAdminView ? subs! : subs!.filter((s) => visibleSubIdsForStudent.includes(s.id)))
                 : [];
-              const effectiveVisibleSubIds = visibleSubIdsForStudent.filter((id) => subs!.some((s) => s.id === id));
-              const fallbackFirst = effectiveVisibleSubIds[0] ?? subs?.[0]?.id ?? null;
               const effectiveSubId =
                 hasSubs && selectedTechniqueSubId && visibleSubs.some((s) => s.id === selectedTechniqueSubId)
                   ? selectedTechniqueSubId
@@ -3253,10 +3261,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               const getCheckedKey = (label: string) => buildTechniqueKey(effectiveSubId, label);
 
               const handleVisibilityToggle = (subId: string, currentlyVisible: boolean) => {
-                if (currentlyVisible && effectiveVisibleSubIds.length <= 1) return; // at least one must stay visible
+                if (!subId) return;
+                if (currentlyVisible && effectiveVisibleSubIds.length <= 1) return; // At least one must stay visible.
+                const base = effectiveVisibleSubIds;
                 const next = currentlyVisible
-                  ? effectiveVisibleSubIds.filter((id) => id !== subId)
-                  : [...effectiveVisibleSubIds, subId];
+                  ? base.filter((id) => id !== subId)
+                  : Array.from(new Set([...base, subId]));
                 setTechniqueVisibleSubIds(next);
                 if (sessionId) {
                   void upsertShotTechniqueSubVisibility(supabase, sessionId, next);
@@ -3312,35 +3322,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             color: COLORS.textMuted,
                           }}
                         >
-                          Categories · tap eye to show/hide for student
+                          Categories · control which are visible to the student
                         </p>
                       )}
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 6,
-                        padding: '4px 0',
-                      }}
-                    >
-                      {visibleSubs.map((sub) => {
-                        const isSubSelected = effectiveSubId === sub.id;
-                        const isVisibleToStudent = isAdminView
-                          ? effectiveVisibleSubIds.includes(sub.id)
-                          : true;
-                        const canHide =
-                          isAdminView && effectiveVisibleSubIds.length > 1 && effectiveVisibleSubIds.includes(sub.id);
-                        return (
-                          <div
-                            key={sub.id}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 6,
-                              flexWrap: 'nowrap',
-                            }}
-                          >
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 6,
+                          padding: '4px 0',
+                        }}
+                      >
+                        {visibleSubs.map((sub) => {
+                          const isSubSelected = effectiveSubId === sub.id;
+                          const isVisibleToStudent = isAdminView
+                            ? effectiveVisibleSubIds.includes(sub.id)
+                            : true;
+                          const labelColor = isSubSelected
+                            ? '#fff'
+                            : isVisibleToStudent
+                              ? COLORS.textSecondary
+                              : COLORS.textMuted;
+                          const labelOpacity = isVisibleToStudent ? 1 : 0.6;
+                          return (
                             <button
+                              key={sub.id}
                               type="button"
                               onClick={() => setSelectedTechniqueSubId(sub.id)}
                               style={{
@@ -3352,61 +3358,69 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   : 'rgba(143, 185, 168, 0.12)',
                                 fontSize: 13,
                                 fontWeight: isSubSelected ? 700 : 600,
-                                color: isSubSelected ? '#fff' : COLORS.textSecondary,
+                                color: labelColor,
                                 cursor: 'pointer',
                                 boxShadow: isSubSelected
                                   ? '0 2px 8px rgba(143, 185, 168, 0.35)'
                                   : 'none',
                                 transition: 'background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease',
+                                opacity: labelOpacity,
                               }}
                             >
                               {sub.label}
                             </button>
-                            {isAdminView && (
-                              <button
-                                type="button"
-                                onClick={() => handleVisibilityToggle(sub.id, isVisibleToStudent)}
-                                disabled={isVisibleToStudent && !canHide}
-                                title={
-                                  isVisibleToStudent
-                                    ? canHide
-                                      ? 'Hide this category from student'
-                                      : 'At least one category must be visible'
-                                    : 'Show this category to student'
-                                }
-                                aria-label={
-                                  isVisibleToStudent
-                                    ? 'Hide from student'
-                                    : 'Show to student'
-                                }
-                                style={{
-                                  width: 36,
-                                  height: 36,
-                                  flexShrink: 0,
-                                  borderRadius: 10,
-                                  border: 'none',
-                                  background: isVisibleToStudent
-                                    ? 'rgba(143, 185, 168, 0.2)'
-                                    : 'rgba(148, 163, 184, 0.2)',
-                                  color: isVisibleToStudent ? REFERENCE_PRIMARY : COLORS.textMuted,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  cursor: canHide || !isVisibleToStudent ? 'pointer' : 'not-allowed',
-                                  opacity: isVisibleToStudent && !canHide ? 0.6 : 1,
-                                }}
-                              >
-                                {isVisibleToStudent ? (
-                                  <IconEye size={18} />
-                                ) : (
-                                  <IconEyeOff size={18} />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                      {isAdminView && effectiveSubId && (
+                        <div
+                          style={{
+                            marginTop: 8,
+                            padding: '8px 12px',
+                            borderRadius: 10,
+                            backgroundColor: effectiveVisibleSubIds.includes(effectiveSubId)
+                              ? 'rgba(56, 189, 248, 0.08)'
+                              : 'rgba(148, 163, 184, 0.12)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 12,
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: 12,
+                              color: COLORS.textSecondary,
+                            }}
+                          >
+                            {effectiveVisibleSubIds.includes(effectiveSubId)
+                              ? 'This shot category is visible to the student.'
+                              : 'This shot category is currently hidden from the student.'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleVisibilityToggle(
+                                effectiveSubId,
+                                effectiveVisibleSubIds.includes(effectiveSubId)
+                              )
+                            }
+                            style={{
+                              padding: '6px 12px',
+                              borderRadius: 999,
+                              border: 'none',
+                              backgroundColor: effectiveVisibleSubIds.includes(effectiveSubId)
+                                ? 'rgba(239, 68, 68, 0.12)'
+                                : REFERENCE_PRIMARY,
+                              color: effectiveVisibleSubIds.includes(effectiveSubId) ? '#b91c1c' : '#fff',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {effectiveVisibleSubIds.includes(effectiveSubId) ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   {(techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
