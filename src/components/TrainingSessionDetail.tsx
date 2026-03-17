@@ -722,7 +722,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditShotVideoUrl(session.videoUrl ?? '');
       setEditShotVideoTitle(session.title ?? '');
     }
-  }, [showEditSession, isShotVideo, session?.id, session?.videoUrl, session?.title]);
+  }, [showEditSession, isShotVideo, session]);
 
   // Lazy-load session details and student list for admin editing
   useEffect(() => {
@@ -2241,7 +2241,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </p>
               ) : (
                 visibleComments.map((comment) => {
-                  const isCoach = comment.role === 'Coach';
                   const isActive = activeCommentId !== null && comment.id === activeCommentId;
                   const canSeekToTimestamp =
                     comment.timestampSeconds != null && editingCommentId !== comment.id;
