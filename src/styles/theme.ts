@@ -25,6 +25,8 @@ export const COLORS = {
   // Library tab (reference design) – sage green
   libraryPrimary: '#8FB9A8',
   libraryPrimaryLight: 'rgba(143, 185, 168, 0.1)',
+  brandLight: '#E8F1EE',
+  brandDark: '#5B8675',
   libraryPrimaryLightHover: 'rgba(143, 185, 168, 0.2)',
 
   // Accents

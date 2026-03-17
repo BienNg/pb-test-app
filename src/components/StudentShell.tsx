@@ -198,6 +198,11 @@ export function StudentShell() {
       >
         <GameAnalyticsPage
           hideSegmentSwitcher
+          onOpenRoadmap={() => setActiveTab('roadmap')}
+          onOpenShotDetail={(shotTitle) => {
+            setOpenShotTitle(shotTitle);
+            setActiveTab('roadmap');
+          }}
           onOpenSession={(sessionId) => {
             setOverrideSession(null);
             setActiveTrainingSessionId(sessionId);

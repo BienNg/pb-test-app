@@ -37,6 +37,7 @@ import {
   Zap,
   Eye,
   EyeOff,
+  Settings,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -249,5 +250,11 @@ export const IconEye: React.FC<{ size?: number; style?: React.CSSProperties }> =
 export const IconEyeOff: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <EyeOff size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconSettings: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Settings size={size} strokeWidth={stroke} />
   </IconWrapper>
 );

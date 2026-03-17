@@ -18,6 +18,8 @@ import {
   IconZap,
   IconSearch,
   IconPlay,
+  IconSettings,
+  IconChevronRight,
 } from './Icons';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
@@ -39,6 +41,10 @@ export interface GameAnalyticsPageProps {
   sessions: TrainingSession[];
   /** Optional callback when user taps "Watch Video Lessons" in the empty state (e.g. switch to library tab). */
   onOpenLibrary?: () => void;
+  /** Optional callback when user taps the arrow on "Shots Analyzed" card (e.g. switch to roadmap tab). */
+  onOpenRoadmap?: () => void;
+  /** Optional callback when user taps "Most trained shot" card (e.g. open that shot's detail in roadmap tab). */
+  onOpenShotDetail?: (shotTitle: string) => void;
   /** When true, hide the "Your Shot Analytics | Your Roadmap" tab switcher (e.g. student view where roadmap is in the navbar). */
   hideSegmentSwitcher?: boolean;
   /** When set (e.g. coach viewing a student), shown in shot detail header breadcrumb. */
@@ -1461,8 +1467,10 @@ function ShotDetailView({
 /** Reusable profile menu button with dropdown (Log out). Use in header or roadmap bar. */
 function ProfileMenuButton({
   size = 40,
+  variant = 'profile',
 }: {
   size?: number;
+  variant?: 'profile' | 'settings';
 }) {
   const { signOut } = useAuth();
   const router = useRouter();
@@ -1480,12 +1488,14 @@ function ProfileMenuButton({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  const isSettings = variant === 'settings';
+
   return (
     <div style={{ position: 'relative', flexShrink: 0 }} ref={ref}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Profile menu"
+        aria-label={isSettings ? 'Settings' : 'Profile menu'}
         aria-expanded={open}
         style={{
           display: 'flex',
@@ -1493,15 +1503,17 @@ function ProfileMenuButton({
           justifyContent: 'center',
           width: size,
           height: size,
+          padding: isSettings ? 8 : 0,
           borderRadius: '50%',
-          border: '1px solid rgba(143, 185, 168, 0.3)',
-          background: 'rgba(143, 185, 168, 0.2)',
-          color: '#2d3a38',
+          border: isSettings ? 'none' : '1px solid rgba(143, 185, 168, 0.3)',
+          background: isSettings ? COLORS.white : 'rgba(143, 185, 168, 0.2)',
+          color: isSettings ? COLORS.brandDark : '#2d3a38',
           cursor: 'pointer',
           overflow: 'hidden',
+          boxShadow: isSettings ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
         }}
       >
-        <IconUser size={22} />
+        {isSettings ? <IconSettings size={20} /> : <IconUser size={22} />}
       </button>
       {open && (
         <div
@@ -1656,7 +1668,6 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
             background: 'transparent',
           }}
         />
-        {!studentName && <ProfileMenuButton />}
       </div>
 
       <div
@@ -1771,6 +1782,8 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   onOpenSession,
   sessions: sessionsProp,
   onOpenLibrary,
+  onOpenRoadmap,
+  onOpenShotDetail,
   hideSegmentSwitcher = false,
   studentName,
   studentId,
@@ -1850,7 +1863,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   return (
     <div
       style={{
-        backgroundColor: '#f6f8f8',
+        backgroundColor: '#F8FAFB',
         padding: '24px',
         width: '100%',
         boxSizing: 'border-box',
@@ -1868,53 +1881,231 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
       >
         {/* Header */}
         {hideSegmentSwitcher ? (
-          <div
-            style={{
-              backgroundColor: COLORS.white,
-              margin: '-24px -24px 16px',
-              padding: '22px 24px 18px',
-              borderBottom: '1px solid rgba(0,0,0,0.04)',
-            }}
-          >
-            <div
+          <>
+            <header
+              data-purpose="game-analytics-header"
               style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                justifyContent: 'space-between',
-                gap: 16,
+                backgroundColor: COLORS.brandLight,
+                margin: '-24px -24px 0',
+                paddingTop: 48,
+                paddingBottom: 32,
+                paddingLeft: 24,
+                paddingRight: 24,
+                borderBottomLeftRadius: 40,
+                borderBottomRightRadius: 40,
               }}
             >
-              <div style={{ minWidth: 0 }}>
-                <div
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  marginBottom: 24,
+                }}
+              >
+                <h2
                   style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: '#8FB9A8',
-                    letterSpacing: '-0.01em',
-                    marginBottom: 6,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: '#1f2937',
                     lineHeight: 1.2,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    textAlign: 'center',
                   }}
                 >
-                  Welcome back, {welcomeName}
-                </div>
-                <div
-                  style={{
-                    fontSize: 30,
-                    fontWeight: 800,
-                    color: '#2d3a38',
-                    letterSpacing: '-0.03em',
-                    lineHeight: 1.05,
-                  }}
-                >
-                  {title ?? 'Game Analytics'}
+                  Player Profile
+                </h2>
+                <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
+                  <ProfileMenuButton size={46} variant="settings" />
                 </div>
               </div>
-              <ProfileMenuButton size={46} />
-            </div>
-          </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ position: 'relative', marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 96,
+                      height: 96,
+                      borderRadius: '50%',
+                      border: '4px solid white',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: COLORS.white,
+                    }}
+                  >
+                    {(user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture) ? (
+                      <img
+                        alt="Profile"
+                        src={String(user.user_metadata.avatar_url ?? user.user_metadata.picture)}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <IconUser size={40} style={{ color: COLORS.brandDark }} />
+                    )}
+                  </div>
+                </div>
+                <p
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 500,
+                    color: COLORS.brandDark,
+                    opacity: 0.8,
+                    margin: 0,
+                  }}
+                >
+                  {welcomeName}
+                </p>
+              </div>
+            </header>
+            {/* Metric cards */}
+            <section
+              data-purpose="quick-stats"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: 12,
+                padding: '0 12px',
+                marginTop: -24,
+                marginBottom: 24,
+              }}
+            >
+              <div
+                style={{
+                  minHeight: 90,
+                  minWidth: 0,
+                  backgroundColor: COLORS.white,
+                  border: '1px solid #E8F1EE',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  borderRadius: 16,
+                  padding: 12,
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
+                  Games Analyzed
+                </span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: COLORS.brandDark }}>
+                  {sessions.length}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenRoadmap?.()}
+                style={{
+                  position: 'relative',
+                  minHeight: 90,
+                  minWidth: 0,
+                  backgroundColor: COLORS.white,
+                  border: '1px solid #E8F1EE',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  borderRadius: 16,
+                  padding: 12,
+                  textAlign: 'center',
+                  cursor: onOpenRoadmap ? 'pointer' : 'default',
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
+                  Shots Analyzed
+                </span>
+                <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: COLORS.brandDark }}>
+                  {Object.values(shotVideoCountByShotId).reduce((a, b) => a + b, 0)}
+                </span>
+                {onOpenRoadmap && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: 12,
+                      right: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <IconChevronRight size={14} style={{ color: COLORS.brandDark }} />
+                  </span>
+                )}
+              </button>
+              {(() => {
+                const mostTrained = Object.entries(shotVideoCountByShotId)
+                  .sort((a, b) => b[1] - a[1])[0];
+                const mostTrainedSkill = mostTrained
+                  ? ROADMAP_SKILLS.find((s) => s.id === mostTrained[0])
+                  : null;
+                const mostTrainedTitle = mostTrainedSkill?.title ?? '—';
+                const canOpen = Boolean(onOpenShotDetail && mostTrainedSkill);
+                return (
+                  <button
+                    type="button"
+                    onClick={() => canOpen && onOpenShotDetail?.(mostTrainedTitle)}
+                    style={{
+                      position: 'relative',
+                      minHeight: 90,
+                      minWidth: 0,
+                      backgroundColor: COLORS.white,
+                      border: '1px solid #E8F1EE',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                      borderRadius: 16,
+                      padding: 12,
+                      textAlign: 'center',
+                      cursor: canOpen ? 'pointer' : 'default',
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
+                      Most trained shot
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minWidth: 0,
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: COLORS.brandDark,
+                        lineHeight: 1.2,
+                        wordBreak: 'break-word',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {mostTrainedTitle}
+                    </span>
+                    {canOpen && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: 12,
+                          right: 12,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <IconChevronRight size={14} style={{ color: COLORS.brandDark }} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
+            </section>
+          </>
         ) : (
           <Breadcrumb
             onBack={onBack}
@@ -1975,7 +2166,21 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           )}
 
         {/* Content based on selected segment */}
-        {selectedSegment === 'videos' && sessions.length === 0 && (
+        {selectedSegment === 'videos' && (
+          <>
+            <h1
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: '#1f2937',
+                letterSpacing: '-0.01em',
+                lineHeight: 1.2,
+                marginBottom: 24,
+              }}
+            >
+              {title ?? 'Game Analytics'}
+            </h1>
+            {sessions.length === 0 ? (
           <div
             style={{
               flex: 1,
@@ -2115,8 +2320,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
               </button>
             )}
           </div>
-        )}
-        {selectedSegment === 'videos' && sessions.length > 0 && (
+            ) : (
           <div style={{ marginBottom: 24 }}>
             <div
               style={{
@@ -2145,6 +2349,8 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
               ))}
             </div>
           </div>
+            )}
+          </>
         )}
 
         {selectedSegment === 'roadmap' && (
