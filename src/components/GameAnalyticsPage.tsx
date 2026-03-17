@@ -1455,7 +1455,11 @@ function ShotDetailView({
 }
 
 /** Reusable profile menu button with dropdown (Log out). Use in header or roadmap bar. */
-function ProfileMenuButton() {
+function ProfileMenuButton({
+  size = 40,
+}: {
+  size?: number;
+}) {
   const { signOut } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -1483,8 +1487,8 @@ function ProfileMenuButton() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 40,
-          height: 40,
+          width: size,
+          height: size,
           borderRadius: '50%',
           border: '1px solid rgba(143, 185, 168, 0.3)',
           background: 'rgba(143, 185, 168, 0.2)',
@@ -1781,6 +1785,15 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
   const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
   const effectiveStudentId = studentId ?? user?.id ?? null;
+  const welcomeName =
+    studentName ??
+    (typeof user?.user_metadata?.first_name === 'string' && user.user_metadata.first_name.trim()
+      ? user.user_metadata.first_name.trim()
+      : typeof user?.user_metadata?.full_name === 'string' && user.user_metadata.full_name.trim()
+        ? user.user_metadata.full_name.trim().split(' ')[0]
+        : typeof user?.email === 'string' && user.email.includes('@')
+          ? user.email.split('@')[0]
+          : 'there');
 
   // Shot video counts per shot for roadmap (badge + sort)
   useEffect(() => {
@@ -1849,14 +1862,64 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        {/* Header — breadcrumb with usual back button (same as other screens) */}
-        <Breadcrumb
-          onBack={onBack}
-          items={[{ label: title ?? 'Game Analytics' }]}
-          ariaLabel="Breadcrumb"
-          rightSlot={!hideSegmentSwitcher ? <ProfileMenuButton /> : undefined}
-          containerStyle={{ marginBottom: 24 }}
-        />
+        {/* Header */}
+        {hideSegmentSwitcher ? (
+          <div
+            style={{
+              backgroundColor: COLORS.white,
+              margin: '-24px -24px 16px',
+              padding: '22px 24px 18px',
+              borderBottom: '1px solid rgba(0,0,0,0.04)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 16,
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 600,
+                    color: '#8FB9A8',
+                    letterSpacing: '-0.01em',
+                    marginBottom: 6,
+                    lineHeight: 1.2,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  Welcome back, {welcomeName}
+                </div>
+                <div
+                  style={{
+                    fontSize: 30,
+                    fontWeight: 800,
+                    color: '#2d3a38',
+                    letterSpacing: '-0.03em',
+                    lineHeight: 1.05,
+                  }}
+                >
+                  {title ?? 'Game Analytics'}
+                </div>
+              </div>
+              <ProfileMenuButton size={46} />
+            </div>
+          </div>
+        ) : (
+          <Breadcrumb
+            onBack={onBack}
+            items={[{ label: title ?? 'Game Analytics' }]}
+            ariaLabel="Breadcrumb"
+            rightSlot={<ProfileMenuButton />}
+            containerStyle={{ marginBottom: 24 }}
+          />
+        )}
 
           {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
           {!hideSegmentSwitcher && (
