@@ -257,6 +257,7 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin: _isAdmin = fa
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const isMobile = useIsMobile();
+  const isAdmin = _isAdmin;
 
   useEffect(() => {
     onLessonViewChange?.(selectedLesson != null);
@@ -411,28 +412,50 @@ export const LessonsPage: React.FC<LessonsPageProps> = ({ isAdmin: _isAdmin = fa
           padding: `0 ${contentPadding}px ${contentPadding}px`,
         }}
       >
-        {/* Page title & subtitle */}
-        <div style={{ marginBottom: 32, marginTop: 32 }}>
-          <h1
-            style={{
-              fontSize: isMobile ? 24 : 30,
-              fontWeight: 800,
-              color: COLORS.textPrimary,
-              margin: 0,
-              marginBottom: SPACING.sm,
-            }}
-          >
-            Pickleball Training Library
-          </h1>
-          <p
-            style={{
-              ...TYPOGRAPHY.bodySmall,
-              color: COLORS.textSecondary,
-              margin: 0,
-            }}
-          >
-            Master your game with professional drills and advanced techniques curated by experts.
-          </p>
+        {/* Page title, subtitle & admin actions */}
+        <div
+          style={{
+            marginBottom: 32,
+            marginTop: 32,
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            justifyContent: 'space-between',
+            gap: SPACING.md,
+          }}
+        >
+          <div>
+            <h1
+              style={{
+                fontSize: isMobile ? 24 : 30,
+                fontWeight: 800,
+                color: COLORS.textPrimary,
+                margin: 0,
+                marginBottom: SPACING.sm,
+              }}
+            >
+              Pickleball Training Library
+            </h1>
+            <p
+              style={{
+                ...TYPOGRAPHY.bodySmall,
+                color: COLORS.textSecondary,
+                margin: 0,
+              }}
+            >
+              Master your game with professional drills and advanced techniques curated by experts.
+            </p>
+          </div>
+
+          {isAdmin && (
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setShowAddModal(true)}
+            >
+              Add video
+            </Button>
+          )}
         </div>
 
         {loadError && (

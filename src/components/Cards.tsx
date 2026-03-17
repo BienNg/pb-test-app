@@ -104,7 +104,7 @@ interface LessonCardProps {
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
-  title: _title,
+  title,
   category,
   thumbnail,
   videoUrl,
@@ -247,6 +247,21 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             >
               {category}
             </span>
+            <p
+              style={{
+                ...TYPOGRAPHY.body,
+                fontWeight: 600,
+                color: COLORS.textPrimary,
+                margin: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {title}
+            </p>
             {dateLabel && (
               <p style={{ fontSize: 14, color: COLORS.textSecondary, margin: '4px 0 0' }}>
                 {dateLabel}

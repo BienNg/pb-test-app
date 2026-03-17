@@ -74,6 +74,7 @@ import {
   insertShotVideoComment,
   insertShotVideoCommentReply,
   mapShotVideoCommentToSessionComment,
+  updateShotVideoComment,
   updateShotVideoCommentReply,
   deleteShotVideoCommentReply,
   type ShotVideoCommentWithAuthor,
@@ -1684,7 +1685,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   );
 
   const handleDeleteComment = async (commentId: string | number) => {
-    if (!isDbSession || typeof commentId !== 'string') {
+    if (typeof commentId !== 'string') {
       // Local state fallback
       setComments((prev) => prev.filter((c) => c.id !== commentId));
       setRepliesByCommentId((prev) => {
@@ -1694,6 +1695,30 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       });
       return;
     }
+
+    // Shot video comments use their own table
+    if (isShotVideo) {
+      // TODO: add deleteShotVideoComment when backend endpoint/table is ready.
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setRepliesByCommentId((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
+      return;
+    }
+
+    if (!isDbSession) {
+      // Local-only session: just update state
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setRepliesByCommentId((prev) => {
+        const next = { ...prev };
+        delete next[commentId];
+        return next;
+      });
+      return;
+    }
+
     const success = await deleteSessionComment(supabase, commentId);
     if (success) {
       setComments((prev) => prev.filter((c) => c.id !== commentId));
@@ -1706,7 +1731,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   };
 
   const handleEditComment = async (commentId: string | number, newText: string) => {
-    if (!isDbSession || typeof commentId !== 'string') {
+    if (typeof commentId !== 'string') {
       // Local state fallback
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
@@ -1715,6 +1740,29 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setEditDraft('');
       return;
     }
+
+    if (isShotVideo) {
+      const success = await updateShotVideoComment(supabase, commentId, newText);
+      if (success) {
+        setComments((prev) =>
+          prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+        );
+        setEditingCommentId(null);
+        setEditDraft('');
+      }
+      return;
+    }
+
+    if (!isDbSession) {
+      // Local-only session: just update state
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+      );
+      setEditingCommentId(null);
+      setEditDraft('');
+      return;
+    }
+
     const success = await updateSessionComment(supabase, commentId, newText);
     if (success) {
       setComments((prev) =>

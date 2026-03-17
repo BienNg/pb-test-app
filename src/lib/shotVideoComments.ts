@@ -258,6 +258,20 @@ export async function insertShotVideoCommentReply(
   );
 }
 
+/** Update a shot video comment's text. Returns true on success. */
+export async function updateShotVideoComment(
+  supabase: SupabaseClient | null,
+  commentId: string,
+  text: string
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('shot_video_comments')
+    .update({ text })
+    .eq('id', commentId);
+  return !error;
+}
+
 /** Update a shot video comment reply (text and optional frame marker). Returns true on success. */
 export async function updateShotVideoCommentReply(
   supabase: SupabaseClient | null,
