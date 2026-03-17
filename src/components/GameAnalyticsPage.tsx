@@ -504,6 +504,9 @@ export const ROADMAP_SKILLS: Array<{
 
 type RoadmapSkill = (typeof ROADMAP_SKILLS)[number];
 
+/** Label for the "roof" technique point; when present we show the custom roof icon. Exported for TrainingSessionDetail. */
+export const ROOF_TECHNIQUE_LABEL = "Imagine a roof above your head (don\u2019t pop up)";
+
 /** Icons for technique point cards (cycle by index to match reference variety). Exported for use in TrainingSessionDetail. */
 export const TECHNIQUE_ICONS = [
   <IconTarget key="target" size={24} />,
@@ -1265,7 +1268,18 @@ function ShotDetailView({
                         color: SAGE_PRIMARY,
                       }}
                     >
-                      {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                      {item.label === ROOF_TECHNIQUE_LABEL ? (
+                        <img
+                          src="/icons/Pickleball%20Academy%20Icons%20Roof.ico"
+                          alt=""
+                          width={24}
+                          height={24}
+                          style={{ display: 'block' }}
+                          aria-hidden
+                        />
+                      ) : (
+                        TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]
+                      )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <h3

@@ -12,7 +12,7 @@ import {
   IconX,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './GameAnalyticsPage';
-import { ROADMAP_SKILLS, TECHNIQUE_ICONS } from './GameAnalyticsPage';
+import { ROADMAP_SKILLS, TECHNIQUE_ICONS, ROOF_TECHNIQUE_LABEL } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
 import { parseCommentTextWithShots, type CommentSegment } from './commentText';
 import {
@@ -3561,7 +3561,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 fontSize: 20,
                               }}
                             >
-                              {TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]}
+                              {item.label === ROOF_TECHNIQUE_LABEL ? (
+                                <img
+                                  src="/icons/Pickleball%20Academy%20Icons%20Roof.ico"
+                                  alt=""
+                                  width={24}
+                                  height={24}
+                                  style={{ display: 'block' }}
+                                  aria-hidden
+                                />
+                              ) : (
+                                TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]
+                              )}
                             </div>
                             <span
                               style={{
