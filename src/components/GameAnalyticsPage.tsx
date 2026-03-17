@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
 import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/lib/shotTechniqueChecks';
+import { fetchShotTechniqueSubVisibilityBatch } from '@/lib/shotTechniqueSubVisibility';
 import { parseCommentTextWithShots } from './commentText';
 import { Breadcrumb } from './Breadcrumb';
 import {
@@ -604,6 +605,7 @@ function ShotDetailView({
   const [shotVideos, setShotVideos] = useState<ShotVideoRow[]>([]);
   const [loadingShotVideos, setLoadingShotVideos] = useState(false);
   const [allChecks, setAllChecks] = useState<Pick<ShotTechniqueCheckRow, 'shot_video_id' | 'sub_category_id' | 'item_label' | 'checked'>[]>([]);
+  const [visibilityByShotVideo, setVisibilityByShotVideo] = useState<Record<string, string[]>>({});
   const { user } = useAuth();
   const isAdmin = Boolean(studentName);
   const effectiveStudentId = studentId ?? user?.id ?? null;
@@ -612,6 +614,7 @@ function ShotDetailView({
     if (!effectiveStudentId || !skill.id) {
       setShotVideos([]);
       setAllChecks([]);
+      setVisibilityByShotVideo({});
       return;
     }
     setLoadingShotVideos(true);
@@ -620,10 +623,15 @@ function ShotDetailView({
       const list = await fetchShotVideos(supabase, effectiveStudentId, skill.id);
       setShotVideos(list);
       if (list.length > 0) {
-        const checks = await fetchMultipleShotTechniqueChecks(supabase, list.map(v => v.id));
+        const [checks, visibility] = await Promise.all([
+          fetchMultipleShotTechniqueChecks(supabase, list.map(v => v.id)),
+          fetchShotTechniqueSubVisibilityBatch(supabase, list.map(v => v.id)),
+        ]);
         setAllChecks(checks);
+        setVisibilityByShotVideo(visibility);
       } else {
         setAllChecks([]);
+        setVisibilityByShotVideo({});
       }
     } finally {
       setLoadingShotVideos(false);
@@ -911,6 +919,49 @@ function ShotDetailView({
                         return '';
                       }
                     })();
+                  const visibleSubIds = visibilityByShotVideo[sv.id];
+                  const effectiveSubIds =
+                    visibleSubIds && visibleSubIds.length > 0
+                      ? visibleSubIds
+                      : skill.subCategories
+                        ? [skill.subCategories[0].id]
+                        : [];
+                  const videoChecks = allChecks.filter((c) => c.shot_video_id === sv.id);
+                  const techniquePointsToImproveBySubcategory: { subcategoryLabel: string; items: string[] }[] = [];
+                  if (skill.subCategories && effectiveSubIds.length > 0) {
+                    for (const sub of skill.subCategories) {
+                      if (!effectiveSubIds.includes(sub.id)) continue;
+                      const unchecked = sub.items
+                        .filter((item) => {
+                          const check = videoChecks.find(
+                            (c) => c.item_label === item.label && c.sub_category_id === sub.id
+                          );
+                          return !(check ? check.checked : false);
+                        })
+                        .map((item) => item.label);
+                      if (unchecked.length > 0) {
+                        techniquePointsToImproveBySubcategory.push({
+                          subcategoryLabel: sub.label,
+                          items: unchecked,
+                        });
+                      }
+                    }
+                  } else {
+                    const unchecked = skill.items
+                      .filter((item) => {
+                        const check = videoChecks.find(
+                          (c) => c.item_label === item.label && c.sub_category_id === null
+                        );
+                        return !(check ? check.checked : false);
+                      })
+                      .map((item) => item.label);
+                    if (unchecked.length > 0) {
+                      techniquePointsToImproveBySubcategory.push({
+                        subcategoryLabel: skill.title,
+                        items: unchecked,
+                      });
+                    }
+                  }
                   return (
                     <LessonCard
                       key={sv.id}
@@ -919,6 +970,11 @@ function ShotDetailView({
                       videoUrl={sv.video_url}
                       dateLabel={dateLabel}
                       isVOD
+                      techniquePointsToImproveBySubcategory={
+                        techniquePointsToImproveBySubcategory.length > 0
+                          ? techniquePointsToImproveBySubcategory
+                          : undefined
+                      }
                       onClick={() =>
                         onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)
                       }

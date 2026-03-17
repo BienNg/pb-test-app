@@ -101,6 +101,8 @@ interface LessonCardProps {
   dateLabel?: string;
   /** 'grid' = desktop library (play on hover, pill category); 'list' = mobile (Watch Now button) */
   variant?: 'grid' | 'list';
+  /** Technique checklist items NOT checked, grouped by subcategory. */
+  techniquePointsToImproveBySubcategory?: { subcategoryLabel: string; items: string[] }[];
 }
 
 export const LessonCard: React.FC<LessonCardProps> = ({
@@ -114,6 +116,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   shots,
   dateLabel,
   variant = 'grid',
+  techniquePointsToImproveBySubcategory,
 }) => {
   const [pressed, setPressed] = React.useState(false);
   const thumbnailUrl = getThumbnailUrl(thumbnail, videoUrl);
@@ -122,6 +125,10 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   const useLibraryColors = variant === 'grid' || variant === 'list';
   const accent = useLibraryColors ? COLORS.libraryPrimary : COLORS.primary;
   const accentLight = useLibraryColors ? COLORS.libraryPrimaryLight : COLORS.primaryLight;
+
+  const hasTechniqueItems =
+    techniquePointsToImproveBySubcategory?.some((g) => g.items.length > 0) ?? false;
+  const hasShotVideoExtras = hasTechniqueItems;
 
   return (
     <div
@@ -143,7 +150,8 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: hasShotVideoExtras ? undefined : '100%',
+        alignSelf: hasShotVideoExtras ? 'flex-start' : undefined,
       }}
     >
       {/* Thumbnail — background image so YouTube thumbnail shows even before img loads */}
@@ -283,6 +291,73 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             </span>
           )}
         </div>
+
+        {/* Technique points to improve by subcategory (shot video cards) */}
+        {techniquePointsToImproveBySubcategory?.map(
+          (group) =>
+            group.items.length > 0 && (
+              <div key={group.subcategoryLabel} style={{ flexShrink: 0 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: accent,
+                    marginBottom: 6,
+                  }}
+                >
+                  {group.subcategoryLabel}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    paddingLeft: 10,
+                    borderLeft: `2px solid ${accentLight}`,
+                  }}
+                >
+                  {group.items.slice(0, 4).map((item) => (
+                    <div
+                      key={item}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        fontSize: 12,
+                        color: COLORS.textSecondary,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 14,
+                          height: 14,
+                          minWidth: 14,
+                          borderRadius: '50%',
+                          border: `2px solid ${COLORS.textMuted}`,
+                          flexShrink: 0,
+                        }}
+                        aria-hidden
+                      />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                  {group.items.length > 4 && (
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: COLORS.textMuted,
+                        fontStyle: 'italic',
+                        paddingLeft: 22,
+                      }}
+                    >
+                      +{group.items.length - 4} more
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+        )}
 
         {isList && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: COLORS.textSecondary }}>

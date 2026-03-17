@@ -7,6 +7,29 @@ export interface ShotTechniqueSubVisibilityRow {
 }
 
 /**
+ * Fetch visible sub-category IDs for multiple shot videos.
+ * Returns a map of shot_video_id -> visible_sub_category_ids.
+ * Empty array for a video means "use default: first sub only".
+ */
+export async function fetchShotTechniqueSubVisibilityBatch(
+  supabase: SupabaseClient | null,
+  shotVideoIds: string[]
+): Promise<Record<string, string[]>> {
+  if (!supabase || shotVideoIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('shot_video_technique_visibility')
+    .select('shot_video_id, visible_sub_category_ids')
+    .in('shot_video_id', shotVideoIds);
+  if (error || !data) return {};
+  const result: Record<string, string[]> = {};
+  for (const row of data as { shot_video_id: string; visible_sub_category_ids: string[] }[]) {
+    const ids = Array.isArray(row.visible_sub_category_ids) ? row.visible_sub_category_ids : [];
+    result[row.shot_video_id] = ids;
+  }
+  return result;
+}
+
+/**
  * Fetch visible sub-category IDs for a shot video.
  * Returns empty array when no row exists (caller should treat as "use default: first sub only").
  */
