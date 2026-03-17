@@ -2166,7 +2166,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
             onBack={onBack}
             items={[{ label: title ?? 'Game Analytics' }]}
             ariaLabel="Breadcrumb"
-            rightSlot={<ProfileMenuButton />}
+            rightSlot={isAdminView ? null : <ProfileMenuButton />}
             containerStyle={{ marginBottom: 24 }}
           />
         )}
