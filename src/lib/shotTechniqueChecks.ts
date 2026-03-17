@@ -38,6 +38,23 @@ export async function fetchShotTechniqueChecks(
   return result;
 }
 
+/**
+ * Fetch all technique checks for multiple shot videos.
+ * Returns an array of checks with their associated shot_video_id.
+ */
+export async function fetchMultipleShotTechniqueChecks(
+  supabase: SupabaseClient | null,
+  shotVideoIds: string[]
+): Promise<Pick<ShotTechniqueCheckRow, 'shot_video_id' | 'sub_category_id' | 'item_label' | 'checked'>[]> {
+  if (!supabase || !shotVideoIds.length) return [];
+  const { data, error } = await supabase
+    .from('shot_technique_checks')
+    .select('shot_video_id, sub_category_id, item_label, checked')
+    .in('shot_video_id', shotVideoIds);
+  if (error) return [];
+  return (data ?? []) as Pick<ShotTechniqueCheckRow, 'shot_video_id' | 'sub_category_id' | 'item_label' | 'checked'>[];
+}
+
 export interface UpsertTechniqueCheckParams {
   shotVideoId: string;
   subCategoryId: string | null;

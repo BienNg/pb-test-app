@@ -6,6 +6,7 @@ import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
+import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/lib/shotTechniqueChecks';
 import { parseCommentTextWithShots } from './commentText';
 import { Breadcrumb } from './Breadcrumb';
 import {
@@ -511,7 +512,7 @@ export const TECHNIQUE_ICONS = [
   <IconZap key="zap" size={24} />,
 ];
 
-type ShotDetailTab = 'sessions' | 'technique';
+type ShotDetailTab = 'analytics' | 'sessions' | 'technique';
 
 const TAB_TRANSITION_MS = 220;
 const TAB_PANEL_ANIMATION_MS = 280;
@@ -563,7 +564,7 @@ function ShotDetailView({
   /** When provided, called when user taps a shot video card; opens that video in TrainingSessionDetail. */
   onOpenShotVideo?: (session: TrainingSession) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<ShotDetailTab>('sessions');
+  const [activeTab, setActiveTab] = useState<ShotDetailTab>('analytics');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
   const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
   const [addSessionError, setAddSessionError] = useState<string | null>(null);
@@ -585,6 +586,7 @@ function ShotDetailView({
   );
   const [shotVideos, setShotVideos] = useState<ShotVideoRow[]>([]);
   const [loadingShotVideos, setLoadingShotVideos] = useState(false);
+  const [allChecks, setAllChecks] = useState<Pick<ShotTechniqueCheckRow, 'shot_video_id' | 'sub_category_id' | 'item_label' | 'checked'>[]>([]);
   const { user } = useAuth();
   const isAdmin = Boolean(studentName);
   const effectiveStudentId = studentId ?? user?.id ?? null;
@@ -592,16 +594,63 @@ function ShotDetailView({
   const loadShotVideos = React.useCallback(async () => {
     if (!effectiveStudentId || !skill.id) {
       setShotVideos([]);
+      setAllChecks([]);
       return;
     }
     setLoadingShotVideos(true);
     try {
-      const list = await fetchShotVideos(createClient(), effectiveStudentId, skill.id);
+      const supabase = createClient();
+      const list = await fetchShotVideos(supabase, effectiveStudentId, skill.id);
       setShotVideos(list);
+      if (list.length > 0) {
+        const checks = await fetchMultipleShotTechniqueChecks(supabase, list.map(v => v.id));
+        setAllChecks(checks);
+      } else {
+        setAllChecks([]);
+      }
     } finally {
       setLoadingShotVideos(false);
     }
   }, [effectiveStudentId, skill.id]);
+
+  const pointsToImprove = React.useMemo(() => {
+    if (shotVideos.length === 0) return [];
+    
+    const counts: Record<string, number> = {};
+    
+    shotVideos.forEach(video => {
+      const videoChecks = allChecks.filter(c => c.shot_video_id === video.id);
+      
+      const allItems = skill.subCategories 
+        ? skill.subCategories.flatMap(s => s.items.map(i => ({ subId: s.id, label: i.label })))
+        : skill.items.map(i => ({ subId: null, label: i.label }));
+
+      allItems.forEach(item => {
+        const check = videoChecks.find(c => c.item_label === item.label && c.sub_category_id === item.subId);
+        // If there's an explicit check, use it. Otherwise assume it hasn't been checked/mastered (false).
+        const isChecked = check ? check.checked : false;
+        if (!isChecked) {
+          const key = item.subId ? `${item.subId}:${item.label}` : item.label;
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      });
+    });
+
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1]) // highest first
+      .map(([key, count]) => {
+        const parts = key.split(':');
+        let label = key;
+        let subLabel = '';
+        if (skill.subCategories && parts.length > 1) {
+          const subId = parts[0];
+          label = parts.slice(1).join(':');
+          subLabel = skill.subCategories.find(s => s.id === subId)?.label || '';
+        }
+        return { label, subLabel, count };
+      })
+      .filter(x => x.count > 0);
+  }, [shotVideos, allChecks, skill]);
 
   useEffect(() => {
     void loadShotVideos();
@@ -685,10 +734,32 @@ function ShotDetailView({
       >
         <button
           type="button"
-          onClick={() => setActiveTab('sessions')}
+          onClick={() => setActiveTab('analytics')}
           style={{
             flex: '0 0 auto',
             padding: '12px 16px 12px 0',
+            border: 'none',
+            borderBottom: `3px solid ${activeTab === 'analytics' ? '#6a9a95' : 'transparent'}`,
+            marginBottom: -1,
+            background: 'transparent',
+            fontSize: 'clamp(14px, 2.5vw, 15px)',
+            fontWeight: activeTab === 'analytics' ? 600 : 400,
+            color: activeTab === 'analytics' ? COLORS.textPrimary : '#6a9a95',
+            cursor: 'pointer',
+            borderRadius: 0,
+            whiteSpace: 'nowrap',
+            textAlign: 'left',
+            transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
+          }}
+        >
+          Your Shot Analytics
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('sessions')}
+          style={{
+            flex: '0 0 auto',
+            padding: '12px 16px',
             border: 'none',
             borderBottom: `3px solid ${activeTab === 'sessions' ? '#6a9a95' : 'transparent'}`,
             marginBottom: -1,
@@ -703,7 +774,7 @@ function ShotDetailView({
             transition: `border-color ${TAB_TRANSITION_MS}ms ease, color ${TAB_TRANSITION_MS}ms ease`,
           }}
         >
-          Your Shot Analytics
+          Your {skill.title} Sessions
         </button>
         <button
           type="button"
@@ -729,9 +800,63 @@ function ShotDetailView({
         </button>
       </div>
 
+      {activeTab === 'analytics' && (
+        <AnimatedTabPanel>
+          {loadingShotVideos ? (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
+              Loading…
+            </div>
+          ) : pointsToImprove.length > 0 ? (
+            <div style={{ padding: '16px 0 80px' }}>
+              <div style={{
+                padding: 20,
+                backgroundColor: COLORS.white,
+                borderRadius: 16,
+                border: `1px solid ${COLORS.textMuted}40`,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              }}>
+                <h3 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: COLORS.textPrimary }}>
+                  Technique Points to Improve
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {pointsToImprove.slice(0, 5).map((point, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: COLORS.textPrimary }}>
+                          {point.label}
+                        </div>
+                        {point.subLabel && (
+                          <div style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 2 }}>
+                            {point.subLabel}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ 
+                        fontSize: 13, 
+                        fontWeight: 600, 
+                        color: '#b91c1c', 
+                        backgroundColor: '#fee2e2', 
+                        padding: '4px 8px', 
+                        borderRadius: 8,
+                        whiteSpace: 'nowrap'
+                      }}>
+                        Missed in {point.count} session{point.count !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
+              {shotVideos.length > 0 ? "You're doing great! No technique points to improve." : `No analytics for ${skill.title} yet.`}
+            </div>
+          )}
+        </AnimatedTabPanel>
+      )}
+
       {activeTab === 'sessions' && (
         <AnimatedTabPanel>
-          {/* Your Shot Analytics — shot videos for this student + shot, or empty state */}
           {loadingShotVideos ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: COLORS.textSecondary }}>
               Loading…
@@ -740,71 +865,79 @@ function ShotDetailView({
             <div
               style={{
                 padding: '16px 0 80px',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                gap: 16,
-                alignContent: 'start',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 24,
               }}
             >
-              {shotVideos.map((sv) => {
-                const dateLabel =
-                  sv.created_at &&
-                  (() => {
-                    try {
-                      const d = new Date(sv.created_at);
-                      return d.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      });
-                    } catch {
-                      return '';
-                    }
-                  })();
-                return (
-                  <LessonCard
-                    key={sv.id}
-                    title={sv.shot_title}
-                    category="Shot video"
-                    videoUrl={sv.video_url}
-                    dateLabel={dateLabel}
-                    isVOD
-                    onClick={() =>
-                      onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)
-                    }
-                  />
-                );
-              })}
-              {isAdmin && (
-                <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center' }}>
-                  <button
-                    type="button"
-                    onClick={() => setAddSessionModalOpen(true)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      width: '100%',
-                      maxWidth: 240,
-                      height: 56,
-                      padding: '0 24px',
-                      backgroundColor: 'transparent',
-                      color: SAGE_PRIMARY,
-                      border: `2px solid ${SAGE_PRIMARY}`,
-                      borderRadius: 12,
-                      fontSize: 16,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    <span>Add another video</span>
-                  </button>
-                </div>
-              )}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
+                  gap: 16,
+                  alignContent: 'start',
+                }}
+              >
+                {shotVideos.map((sv) => {
+                  const dateLabel =
+                    sv.created_at &&
+                    (() => {
+                      try {
+                        const d = new Date(sv.created_at);
+                        return d.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        });
+                      } catch {
+                        return '';
+                      }
+                    })();
+                  return (
+                    <LessonCard
+                      key={sv.id}
+                      title={sv.shot_title}
+                      category="Shot video"
+                      videoUrl={sv.video_url}
+                      dateLabel={dateLabel}
+                      isVOD
+                      onClick={() =>
+                        onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)
+                      }
+                    />
+                  );
+                })}
+                {isAdmin && (
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => setAddSessionModalOpen(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        width: '100%',
+                        maxWidth: 240,
+                        height: 56,
+                        padding: '0 24px',
+                        backgroundColor: 'transparent',
+                        color: SAGE_PRIMARY,
+                        border: `2px solid ${SAGE_PRIMARY}`,
+                        borderRadius: 12,
+                        fontSize: 16,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      <span>Add another video</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div
