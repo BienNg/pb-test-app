@@ -233,28 +233,51 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             <IconCheck size={40} />
           </div>
         )}
+        {['shot video', 'game'].includes(category.toLowerCase()) && (
+          <span
+            style={{
+              position: 'absolute',
+              bottom: 8,
+              right: 8,
+              display: 'inline-block',
+              padding: '4px 10px',
+              borderRadius: 6,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              backgroundColor: 'rgba(0, 0, 0, 0.75)',
+              color: COLORS.white,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            }}
+          >
+            {category.toUpperCase()}
+          </span>
+        )}
       </div>
 
       {/* Content */}
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                borderRadius: 4,
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                backgroundColor: accentLight,
-                color: accent,
-                marginBottom: 6,
-              }}
-            >
-              {category}
-            </span>
+            {!['shot video', 'game'].includes(category.toLowerCase()) && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  backgroundColor: accentLight,
+                  color: accent,
+                  marginBottom: 6,
+                }}
+              >
+                {category}
+              </span>
+            )}
             <p
               style={{
                 ...TYPOGRAPHY.body,
