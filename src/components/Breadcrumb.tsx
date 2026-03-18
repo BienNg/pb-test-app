@@ -31,6 +31,8 @@ export interface BreadcrumbProps {
   variant?: 'default' | 'centered';
   /** Optional node rendered after the nav (e.g. header actions) */
   rightSlot?: React.ReactNode;
+  /** Optional font size override for breadcrumb text (default 17) */
+  fontSize?: number;
 }
 
 export function Breadcrumb({
@@ -40,6 +42,7 @@ export function Breadcrumb({
   ariaLabel = 'Breadcrumb',
   variant = 'default',
   rightSlot,
+  fontSize = 17,
 }: BreadcrumbProps) {
   const defaultContainerStyle: React.CSSProperties = {
     display: 'flex',
@@ -108,7 +111,7 @@ export function Breadcrumb({
               {showSeparator && (
                 <span
                   style={{
-                    fontSize: 17,
+                    fontSize,
                     color: BREADCRUMB_SEPARATOR_COLOR,
                     flexShrink: 0,
                   }}
@@ -125,7 +128,7 @@ export function Breadcrumb({
                     padding: 0,
                     border: 'none',
                     background: 'none',
-                    fontSize: 17,
+                    fontSize,
                     fontWeight: 500,
                     letterSpacing: '-0.02em',
                     color: BREADCRUMB_LINK_COLOR,
@@ -141,7 +144,7 @@ export function Breadcrumb({
               ) : (
                 <span
                   style={{
-                    fontSize: 17,
+                    fontSize,
                     fontWeight: 600,
                     letterSpacing: '-0.02em',
                     color: isCurrent ? COLORS.textPrimary : BREADCRUMB_LINK_COLOR,

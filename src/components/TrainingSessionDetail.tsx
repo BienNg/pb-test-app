@@ -1816,6 +1816,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           <Breadcrumb
             onBack={onBack}
             variant="centered"
+            fontSize={14}
             containerStyle={{
               flex: 1,
               borderBottom: 'none',
@@ -1894,7 +1895,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <h1
               style={{
                 margin: 0,
-                fontSize: 'clamp(15px, 4.5vw, 18px)',
+                fontSize: 'clamp(13px, 3.5vw, 15px)',
                 fontWeight: 700,
                 letterSpacing: '-0.02em',
                 color: COLORS.textPrimary,
@@ -1942,7 +1943,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       </header>
       <div
         style={{
-          padding: `0 clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px)`,
+          padding: 0,
           width: '100%',
           boxSizing: 'border-box',
           flex: 1,
@@ -1950,6 +1951,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          marginLeft: -1,
+          marginTop: 1,
         }}
       >
         {/* Main content */}
@@ -2005,7 +2008,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   marginLeft: undefined,
                   marginRight: undefined,
                   left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
-                  borderRadius: 12,
                   overflow: 'hidden',
                   background: '#ffffff',
                   marginBottom: isNarrow ? SPACING.sm : 0,

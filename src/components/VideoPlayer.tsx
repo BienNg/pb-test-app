@@ -712,7 +712,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               aspectRatio: '16 / 9',
               overflow: 'hidden',
               minWidth: 0,
-              ...(isSessionDetail ? { borderRadius: 12, maxHeight: '100%' } : {}),
+              ...(isSessionDetail ? { maxHeight: '100%' } : {}),
             }}
           >
             <div
@@ -1007,7 +1007,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               maxWidth: '100%',
               aspectRatio: videoAspectRatio ?? '16 / 9',
               minWidth: 0,
-              ...(isSessionDetail ? { borderRadius: 12, overflow: 'hidden', maxHeight: '100%' } : {}),
+              ...(isSessionDetail ? { overflow: 'hidden', maxHeight: '100%' } : {}),
             }}
           >
             <div
