@@ -4,6 +4,7 @@ import { getYoutubeVideoId } from '@/lib/youtube';
 import {
   IconPause,
   IconPlay,
+  IconRepeat,
   IconVolume2,
   IconVolumeX,
 } from './Icons';
@@ -174,6 +175,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1); // 0–1, used when unmuted
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [isLoopActive, setIsLoopActive] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
@@ -794,9 +796,33 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)', minWidth: 0 }}>
-                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
-                    {formatTimestamp(currentVideoTime)}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                      {formatTimestamp(currentVideoTime)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setIsLoopActive((a) => !a); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 28,
+                        height: 28,
+                        padding: 0,
+                        border: 'none',
+                        borderRadius: 6,
+                        background: isLoopActive ? `${accentColor}40` : 'transparent',
+                        cursor: 'pointer',
+                        color: isLoopActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                        boxShadow: isLoopActive ? `0 0 0 2px ${accentColor}` : undefined,
+                      }}
+                      title={isLoopActive ? 'Loop on' : 'Loop off'}
+                      aria-label={isLoopActive ? 'Loop on' : 'Loop off'}
+                    >
+                      <IconRepeat size={18} />
+                    </button>
+                  </div>
                   <div
                     style={{
                       flex: 1,
@@ -1126,9 +1152,33 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 12px)', minWidth: 0 }}>
-                  <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
-                    {formatTimestamp(currentVideoTime)}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    <span style={{ fontSize: 'clamp(9px, 2.5vw, 10px)', fontWeight: 700, color: '#fff', minWidth: 28, flexShrink: 0 }}>
+                      {formatTimestamp(currentVideoTime)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setIsLoopActive((a) => !a); }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 28,
+                        height: 28,
+                        padding: 0,
+                        border: 'none',
+                        borderRadius: 6,
+                        background: isLoopActive ? `${accentColor}40` : 'transparent',
+                        cursor: 'pointer',
+                        color: isLoopActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                        boxShadow: isLoopActive ? `0 0 0 2px ${accentColor}` : undefined,
+                      }}
+                      title={isLoopActive ? 'Loop on' : 'Loop off'}
+                      aria-label={isLoopActive ? 'Loop on' : 'Loop off'}
+                    >
+                      <IconRepeat size={18} />
+                    </button>
+                  </div>
                   <div
                     style={{
                       flex: 1,

@@ -36,6 +36,7 @@ import {
   Eye,
   EyeOff,
   Settings,
+  Repeat,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -256,5 +257,11 @@ export const IconEyeOff: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconSettings: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Settings size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconRepeat: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Repeat size={size} strokeWidth={stroke} />
   </IconWrapper>
 );
