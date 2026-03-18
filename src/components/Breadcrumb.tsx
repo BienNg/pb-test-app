@@ -47,7 +47,7 @@ export function Breadcrumb({
   const defaultContainerStyle: React.CSSProperties = {
     display: 'flex',
     alignItems: 'center',
-    gap: SPACING.sm,
+    gap: 2,
     padding: 0,
     flexShrink: 0,
     borderBottom: `1px solid ${BREADCRUMB_BORDER}`,

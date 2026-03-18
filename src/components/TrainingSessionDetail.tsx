@@ -1818,12 +1818,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: SPACING.sm,
-          padding: `${SPACING.md}px clamp(${SPACING.sm}px, 4vw, ${SPACING.lg}px)`,
-          borderBottom: '1px solid #f1f5f9',
-          backgroundColor: '#ffffff',
+          gap: SPACING.xs,
+          padding: `${SPACING.md}px ${SPACING.xs}px`,
+          backgroundColor: '#f6f8f8',
           minWidth: 0,
           flexShrink: 0,
+          overflow: 'hidden',
         }}
       >
         {breadcrumbFromRoadmap ? (
@@ -1854,6 +1854,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               <div
                 style={{
                   width: 40,
+                  minWidth: 40,
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
@@ -1867,7 +1868,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     aria-label="Edit session"
                     style={{
                       width: 36,
+                      minWidth: 36,
                       height: 36,
+                      flexShrink: 0,
                       borderRadius: '50%',
                       border: 'none',
                       backgroundColor: 'transparent',
@@ -1924,6 +1927,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <div
               style={{
                 width: 40,
+                minWidth: 40,
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -1937,7 +1941,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   aria-label="Edit session"
                   style={{
                     width: 36,
+                    minWidth: 36,
                     height: 36,
+                    flexShrink: 0,
                     borderRadius: '50%',
                     border: 'none',
                     backgroundColor: 'transparent',

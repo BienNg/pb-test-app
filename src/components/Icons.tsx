@@ -29,7 +29,6 @@ import {
   Filter,
   ArrowDownUp,
   MoreVertical,
-  ArrowLeft,
   Pencil,
   X,
   Hand,
@@ -214,7 +213,7 @@ export const IconMoreVertical: React.FC<{ size?: number; style?: React.CSSProper
 
 export const IconArrowLeft: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
-    <ArrowLeft size={size} strokeWidth={stroke} />
+    <ChevronLeft size={size} strokeWidth={2.5} />
   </IconWrapper>
 );
 
