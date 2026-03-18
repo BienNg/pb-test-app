@@ -2166,64 +2166,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             )}
             {(!isShotVideo || shotDetailTab === 'comments') && (
               <>
-            {/* Filter & Sort */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: `10px ${SPACING.sm}px 8px`,
-                minWidth: 0,
-                flexShrink: 0,
-                background: '#fff',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setIsFilterSheetOpen(true)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
-                  border: '1.5px solid #e2e8f0',
-                  borderRadius: 999,
-                  background: '#fff',
-                  color: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#1C1C1E',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  flexShrink: 0,
-                  borderColor: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#e2e8f0',
-                  backgroundColor: (shotFilter.length || studentFilter.length) > 0 ? 'rgba(143,185,168,0.08)' : '#fff',
-                }}
-                aria-label="Filter comments"
-                title="Filter comments by shots and students"
-              >
-                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                </svg>
-                Filters
-                {(shotFilter.length || studentFilter.length) > 0 && (
-                  <span
-                    style={{
-                      minWidth: 18,
-                      height: 18,
-                      borderRadius: 999,
-                      backgroundColor: REFERENCE_PRIMARY,
-                      color: '#fff',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 10,
-                      padding: '0 5px',
-                    }}
-                  >
-                    {shotFilter.length + studentFilter.length}
-                  </span>
-                )}
-              </button>
-            </div>
-
             <div
               ref={commentsScrollRef}
               style={{
@@ -2237,6 +2179,64 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 paddingBottom: SPACING.xxl + SPACING.lg,
               }}
             >
+              {/* Filter & Sort - scrolls with comments */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  padding: `10px 0 8px`,
+                  minWidth: 0,
+                  flexShrink: 0,
+                  background: '#fff',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsFilterSheetOpen(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    border: '1.5px solid #e2e8f0',
+                    borderRadius: 999,
+                    background: '#fff',
+                    color: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#1C1C1E',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    borderColor: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#e2e8f0',
+                    backgroundColor: (shotFilter.length || studentFilter.length) > 0 ? 'rgba(143,185,168,0.08)' : '#fff',
+                  }}
+                  aria-label="Filter comments"
+                  title="Filter comments by shots and students"
+                >
+                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                  </svg>
+                  Filters
+                  {(shotFilter.length || studentFilter.length) > 0 && (
+                    <span
+                      style={{
+                        minWidth: 18,
+                        height: 18,
+                        borderRadius: 999,
+                        backgroundColor: REFERENCE_PRIMARY,
+                        color: '#fff',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 10,
+                        padding: '0 5px',
+                      }}
+                    >
+                      {shotFilter.length + studentFilter.length}
+                    </span>
+                  )}
+                </button>
+              </div>
               {commentsLoading ? (
                 <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
                   Loading comments…
@@ -2297,8 +2297,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       }
                       style={{
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: 0,
+                        flexDirection: 'row',
+                        gap: SPACING.sm,
                         padding: `${SPACING.sm}px ${SPACING.sm}px`,
                         cursor: canSeekToTimestamp ? 'pointer' : 'default',
                         backgroundColor: isActive ? `${REFERENCE_PRIMARY}18` : 'transparent',
@@ -2306,7 +2306,34 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         margin: isActive ? `0 -${SPACING.sm}px 0 0` : 0,
                       }}
                     >
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Left column: profile icon only */}
+                    <div style={{ flexShrink: 0 }}>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: `${REFERENCE_PRIMARY}33`,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: REFERENCE_PRIMARY,
+                        }}
+                      >
+                        {(comment.author || '')
+                          .trim()
+                          .split(/\s+/)
+                          .map((n) => n[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase() || '?'}
+                      </div>
+                    </div>
+                    {/* Right column: author, controls, content */}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
                       <div
                         style={{
                           display: 'flex',
@@ -2317,32 +2344,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           minWidth: 0,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: '50%',
-                              backgroundColor: `${REFERENCE_PRIMARY}33`,
-                              flexShrink: 0,
-                              overflow: 'hidden',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: REFERENCE_PRIMARY,
-                            }}
-                          >
-                            {(comment.author || '')
-                              .trim()
-                              .split(/\s+/)
-                              .map((n) => n[0])
-                              .join('')
-                              .slice(0, 2)
-                              .toUpperCase() || '?'}
-                          </div>
-                          <span
+                        <span
                             style={{
                               fontSize: 14,
                               fontWeight: 700,
@@ -2355,7 +2357,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           >
                             {comment.author}
                           </span>
-                        </div>
                         <div
                           style={{
                             display: 'flex',
@@ -3393,28 +3394,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     </div>
                   )}
                   {hasSubs && (techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
-                    <div style={{ marginBottom: SPACING.sm }}>
-                      {isAdminView && (
-                        <p
-                          style={{
-                            margin: 0,
-                            marginBottom: 8,
-                            fontSize: 11,
-                            fontWeight: 600,
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            color: COLORS.textMuted,
-                          }}
-                        >
-                          Categories · control which are visible to the student
-                        </p>
-                      )}
+                    <div
+                      style={{
+                        marginBottom: SPACING.sm,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                      }}
+                    >
                       <div
                         style={{
                           display: 'flex',
                           flexWrap: 'wrap',
                           gap: 6,
                           padding: '4px 0',
+                          justifyContent: 'center',
                         }}
                       >
                         {visibleSubs.map((sub) => {
@@ -3438,7 +3432,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 border: 'none',
                                 borderRadius: 12,
                                 background: isSubSelected
-                                  ? `linear-gradient(135deg, ${REFERENCE_PRIMARY} 0%, #7ba892 100%)`
+                                  ? REFERENCE_PRIMARY
                                   : 'rgba(143, 185, 168, 0.12)',
                                 fontSize: 13,
                                 fontWeight: isSubSelected ? 700 : 600,
