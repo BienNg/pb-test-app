@@ -107,6 +107,12 @@ export interface VideoPlayerProps {
 
   /** Optional content to render below the time controls (sessionDetail variant). */
   renderBelowTimeControls?: React.ReactNode;
+
+  /**
+   * When loop icon is active and this is set, the video will seek back to start when
+   * playback reaches end. Used for looping through a comment's timestamp range.
+   */
+  loopRange?: { start: number; end: number } | null;
 }
 
 export interface FrameMarkerState {
@@ -147,6 +153,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     onPlay: onPlayProp,
     onControlPressed,
     renderBelowTimeControls,
+    loopRange = null,
   },
   ref
 ) {
@@ -590,6 +597,16 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     seekTo(seekToSeconds);
     if (onSeekHandled) onSeekHandled();
   }, [seekToSeconds, seekTo, onSeekHandled]);
+
+  // When loop is active and a loop range is set, seek back to start when playback reaches end
+  useEffect(() => {
+    if (!isLoopActive || !loopRange) return;
+    const { start, end } = loopRange;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    if (currentVideoTime >= end) {
+      seekTo(start);
+    }
+  }, [currentVideoTime, isLoopActive, loopRange, seekTo]);
 
   // Notify parent about current time / duration
   useEffect(() => {

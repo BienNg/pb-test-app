@@ -2096,6 +2096,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   }}
                   seekToSeconds={pendingSeekSeconds}
                   onSeekHandled={() => setPendingSeekSeconds(null)}
+                  loopRange={
+                    activeCommentId != null
+                      ? (() => {
+                          const c = comments.find((x) => x.id === activeCommentId);
+                          if (
+                            c?.timestampSeconds != null &&
+                            c?.loopEndTimestampSeconds != null &&
+                            c.loopEndTimestampSeconds > c.timestampSeconds
+                          ) {
+                            return { start: c.timestampSeconds, end: c.loopEndTimestampSeconds };
+                          }
+                          return null;
+                        })()
+                      : null
+                  }
                   canRequestAddUrl={canAddVideoUrl && !hasVideoUrl && !showAddUrlForm}
                   onRequestAddUrl={() => {
                     setShowAddUrlForm(true);
