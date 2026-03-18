@@ -1977,7 +1977,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               ? 'minmax(0, 1fr)'
               : 'minmax(0, 1fr) minmax(280px, 400px)',
             gridTemplateRows: isNarrow ? 'auto 1fr' : '1fr',
-            gap: isNarrow ? SPACING.sm : SPACING.lg,
+            gap: isNarrow ? 0 : SPACING.lg,
             minWidth: 0,
             flex: 1,
             minHeight: 0,
@@ -2006,7 +2006,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   height: videoStickyBox.height,
                   width: '100%',
                   flexShrink: 0,
-                  marginBottom: SPACING.md,
                 }}
                 aria-hidden
               />
@@ -2024,7 +2023,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   left: isNarrow && videoStickyBox ? videoStickyBox.left : undefined,
                   overflow: 'hidden',
                   background: '#ffffff',
-                  marginBottom: isNarrow ? SPACING.sm : 0,
+                  marginBottom: 0,
                   border: 'none',
                   ...(isNarrow ? {} : { maxHeight: '100%' }),
                 }}
@@ -2110,9 +2109,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               <div
                 style={{
                   display: 'flex',
-                  gap: 0,
-                  padding: `${SPACING.xs}px 0`,
-                  marginBottom: SPACING.sm,
+                  alignItems: 'flex-end',
+                  padding: '0 16px',
+                  background: '#fff',
+                  borderBottom: '1px solid #F5F5F5',
                   flexShrink: 0,
                 }}
                 role="tablist"
@@ -2124,16 +2124,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   aria-selected={shotDetailTab === 'comments'}
                   onClick={() => setShotDetailTab('comments')}
                   style={{
-                    padding: '8px 16px',
+                    padding: '12px 0',
+                    marginRight: 26,
                     border: 'none',
                     borderRadius: 0,
                     background: 'none',
                     fontSize: 14,
                     fontWeight: shotDetailTab === 'comments' ? 600 : 500,
-                    color: shotDetailTab === 'comments' ? REFERENCE_PRIMARY : COLORS.textSecondary,
-                    borderBottom: `3px solid ${shotDetailTab === 'comments' ? REFERENCE_PRIMARY : 'transparent'}`,
+                    color: shotDetailTab === 'comments' ? REFERENCE_PRIMARY : '#8E8E93',
+                    borderBottom: `2.5px solid ${shotDetailTab === 'comments' ? REFERENCE_PRIMARY : 'transparent'}`,
                     marginBottom: -1,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Comments
@@ -2144,16 +2146,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   aria-selected={shotDetailTab === 'technique'}
                   onClick={() => setShotDetailTab('technique')}
                   style={{
-                    padding: '8px 16px',
+                    padding: '12px 0',
+                    marginRight: 26,
                     border: 'none',
                     borderRadius: 0,
                     background: 'none',
                     fontSize: 14,
                     fontWeight: shotDetailTab === 'technique' ? 600 : 500,
-                    color: shotDetailTab === 'technique' ? REFERENCE_PRIMARY : COLORS.textSecondary,
-                    borderBottom: `3px solid ${shotDetailTab === 'technique' ? REFERENCE_PRIMARY : 'transparent'}`,
+                    color: shotDetailTab === 'technique' ? REFERENCE_PRIMARY : '#8E8E93',
+                    borderBottom: `2.5px solid ${shotDetailTab === 'technique' ? REFERENCE_PRIMARY : 'transparent'}`,
                     marginBottom: -1,
                     cursor: 'pointer',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Shot technique
