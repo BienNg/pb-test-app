@@ -598,11 +598,29 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     if (onSeekHandled) onSeekHandled();
   }, [seekToSeconds, seekTo, onSeekHandled]);
 
-  // When loop is active and a loop range is set, seek back to start when playback reaches end
+  // Auto-activate loop only when user newly selects a comment with a loop range (not on every re-render)
+  const hadLoopRangeRef = useRef(false);
+  useEffect(() => {
+    const hasLoopRange = Boolean(loopRange && loopRange.end > loopRange.start);
+    if (hasLoopRange && !hadLoopRangeRef.current) {
+      setIsLoopActive(true);
+    }
+    hadLoopRangeRef.current = hasLoopRange;
+  }, [loopRange]);
+
+  // When loop is active and a loop range is set: seek back when reaching end, or deactivate when skipped outside
   useEffect(() => {
     if (!isLoopActive || !loopRange) return;
     const { start, end } = loopRange;
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    if (currentVideoTime < start) {
+      setIsLoopActive(false);
+      return;
+    }
+    if (currentVideoTime > end + 0.5) {
+      setIsLoopActive(false);
+      return;
+    }
     if (currentVideoTime >= end) {
       seekTo(start);
     }
