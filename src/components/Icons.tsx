@@ -11,7 +11,6 @@ import {
   Calendar,
   CalendarDays,
   MapPin,
-  Play,
   Pause,
   ChevronRight,
   ChevronLeft,
@@ -99,7 +98,9 @@ export const IconMapPin: React.FC<{ size?: number; style?: React.CSSProperties }
 
 export const IconPlay: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
-    <Play size={size} strokeWidth={stroke} fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <polygon points="5,3 19,12 5,21" />
+    </svg>
   </IconWrapper>
 );
 

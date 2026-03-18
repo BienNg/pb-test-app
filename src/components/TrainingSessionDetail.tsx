@@ -4,7 +4,6 @@ import {
   IconArrowLeft,
   IconCheck,
   IconClock,
-  IconFilter,
   IconMoreVertical,
   IconPencil,
   IconPlay,
@@ -1043,15 +1042,30 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [currentVideoTime]
   );
 
-  // Scroll comments list to the active comment and keep it in view
+  // Scroll comments list to the active comment — only scroll the comments container,
+  // never the page. scrollIntoView() scrolls all ancestor scroll containers, which
+  // caused the video/header to jump and the filter sheet to appear on timestamp click.
   useEffect(() => {
     if (activeCommentId == null || !commentsScrollRef.current) return;
-    const el = commentsScrollRef.current.querySelector(
+    const container = commentsScrollRef.current;
+    const el = container.querySelector(
       `[data-comment-id="${CSS.escape(String(activeCommentId))}"]`
     ) as HTMLElement | null;
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }
+    if (!el) return;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const containerHeight = container.clientHeight;
+    const elHeight = el.offsetHeight;
+    const scrollTop =
+      container.scrollTop +
+      (elRect.top - containerRect.top) -
+      containerHeight / 2 +
+      elHeight / 2;
+    const clamped = Math.max(
+      0,
+      Math.min(scrollTop, container.scrollHeight - containerHeight)
+    );
+    container.scrollTo({ top: clamped, behavior: 'smooth' });
   }, [activeCommentId]);
 
   const handleAddComment = useCallback(async () => {
@@ -2152,36 +2166,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             <div
               style={{
                 display: 'flex',
-                flexWrap: 'wrap',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: `${SPACING.xs}px 0`,
-                gap: SPACING.xs,
+                padding: `10px ${SPACING.sm}px 8px`,
                 minWidth: 0,
                 flexShrink: 0,
+                background: '#fff',
               }}
             >
               <button
                 type="button"
                 onClick={() => setIsFilterSheetOpen(true)}
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 8,
-                  padding: '6px 12px',
-                  borderRadius: 9999,
-                  border: '1px solid #e2e8f0',
-                  backgroundColor: 'transparent',
-                  color: '#64748b',
-                  fontSize: 'clamp(11px, 2.8vw, 12px)',
-                  fontWeight: 600,
+                  gap: 6,
+                  padding: '6px 14px',
+                  border: '1.5px solid #e2e8f0',
+                  borderRadius: 999,
+                  background: '#fff',
+                  color: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#1C1C1E',
+                  fontSize: 13,
+                  fontWeight: 500,
                   cursor: 'pointer',
                   flexShrink: 0,
+                  borderColor: (shotFilter.length || studentFilter.length) > 0 ? REFERENCE_PRIMARY : '#e2e8f0',
+                  backgroundColor: (shotFilter.length || studentFilter.length) > 0 ? 'rgba(143,185,168,0.08)' : '#fff',
                 }}
                 aria-label="Filter comments"
                 title="Filter comments by shots and students"
               >
-                <IconFilter size={14} />
+                <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                </svg>
                 Filters
                 {(shotFilter.length || studentFilter.length) > 0 && (
                   <span

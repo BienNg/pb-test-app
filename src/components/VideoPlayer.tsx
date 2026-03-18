@@ -1743,19 +1743,16 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
       {videoDuration > 0 && isSessionDetail && (
         <div
+          className="time-controls"
           style={{
             flexShrink: 0,
-            marginTop: SPACING.sm,
-            padding: SPACING.sm,
-            backgroundColor: '#f8fafc',
-            borderRadius: 12,
-            border: '1px solid #f1f5f9',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: SPACING.xs,
-            flexWrap: 'nowrap',
+            gap: 5,
+            padding: '10px 10px',
+            background: '#fff',
+            borderBottom: '1px solid #F5F5F5',
             width: '100%',
             minWidth: 0,
             overflowX: 'auto',
@@ -1776,7 +1773,16 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             −1s
           </button>
           <button type="button" onClick={() => { handlePlayPause(); onControlPressed?.(); }} style={sessionDetailPlayPauseBtn(accentColor)} aria-label={isVideoPlaying ? 'Pause' : 'Play'} title={isVideoPlaying ? 'Pause' : 'Play'}>
-            {isVideoPlaying ? <IconPause size={18} /> : <IconPlay size={18} />}
+            {isVideoPlaying ? (
+              <svg width={19} height={19} viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+            ) : (
+              <svg width={19} height={19} viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: 2 }}>
+                <polygon points="5,3 19,12 5,21" />
+              </svg>
+            )}
           </button>
           <button type="button" onClick={() => { skipBy(1); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+1s" title="+1s">
             +1s
@@ -1797,39 +1803,34 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 });
 
 function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
-  const size = 'clamp(32px, 9vw, 40px)';
   return {
-    width: size,
-    height: size,
-    minWidth: size,
-    minHeight: size,
-    flexShrink: 0,
-    borderRadius: '50%',
-    border: '1px solid #e2e8f0',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    color: '#475569',
-    fontSize: 10,
-    fontWeight: 700,
+    height: 32,
+    minWidth: 36,
+    padding: '0 7px',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: 999,
+    background: '#fff',
+    color: '#1C1C1E',
+    fontSize: 11.5,
+    fontWeight: 500,
+    cursor: disabled ? 'default' : 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: disabled ? 'default' : 'pointer',
-    padding: 0,
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
     opacity: disabled ? 0.5 : 1,
   };
 }
 
 function sessionDetailPlayPauseBtn(accentColor: string): React.CSSProperties {
-  const size = 'clamp(32px, 9vw, 40px)';
   return {
-    width: size,
-    height: size,
-    minWidth: size,
-    minHeight: size,
+    width: 44,
+    height: 44,
     flexShrink: 0,
     borderRadius: '50%',
-    border: `1px solid ${accentColor}`,
-    backgroundColor: `${accentColor}1A`,
+    border: `2px solid ${accentColor}`,
+    background: '#fff',
     color: accentColor,
     display: 'flex',
     alignItems: 'center',
