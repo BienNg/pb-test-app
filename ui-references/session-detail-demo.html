@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Session Detail – Forehand Dink</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #e8edf0;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 430px;
+      background: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ─── Breadcrumb Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0;
+      background: #f6f8f8;
+      border-bottom: 1px solid rgba(143,185,168,0.1);
+      flex-shrink: 0;
+      height: 52px;
+    }
+    .header-back {
+      width: 44px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #475569;
+      flex-shrink: 0;
+    }
+    .header-back:active { background: rgba(0,0,0,0.04); }
+    .header-nav {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      justify-content: center;
+    }
+    .breadcrumb-seg {
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      color: #6a9a95;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+    .breadcrumb-seg.current {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1C1C1E;
+      cursor: default;
+    }
+    .breadcrumb-sep {
+      font-size: 15px;
+      color: #94a3b8;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .header-right {
+      width: 44px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #475569;
+      flex-shrink: 0;
+    }
+    .header-right:active { background: rgba(0,0,0,0.04); }
+
+    /* ─── Video Wrapper ─── */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #111;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    /* Court background simulation */
+    .court-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        /* Court surface gradient */
+        linear-gradient(175deg, #2d6a4f 0%, #3a7d5a 40%, #2d6050 60%, #1e4d3a 100%);
+    }
+    .court-lines {
+      position: absolute;
+      inset: 0;
+    }
+
+    /* YouTube-style video info bar */
+    .video-top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, transparent 100%);
+      gap: 8px;
+      z-index: 3;
+    }
+    .video-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #e74c3c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .video-title {
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      flex: 1;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+    }
+    .video-share {
+      color: rgba(255,255,255,0.85);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    /* Big center play/pause button */
+    .video-center-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 58px;
+      height: 58px;
+      background: rgba(0,0,0,0.55);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      z-index: 4;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .video-center-btn:active { background: rgba(0,0,0,0.75); transform: translate(-50%, -50%) scale(0.93); }
+
+    /* Player silhouette on court */
+    .player-silhouette {
+      position: absolute;
+      bottom: 28%;
+      right: 28%;
+      width: 80px;
+      height: 130px;
+      z-index: 2;
+      opacity: 0.85;
+    }
+
+    /* Frame annotation - red dashed circle */
+    .frame-annotation-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .frame-annotation-overlay.visible { opacity: 1; }
+
+    /* Bottom video controls */
+    .video-controls-bottom {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: linear-gradient(0deg, rgba(0,0,0,0.72) 0%, transparent 100%);
+      padding: 14px 10px 6px;
+      z-index: 3;
+    }
+    .progress-track {
+      position: relative;
+      height: 3px;
+      background: rgba(255,255,255,0.28);
+      border-radius: 2px;
+      cursor: pointer;
+      margin-bottom: 5px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: #fff;
+      border-radius: 2px;
+      pointer-events: none;
+      transition: width 0.08s linear;
+    }
+    .progress-thumb {
+      position: absolute;
+      top: 50%;
+      width: 11px;
+      height: 11px;
+      background: #fff;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    }
+    .progress-marker {
+      position: absolute;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 2;
+      transition: transform 0.1s;
+    }
+    .progress-marker:hover { transform: translate(-50%, -50%) scale(1.3); }
+    .video-time-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .video-time-text {
+      color: #fff;
+      font-size: 11px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .yt-logo-text {
+      color: rgba(255,255,255,0.75);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    /* ─── Time Controls ─── */
+    .time-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 10px 10px;
+      background: #fff;
+      border-bottom: 1px solid #F5F5F5;
+      flex-shrink: 0;
+    }
+    .tc-btn {
+      height: 32px;
+      min-width: 36px;
+      padding: 0 7px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 999px;
+      background: #fff;
+      color: #1C1C1E;
+      font-size: 11.5px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, border-color 0.1s;
+      white-space: nowrap;
+    }
+    .tc-btn:hover { background: #f8fafc; }
+    .tc-btn:active { background: #e8f4f0; border-color: #8FB9A8; }
+    .tc-play-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #8FB9A8;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.1s;
+    }
+    .tc-play-btn:hover { background: rgba(143,185,168,0.08); }
+    .tc-play-btn:active { background: rgba(143,185,168,0.18); }
+
+    /* ─── Tabs Row ─── */
+    .tabs-row {
+      display: flex;
+      align-items: flex-end;
+      padding: 0 16px;
+      background: #fff;
+      border-bottom: 1px solid #F5F5F5;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      padding: 12px 0;
+      margin-right: 26px;
+      background: none;
+      border: none;
+      border-bottom: 2.5px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #8E8E93;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      color: #8FB9A8;
+      border-bottom-color: #8FB9A8;
+      font-weight: 600;
+    }
+
+    /* ─── Filters Row ─── */
+    .filters-row {
+      padding: 10px 16px 8px;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .filter-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 999px;
+      background: #fff;
+      color: #1C1C1E;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .filter-pill-btn:hover { background: #f8fafc; }
+    .filter-pill-btn.has-filters {
+      border-color: #8FB9A8;
+      background: rgba(143,185,168,0.08);
+      color: #8FB9A8;
+    }
+
+    /* ─── Comments List ─── */
+    .comments-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 8px 80px;
+      background: #fff;
+    }
+    .comments-scroll::-webkit-scrollbar { width: 0; }
+
+    .comment-item {
+      padding: 10px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .comment-item:hover { background: rgba(143,185,168,0.05); }
+    .comment-item.active { background: rgba(143,185,168,0.09); }
+
+    .comment-header-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 5px;
+    }
+    .comment-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(143,185,168,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #8FB9A8;
+      flex-shrink: 0;
+    }
+    .comment-author {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1C1C1E;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .comment-actions-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .example-btn {
+      padding: 2px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      color: #8E8E93;
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.1s, background 0.1s;
+    }
+    .example-btn:hover { border-color: #8FB9A8; background: rgba(143,185,168,0.06); color: #8FB9A8; }
+    .timestamp-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 7px;
+      border: none;
+      background: rgba(143,185,168,0.12);
+      color: #8FB9A8;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .timestamp-btn:hover { background: rgba(143,185,168,0.22); }
+    .more-btn {
+      background: none;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      color: #8E8E93;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      transition: background 0.1s;
+    }
+    .more-btn:hover { background: #F5F5F5; }
+
+    .comment-body {
+      font-size: 14px;
+      color: #1C1C1E;
+      line-height: 1.5;
+      padding-left: 40px;
+    }
+
+    /* ─── Frame Detail Card ─── */
+    .frame-card {
+      margin-top: 7px;
+      margin-left: 40px;
+      border-left: 3px solid #8FB9A8;
+      border-radius: 0 8px 8px 0;
+      background: #fafcfb;
+      padding: 8px 8px 8px 12px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .frame-card:hover { background: rgba(143,185,168,0.07); }
+    .frame-card-header {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 4px;
+    }
+    .frame-label-text {
+      font-size: 10px;
+      font-weight: 700;
+      color: #8E8E93;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .frame-ts-badge {
+      font-size: 10px;
+      color: #8E8E93;
+      font-weight: 500;
+    }
+    .view-frame-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #8FB9A8;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      margin-left: auto;
+      letter-spacing: 0.01em;
+    }
+    .view-frame-btn:hover { color: #6a9a95; }
+    .frame-card-more {
+      background: none;
+      border: none;
+      padding: 2px;
+      cursor: pointer;
+      color: #8E8E93;
+      display: flex;
+      align-items: center;
+      width: 22px;
+      height: 22px;
+      justify-content: center;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .frame-card-more:hover { background: #F5F5F5; }
+    .frame-card-text {
+      font-size: 13px;
+      color: #1C1C1E;
+      line-height: 1.4;
+    }
+
+    /* ─── Context Menu ─── */
+    .ctx-menu-wrapper { position: relative; }
+    .ctx-menu {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 4px);
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
+      border: 1px solid rgba(0,0,0,0.06);
+      overflow: hidden;
+      z-index: 50;
+      min-width: 160px;
+      display: none;
+    }
+    .ctx-menu.open { display: block; }
+    .ctx-menu-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 10px 14px;
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #1C1C1E;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .ctx-menu-item:hover { background: #f8fafc; }
+    .ctx-menu-item.danger { color: #e74c3c; }
+    .ctx-divider { height: 1px; background: #F5F5F5; }
+
+    /* ─── Shot Technique Panel ─── */
+    .shot-technique-panel {
+      display: none;
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #fff;
+    }
+    .shot-technique-panel.visible { display: block; }
+
+    /* ─── View Frame Modal ─── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      pointer-events: none;
+      transition: background 0.22s;
+    }
+    .modal-backdrop.open {
+      background: rgba(0,0,0,0.72);
+      pointer-events: auto;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.22s cubic-bezier(0.22,0.61,0.36,1), opacity 0.22s;
+      opacity: 0;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    }
+    .modal-backdrop.open .modal-card {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid #F5F5F5;
+    }
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1C1C1E;
+    }
+    .modal-close-btn {
+      width: 30px;
+      height: 30px;
+      background: #F5F5F5;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: #8E8E93;
+      transition: background 0.1s;
+    }
+    .modal-close-btn:hover { background: #e2e8f0; }
+    .modal-frame-area {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #111;
+      overflow: hidden;
+    }
+    .modal-court-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(175deg, #2d6a4f 0%, #3a7d5a 40%, #2d6050 60%, #1e4d3a 100%);
+    }
+    .modal-annotation-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    .modal-body {
+      padding: 14px 16px;
+    }
+    .modal-frame-note {
+      font-size: 14px;
+      color: #1C1C1E;
+      line-height: 1.5;
+      font-weight: 400;
+    }
+    .modal-timestamp-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(143,185,168,0.12);
+      color: #8FB9A8;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    /* ─── Filter Bottom Sheet ─── */
+    .filter-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 110;
+      background: rgba(0,0,0,0);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      pointer-events: none;
+      transition: background 0.22s;
+    }
+    .filter-backdrop.open {
+      background: rgba(0,0,0,0.45);
+      pointer-events: auto;
+    }
+    .filter-sheet {
+      width: 100%;
+      max-width: 430px;
+      background: #fff;
+      border-top-left-radius: 22px;
+      border-top-right-radius: 22px;
+      transform: translateY(100%);
+      transition: transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .filter-backdrop.open .filter-sheet { transform: translateY(0); }
+    .filter-handle-bar {
+      display: flex;
+      justify-content: center;
+      padding-top: 10px;
+      padding-bottom: 2px;
+    }
+    .filter-handle {
+      width: 44px;
+      height: 4px;
+      border-radius: 999px;
+      background: #e2e8f0;
+    }
+    .filter-sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px 14px;
+    }
+    .filter-close-btn {
+      width: 38px;
+      height: 38px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #1C1C1E;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+    .filter-close-btn:hover { background: #F5F5F5; }
+    .filter-sheet-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #1C1C1E;
+      margin: 0;
+    }
+    .filter-reset-btn {
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #8FB9A8;
+      cursor: pointer;
+      font-weight: 500;
+      padding: 4px 0;
+    }
+    .filter-sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+    }
+    .filter-section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1C1C1E;
+      margin-bottom: 12px;
+    }
+    .shot-tag-btn {
+      padding: 10px 18px;
+      border-radius: 999px;
+      border: 1px solid #f1f5f9;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s;
+    }
+    .shot-tag-btn.active {
+      background: #8FB9A8;
+      color: #fff;
+      border-color: #8FB9A8;
+    }
+    .filter-student-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #f1f5f9;
+      background: transparent;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      transition: all 0.12s;
+    }
+    .filter-student-card:hover { background: #f8fafc; }
+    .filter-student-card.active { border-color: #e2e8f0; background: #f8fafc; }
+    .filter-student-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #8E8E93;
+      flex-shrink: 0;
+    }
+    .filter-sheet-footer {
+      padding: 12px 16px 28px;
+      border-top: 1px solid #F5F5F5;
+    }
+    .apply-btn {
+      width: 100%;
+      padding: 15px;
+      background: #8FB9A8;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .apply-btn:hover { background: #7aa896; }
+    .apply-btn:active { background: #6a9a95; }
+
+    /* ─── Example GIF Modal ─── */
+    .example-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      pointer-events: none;
+      transition: background 0.22s;
+    }
+    .example-modal-backdrop.open {
+      background: rgba(0,0,0,0.72);
+      pointer-events: auto;
+    }
+    .example-modal-card {
+      width: 100%;
+      max-width: 400px;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.22s cubic-bezier(0.22,0.61,0.36,1), opacity 0.22s;
+      opacity: 0;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+    }
+    .example-modal-backdrop.open .example-modal-card {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    /* ─── Toast notification ─── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(0);
+      background: rgba(30,30,30,0.92);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 999px;
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-4px);
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell" id="appShell">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="header">
+    <button class="header-back" onclick="goBack()" aria-label="Back">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+    </button>
+    <nav class="header-nav" aria-label="Breadcrumb">
+      <button class="breadcrumb-seg" onclick="showToast('Navigate to bach.nn11')">bach.nn11</button>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <button class="breadcrumb-seg" onclick="showToast('Navigate to Your Roadmap')">Your Roadmap</button>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <button class="breadcrumb-seg" onclick="showToast('Navigate to Forehand Dink')">Forehand Dink</button>
+      <span class="breadcrumb-sep" aria-hidden="true">/</span>
+      <span class="breadcrumb-seg current" aria-current="page">Sun, Mar 15, 2026</span>
+    </nav>
+    <button class="header-right" onclick="openEditModal()" aria-label="Edit session">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- ═══ VIDEO PLAYER ═══ -->
+  <div class="video-wrapper" id="videoWrapper">
+    <!-- Court background -->
+    <div class="court-bg"></div>
+    <!-- SVG court lines + player silhouette -->
+    <svg class="court-lines" viewBox="0 0 430 242" xmlns="http://www.w3.org/2000/svg">
+      <!-- Floor gradient overlay -->
+      <defs>
+        <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3a7d5a" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#1a3d2a" stop-opacity="0.5"/>
+        </linearGradient>
+        <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5a9a78"/>
+          <stop offset="40%" stop-color="#3a7d5a"/>
+        </linearGradient>
+      </defs>
+      <!-- Background wall -->
+      <rect x="0" y="0" width="430" height="130" fill="url(#wallGrad)" opacity="0.7"/>
+      <!-- SWIN logos on wall -->
+      <text x="55" y="80" fill="rgba(255,255,255,0.3)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+      <text x="340" y="80" fill="rgba(255,255,255,0.3)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+      <!-- Court floor perspective lines -->
+      <polygon points="0,135 430,135 350,242 80,242" fill="#4a8c62" opacity="0.6"/>
+      <!-- Net post and net -->
+      <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(0,0,0,0.5)" stroke-width="1.5"/>
+      <rect x="50" y="100" width="3" height="35" fill="rgba(0,0,0,0.4)"/>
+      <rect x="377" y="100" width="3" height="35" fill="rgba(0,0,0,0.4)"/>
+      <!-- Net mesh suggestion -->
+      <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+      <line x1="50" y1="115" x2="380" y2="115" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+      <!-- Court lines -->
+      <rect x="55" y="108" width="320" height="120" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="215" y1="108" x2="215" y2="228" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="55" y1="168" x2="375" y2="168" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+
+      <!-- Player silhouette (right side, mid court) -->
+      <!-- Body -->
+      <ellipse cx="295" cy="155" rx="12" ry="20" fill="rgba(0,0,0,0.65)"/>
+      <!-- Head -->
+      <circle cx="295" cy="130" r="9" fill="rgba(0,0,0,0.65)"/>
+      <!-- Arm + paddle (forehand dink position) -->
+      <line x1="295" y1="148" x2="325" y2="158" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="331" cy="160" rx="10" ry="6" fill="rgba(0,0,0,0.5)" transform="rotate(-15 331 160)"/>
+      <!-- Legs -->
+      <line x1="290" y1="175" x2="283" y2="200" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+      <line x1="300" y1="175" x2="305" y2="200" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+
+      <!-- Another player (left side background, smaller) -->
+      <ellipse cx="130" cy="118" rx="8" ry="13" fill="rgba(0,0,0,0.35)"/>
+      <circle cx="130" cy="103" r="6" fill="rgba(0,0,0,0.35)"/>
+    </svg>
+
+    <!-- Top info bar (YouTube style) -->
+    <div class="video-top-bar">
+      <div class="video-avatar">B</div>
+      <div class="video-title">Ben Session 1 Forehand Dink</div>
+      <div class="video-share">Share ↗</div>
+    </div>
+
+    <!-- Center play/pause -->
+    <button class="video-center-btn" id="videoCenterBtn" onclick="togglePlay()" aria-label="Play/Pause">
+      <svg id="bigPlayIcon" width="26" height="26" viewBox="0 0 24 24" fill="white" style="margin-left:3px;">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="bigPauseIcon" width="26" height="26" viewBox="0 0 24 24" fill="white" style="display:none;">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+    </button>
+
+    <!-- Red circle annotation overlay -->
+    <div class="frame-annotation-overlay" id="frameAnnotation">
+      <svg width="100%" height="100%" viewBox="0 0 430 242" preserveAspectRatio="xMidYMid meet">
+        <!-- Animated red dashed circle around player head area -->
+        <circle id="annotationCircle" cx="295" cy="130" r="28"
+          fill="none"
+          stroke="#FF3B30"
+          stroke-width="2.5"
+          stroke-dasharray="7 4"
+          opacity="0.95">
+          <animateTransform attributeName="transform" type="rotate" from="0 295 130" to="360 295 130" dur="8s" repeatCount="indefinite"/>
+        </circle>
+        <!-- Small static inner circle -->
+        <circle cx="295" cy="130" r="22" fill="rgba(255,59,48,0.08)" stroke="rgba(255,59,48,0.4)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="video-controls-bottom">
+      <div class="progress-track" id="progressTrack" onclick="seekFromBar(event)">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        <div class="progress-thumb" id="progressThumb" style="left:0%"></div>
+        <!-- Comment timestamp markers -->
+        <div class="progress-marker" id="marker-10"
+          style="left:4.95%"
+          title="Comment at 0:10"
+          onclick="event.stopPropagation(); activateComment(1, 10)"></div>
+        <div class="progress-marker" id="marker-43"
+          style="left:21.3%"
+          title="Comment at 0:43"
+          onclick="event.stopPropagation(); activateComment(2, 43)"></div>
+      </div>
+      <div class="video-time-row">
+        <span class="video-time-text" id="videoCurrentTime">0:00</span>
+        <span class="yt-logo-text">▶ YouTube</span>
+        <span class="video-time-text">3:22</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TIME CONTROLS ═══ -->
+  <div class="time-controls">
+    <button class="tc-btn" onclick="adjustTime(-1/30)" title="Back 1 frame">-1f</button>
+    <button class="tc-btn" onclick="adjustTime(-10)" title="Back 10 seconds">-10s</button>
+    <button class="tc-btn" onclick="adjustTime(-5)" title="Back 5 seconds">-5s</button>
+    <button class="tc-btn" onclick="adjustTime(-1)" title="Back 1 second">-1s</button>
+    <button class="tc-play-btn" id="tcPlayBtn" onclick="togglePlay()" aria-label="Play/Pause">
+      <svg id="tcPlayIcon" width="19" height="19" viewBox="0 0 24 24" fill="#8FB9A8" style="margin-left:2px;">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="tcPauseIcon" width="19" height="19" viewBox="0 0 24 24" fill="#8FB9A8" style="display:none;">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+    </button>
+    <button class="tc-btn" onclick="adjustTime(1)" title="Forward 1 second">+1s</button>
+    <button class="tc-btn" onclick="adjustTime(5)" title="Forward 5 seconds">+5s</button>
+    <button class="tc-btn" onclick="adjustTime(10)" title="Forward 10 seconds">+10s</button>
+    <button class="tc-btn" onclick="adjustTime(1/30)" title="Forward 1 frame">+1f</button>
+  </div>
+
+  <!-- ═══ TABS ═══ -->
+  <div class="tabs-row" role="tablist">
+    <button class="tab-btn active" id="tab-comments" role="tab" aria-selected="true" onclick="switchTab('comments')">Comments</button>
+    <button class="tab-btn" id="tab-shot" role="tab" aria-selected="false" onclick="switchTab('shot')">Shot technique</button>
+  </div>
+
+  <!-- ═══ FILTERS ROW ═══ -->
+  <div class="filters-row" id="filtersRow">
+    <button class="filter-pill-btn" id="filterPillBtn" onclick="openFilterSheet()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+      </svg>
+      Filters
+    </button>
+  </div>
+
+  <!-- ═══ COMMENTS SCROLL AREA ═══ -->
+  <div class="comments-scroll" id="commentsArea" role="tabpanel">
+
+    <!-- ── Comment 1 ── -->
+    <div class="comment-item" id="comment-1" onclick="activateComment(1, 10)" role="button" tabindex="0">
+      <div class="comment-header-row">
+        <div class="comment-avatar">BN</div>
+        <span class="comment-author">bien-nguyen</span>
+        <div class="comment-actions-group" onclick="event.stopPropagation()">
+          <button class="example-btn" onclick="openExampleModal(1)">+example</button>
+          <button class="timestamp-btn" onclick="activateComment(1, 10)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            0:10
+          </button>
+          <div class="ctx-menu-wrapper">
+            <button class="more-btn" onclick="toggleCtxMenu('ctxmenu-c1', event)" aria-label="More options">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-c1" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="doAddFrameComment(1)">Add Frame Comment</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item" onclick="doEditComment(1)">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="doDeleteComment(1)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="comment-body">Head is not stable</div>
+
+      <!-- Frame Detail 1-A -->
+      <div class="frame-card" onclick="event.stopPropagation(); viewFrame(11, 'Head Starting position before hitting the ball', 'start')">
+        <div class="frame-card-header">
+          <span class="frame-label-text">Frame Detail</span>
+          <span class="frame-ts-badge">[0:11]</span>
+          <button class="view-frame-btn" onclick="event.stopPropagation(); viewFrame(11, 'Head Starting position before hitting the ball', 'start')">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            VIEW FRAME
+          </button>
+          <div class="ctx-menu-wrapper" onclick="event.stopPropagation()">
+            <button class="frame-card-more" onclick="toggleCtxMenu('ctxmenu-fd1a', event)" aria-label="More options">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-fd1a" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="showToast('Edit frame comment')">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="showToast('Frame comment deleted')">Delete</button>
+            </div>
+          </div>
+        </div>
+        <div class="frame-card-text">Head Starting position before hitting the ball</div>
+      </div>
+
+      <!-- Frame Detail 1-B -->
+      <div class="frame-card" onclick="event.stopPropagation(); viewFrame(11, 'Head Ending position after shot. Your Head should stay at the same level', 'end')">
+        <div class="frame-card-header">
+          <span class="frame-label-text">Frame Detail</span>
+          <span class="frame-ts-badge">[0:11]</span>
+          <button class="view-frame-btn" onclick="event.stopPropagation(); viewFrame(11, 'Head Ending position after shot. Your Head should stay at the same level', 'end')">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            VIEW FRAME
+          </button>
+          <div class="ctx-menu-wrapper" onclick="event.stopPropagation()">
+            <button class="frame-card-more" onclick="toggleCtxMenu('ctxmenu-fd1b', event)" aria-label="More options">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-fd1b" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="showToast('Edit frame comment')">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="showToast('Frame comment deleted')">Delete</button>
+            </div>
+          </div>
+        </div>
+        <div class="frame-card-text">Head Ending position after shot. Your Head should stay at the same level</div>
+      </div>
+    </div>
+
+    <!-- ── Comment 2 ── -->
+    <div class="comment-item" id="comment-2" onclick="activateComment(2, 43)" role="button" tabindex="0">
+      <div class="comment-header-row">
+        <div class="comment-avatar">BN</div>
+        <span class="comment-author">bien-nguyen</span>
+        <div class="comment-actions-group" onclick="event.stopPropagation()">
+          <button class="example-btn" onclick="openExampleModal(2)">+example</button>
+          <button class="timestamp-btn" onclick="activateComment(2, 43)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            0:43
+          </button>
+          <div class="ctx-menu-wrapper">
+            <button class="more-btn" onclick="toggleCtxMenu('ctxmenu-c2', event)" aria-label="More options">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-c2" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="doAddFrameComment(2)">Add Frame Comment</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item" onclick="doEditComment(2)">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="doDeleteComment(2)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="comment-body">Dont reach for the ball</div>
+    </div>
+
+    <!-- ── Comment 3 (extra mock data) ── -->
+    <div class="comment-item" id="comment-3" onclick="activateComment(3, 87)" role="button" tabindex="0">
+      <div class="comment-header-row">
+        <div class="comment-avatar">BN</div>
+        <span class="comment-author">bien-nguyen</span>
+        <div class="comment-actions-group" onclick="event.stopPropagation()">
+          <button class="example-btn" onclick="openExampleModal(3)">+example</button>
+          <button class="timestamp-btn" onclick="activateComment(3, 87)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            1:27
+          </button>
+          <div class="ctx-menu-wrapper">
+            <button class="more-btn" onclick="toggleCtxMenu('ctxmenu-c3', event)" aria-label="More options">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-c3" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="doAddFrameComment(3)">Add Frame Comment</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item" onclick="doEditComment(3)">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="doDeleteComment(3)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="comment-body">Bend your knees more — weight should be forward on your toes during the dink</div>
+
+      <!-- Frame Detail 3-A -->
+      <div class="frame-card" onclick="event.stopPropagation(); viewFrame(87, 'Knee bend — ideally at 120° angle for stable base', 'knees')">
+        <div class="frame-card-header">
+          <span class="frame-label-text">Frame Detail</span>
+          <span class="frame-ts-badge">[1:27]</span>
+          <button class="view-frame-btn" onclick="event.stopPropagation(); viewFrame(87, 'Knee bend — ideally at 120° angle for stable base', 'knees')">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+            VIEW FRAME
+          </button>
+          <div class="ctx-menu-wrapper" onclick="event.stopPropagation()">
+            <button class="frame-card-more" onclick="toggleCtxMenu('ctxmenu-fd3a', event)" aria-label="More options">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="#8E8E93">
+                <circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>
+              </svg>
+            </button>
+            <div id="ctxmenu-fd3a" class="ctx-menu">
+              <button class="ctx-menu-item" onclick="showToast('Edit frame comment')">Edit</button>
+              <div class="ctx-divider"></div>
+              <button class="ctx-menu-item danger" onclick="showToast('Frame comment deleted')">Delete</button>
+            </div>
+          </div>
+        </div>
+        <div class="frame-card-text">Knee bend — ideally at 120° angle for stable base</div>
+      </div>
+    </div>
+
+  </div><!-- /.comments-scroll -->
+
+  <!-- Shot Technique Panel -->
+  <div class="shot-technique-panel" id="shotTechniquePanel" role="tabpanel">
+    <div style="display:flex;align-items:center;gap:10px;padding:12px 0 16px;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(143,185,168,0.15);display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FB9A8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <div style="font-size:15px;font-weight:600;color:#1C1C1E;">Forehand Dink</div>
+        <div style="font-size:12px;color:#8E8E93;margin-top:1px;">Shot technique analysis</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#8FB9A8;"></div>
+          <span style="font-size:14px;color:#1C1C1E;font-weight:500;">Head stability</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#e74c3c;font-weight:500;">Needs work</span>
+          <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="showToast('Marked as done')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#8FB9A8;"></div>
+          <span style="font-size:14px;color:#1C1C1E;font-weight:500;">Arm extension</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#e74c3c;font-weight:500;">Needs work</span>
+          <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="showToast('Marked as done')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#8FB9A8;"></div>
+          <span style="font-size:14px;color:#1C1C1E;font-weight:500;">Knee bend</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#e74c3c;font-weight:500;">Needs work</span>
+          <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="showToast('Marked as done')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7CC" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#4CAF50;"></div>
+          <span style="font-size:14px;color:#1C1C1E;font-weight:500;">Paddle angle</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#4CAF50;font-weight:500;">Good</span>
+          <div style="width:28px;height:28px;border-radius:50%;background:#4CAF50;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#4CAF50;"></div>
+          <span style="font-size:14px;color:#1C1C1E;font-weight:500;">Follow-through</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:12px;color:#4CAF50;font-weight:500;">Good</span>
+          <div style="width:28px;height:28px;border-radius:50%;background:#4CAF50;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.app-shell -->
+
+
+<!-- ═══ VIEW FRAME MODAL ═══ -->
+<div class="modal-backdrop" id="viewFrameModal" onclick="closeViewFrameModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="viewFrameModalTitle">Frame Detail [0:11]</span>
+      <button class="modal-close-btn" onclick="closeViewFrameModal()" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <!-- Frame image with annotation -->
+    <div class="modal-frame-area">
+      <div class="modal-court-bg"></div>
+      <!-- Court SVG reused -->
+      <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 430 242" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="430" height="130" fill="#5a9a78" opacity="0.55"/>
+        <text x="55" y="80" fill="rgba(255,255,255,0.25)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+        <text x="340" y="80" fill="rgba(255,255,255,0.25)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+        <polygon points="0,135 430,135 350,242 80,242" fill="#4a8c62" opacity="0.55"/>
+        <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        <rect x="55" y="108" width="320" height="120" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+        <line x1="215" y1="108" x2="215" y2="228" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+        <!-- Player body -->
+        <ellipse cx="295" cy="155" rx="12" ry="20" fill="rgba(0,0,0,0.6)"/>
+        <circle cx="295" cy="130" r="9" fill="rgba(0,0,0,0.6)"/>
+        <line x1="295" y1="148" x2="325" y2="158" stroke="rgba(0,0,0,0.55)" stroke-width="5" stroke-linecap="round"/>
+        <ellipse cx="331" cy="160" rx="10" ry="6" fill="rgba(0,0,0,0.45)" transform="rotate(-15 331 160)"/>
+        <line x1="290" y1="175" x2="283" y2="200" stroke="rgba(0,0,0,0.55)" stroke-width="5" stroke-linecap="round"/>
+        <line x1="300" y1="175" x2="305" y2="200" stroke="rgba(0,0,0,0.55)" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <!-- Red annotation on modal -->
+      <svg class="modal-annotation-svg" id="modalAnnotationSvg" viewBox="0 0 430 242" preserveAspectRatio="xMidYMid meet">
+        <circle id="modalCircle" cx="295" cy="130" r="28"
+          fill="none"
+          stroke="#FF3B30"
+          stroke-width="2.5"
+          stroke-dasharray="7 4">
+          <animateTransform attributeName="transform" type="rotate" from="0 295 130" to="360 295 130" dur="8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="295" cy="130" r="22" fill="rgba(255,59,48,0.08)" stroke="rgba(255,59,48,0.35)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="modal-body">
+      <div class="modal-frame-note" id="viewFrameModalNote">Head Starting position before hitting the ball</div>
+      <div class="modal-timestamp-badge" id="viewFrameModalBadge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+        0:11
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ EXAMPLE MODAL ═══ -->
+<div class="example-modal-backdrop" id="exampleModal" onclick="closeExampleModal()">
+  <div class="example-modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">Attach Example</span>
+      <button class="modal-close-btn" onclick="closeExampleModal()" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div style="padding:16px;">
+      <p style="font-size:13px;color:#8E8E93;margin-bottom:16px;">Select a technique example to attach to this comment:</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button onclick="attachExample('Forehand Dink – Professional Form')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:background 0.1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="width:44px;height:30px;border-radius:6px;background:linear-gradient(135deg,#3a7d5a,#4a8c62);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1C1C1E;">Forehand Dink – Professional Form</div>
+            <div style="font-size:11px;color:#8E8E93;margin-top:1px;">Stable head, bent knees, compact swing</div>
+          </div>
+        </button>
+        <button onclick="attachExample('Head Stability Drill')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:background 0.1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="width:44px;height:30px;border-radius:6px;background:linear-gradient(135deg,#5b8675,#6a9a95);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1C1C1E;">Head Stability Drill</div>
+            <div style="font-size:11px;color:#8E8E93;margin-top:1px;">Keep head level throughout the stroke</div>
+          </div>
+        </button>
+        <button onclick="attachExample('Reach Correction Exercise')" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;text-align:left;width:100%;transition:background 0.1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+          <div style="width:44px;height:30px;border-radius:6px;background:linear-gradient(135deg,#8FB9A8,#6a9a95);flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2"><polygon points="5,3 19,12 5,21"/></svg>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:#1C1C1E;">Reach Correction Exercise</div>
+            <div style="font-size:11px;color:#8E8E93;margin-top:1px;">Let the ball come to you, don't reach</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ FILTER BOTTOM SHEET ═══ -->
+<div class="filter-backdrop" id="filterBackdrop" onclick="closeFilterSheet()">
+  <div class="filter-sheet" onclick="event.stopPropagation()">
+    <div class="filter-handle-bar">
+      <div class="filter-handle"></div>
+    </div>
+    <div class="filter-sheet-header">
+      <button class="filter-close-btn" onclick="closeFilterSheet()" aria-label="Close filters">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <h2 class="filter-sheet-title">Filters</h2>
+      <button class="filter-reset-btn" onclick="resetFilters()">Reset</button>
+    </div>
+    <div class="filter-sheet-body">
+      <div style="margin-bottom:28px;">
+        <h3 class="filter-section-title">Shots in this thread</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <button class="shot-tag-btn" id="shotTag-fd" data-active="false" onclick="toggleShotFilter(this)">Forehand Dink (3)</button>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 class="filter-section-title" style="margin-bottom:0;">Students in this thread</h3>
+          <span id="activeStudentCount" style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">0 active</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="filter-student-card" id="studentCard-bn" data-active="false" onclick="toggleStudentFilter(this)" style="border:none;background:none;padding:12px;border-radius:12px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;border:1px solid #f1f5f9;">
+            <div class="filter-student-avatar">BN</div>
+            <div>
+              <div style="font-size:14px;color:#1C1C1E;font-weight:500;">bien-nguyen</div>
+              <div style="font-size:11px;color:#8E8E93;margin-top:1px;">bach.nn11</div>
+            </div>
+            <div id="studentCheck-bn" style="margin-left:auto;width:22px;height:22px;border-radius:50%;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-sheet-footer">
+      <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+
+<script>
+  // ── Mock Data ──────────────────────────────────────────────────
+  const MOCK = {
+    session: {
+      date: 'Sun, Mar 15, 2026',
+      shot: 'Forehand Dink',
+      student: 'bach.nn11',
+      duration: 202, // 3:22 in seconds
+    },
+    comments: [
+      {
+        id: 1,
+        author: 'bien-nguyen',
+        timestamp: 10,
+        text: 'Head is not stable',
+        frames: [
+          { ts: 11, note: 'Head Starting position before hitting the ball' },
+          { ts: 11, note: 'Head Ending position after shot. Your Head should stay at the same level' },
+        ],
+      },
+      {
+        id: 2,
+        author: 'bien-nguyen',
+        timestamp: 43,
+        text: 'Dont reach for the ball',
+        frames: [],
+      },
+      {
+        id: 3,
+        author: 'bien-nguyen',
+        timestamp: 87,
+        text: 'Bend your knees more — weight should be forward on your toes during the dink',
+        frames: [
+          { ts: 87, note: 'Knee bend — ideally at 120° angle for stable base' },
+        ],
+      },
+    ],
+  };
+
+  // ── State ──────────────────────────────────────────────────────
+  const DURATION = MOCK.session.duration;
+  let currentTime = 0;
+  let isPlaying = false;
+  let playInterval = null;
+  let activeCommentId = null;
+  let openMenuId = null;
+  let activeAnnotationTimeout = null;
+  let activeFilters = { shots: [], students: [] };
+
+  // ── Time Helpers ───────────────────────────────────────────────
+  function fmt(seconds) {
+    const s = Math.max(0, Math.floor(seconds));
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function updateProgressUI() {
+    const pct = (currentTime / DURATION) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressThumb').style.left = pct + '%';
+    document.getElementById('videoCurrentTime').textContent = fmt(currentTime);
+  }
+
+  // ── Playback ───────────────────────────────────────────────────
+  function togglePlay() {
+    isPlaying = !isPlaying;
+    const bigPlay = document.getElementById('bigPlayIcon');
+    const bigPause = document.getElementById('bigPauseIcon');
+    const tcPlay = document.getElementById('tcPlayIcon');
+    const tcPause = document.getElementById('tcPauseIcon');
+
+    if (isPlaying) {
+      bigPlay.style.display = 'none';
+      bigPause.style.display = 'block';
+      tcPlay.style.display = 'none';
+      tcPause.style.display = 'block';
+      // Hide annotation while playing
+      hideAnnotation();
+      clearInterval(playInterval);
+      playInterval = setInterval(() => {
+        currentTime += 0.1;
+        if (currentTime >= DURATION) {
+          currentTime = DURATION;
+          stopPlayback();
+        }
+        updateProgressUI();
+      }, 100);
+    } else {
+      stopPlayback();
+    }
+  }
+
+  function stopPlayback() {
+    isPlaying = false;
+    clearInterval(playInterval);
+    document.getElementById('bigPlayIcon').style.display = 'block';
+    document.getElementById('bigPauseIcon').style.display = 'none';
+    document.getElementById('tcPlayIcon').style.display = 'block';
+    document.getElementById('tcPauseIcon').style.display = 'none';
+  }
+
+  function adjustTime(delta) {
+    currentTime = Math.max(0, Math.min(DURATION, currentTime + delta));
+    updateProgressUI();
+  }
+
+  function seekToTime(t, showAnnotation) {
+    currentTime = Math.max(0, Math.min(DURATION, t));
+    updateProgressUI();
+    if (showAnnotation) {
+      showFrameAnnotation();
+    }
+  }
+
+  function seekFromBar(e) {
+    const track = document.getElementById('progressTrack');
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    currentTime = pct * DURATION;
+    updateProgressUI();
+  }
+
+  // ── Annotation ─────────────────────────────────────────────────
+  function showFrameAnnotation() {
+    if (isPlaying) return;
+    const ann = document.getElementById('frameAnnotation');
+    ann.classList.add('visible');
+    clearTimeout(activeAnnotationTimeout);
+    activeAnnotationTimeout = setTimeout(hideAnnotation, 4000);
+  }
+
+  function hideAnnotation() {
+    document.getElementById('frameAnnotation').classList.remove('visible');
+  }
+
+  // ── Comments ───────────────────────────────────────────────────
+  function activateComment(id, ts) {
+    // Deactivate all
+    document.querySelectorAll('.comment-item').forEach(el => el.classList.remove('active'));
+    activeCommentId = id;
+    const el = document.getElementById('comment-' + id);
+    if (el) el.classList.add('active');
+    // Stop playing and seek
+    if (isPlaying) stopPlayback();
+    seekToTime(ts, true);
+    // Scroll comment into view
+    el && el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── VIEW FRAME ─────────────────────────────────────────────────
+  function viewFrame(ts, note, type) {
+    if (isPlaying) stopPlayback();
+    seekToTime(ts, false);
+    showFrameAnnotation();
+
+    // Update annotation position based on type
+    const cx = type === 'knees' ? 295 : 295;
+    const cy = type === 'knees' ? 185 : 130;
+    const circle = document.getElementById('annotationCircle');
+    const modalCircle = document.getElementById('modalCircle');
+    if (circle) {
+      circle.setAttribute('cx', cx);
+      circle.setAttribute('cy', cy);
+    }
+    if (modalCircle) {
+      modalCircle.setAttribute('cx', cx);
+      modalCircle.setAttribute('cy', cy);
+      // Update animateTransform origin too
+      const anim = modalCircle.querySelector('animateTransform');
+      if (anim) anim.setAttribute('from', `0 ${cx} ${cy}`), anim.setAttribute('to', `360 ${cx} ${cy}`);
+    }
+
+    // Open modal
+    document.getElementById('viewFrameModalTitle').textContent = `Frame Detail [${fmt(ts)}]`;
+    document.getElementById('viewFrameModalNote').textContent = note;
+    document.getElementById('viewFrameModalBadge').innerHTML = `
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+      ${fmt(ts)}
+    `;
+    document.getElementById('viewFrameModal').classList.add('open');
+  }
+
+  function closeViewFrameModal() {
+    document.getElementById('viewFrameModal').classList.remove('open');
+    hideAnnotation();
+  }
+
+  // ── Tabs ───────────────────────────────────────────────────────
+  function switchTab(tab) {
+    const isComments = tab === 'comments';
+    document.getElementById('tab-comments').classList.toggle('active', isComments);
+    document.getElementById('tab-shot').classList.toggle('active', !isComments);
+    document.getElementById('commentsArea').style.display = isComments ? 'block' : 'none';
+    document.getElementById('shotTechniquePanel').classList.toggle('visible', !isComments);
+    document.getElementById('filtersRow').style.display = isComments ? 'block' : 'none';
+  }
+
+  // ── Context Menus ──────────────────────────────────────────────
+  function toggleCtxMenu(menuId, e) {
+    e.stopPropagation();
+    const menu = document.getElementById(menuId);
+    const isOpen = menu.classList.contains('open');
+    // Close any open menus
+    if (openMenuId) {
+      const prev = document.getElementById(openMenuId);
+      if (prev) prev.classList.remove('open');
+    }
+    if (!isOpen) {
+      menu.classList.add('open');
+      openMenuId = menuId;
+    } else {
+      openMenuId = null;
+    }
+  }
+
+  document.addEventListener('click', () => {
+    if (openMenuId) {
+      const menu = document.getElementById(openMenuId);
+      if (menu) menu.classList.remove('open');
+      openMenuId = null;
+    }
+  });
+
+  // ── Comment Actions ────────────────────────────────────────────
+  function doAddFrameComment(parentId) {
+    closeMenus();
+    if (isPlaying) stopPlayback();
+    showToast(`Add frame comment at ${fmt(currentTime)}`);
+  }
+
+  function doEditComment(id) {
+    closeMenus();
+    showToast('Edit comment');
+  }
+
+  function doDeleteComment(id) {
+    closeMenus();
+    const el = document.getElementById('comment-' + id);
+    if (el) {
+      el.style.transition = 'opacity 0.2s, transform 0.2s';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(16px)';
+      setTimeout(() => el.remove(), 220);
+      showToast('Comment deleted');
+    }
+  }
+
+  function closeMenus() {
+    if (openMenuId) {
+      const menu = document.getElementById(openMenuId);
+      if (menu) menu.classList.remove('open');
+      openMenuId = null;
+    }
+  }
+
+  // ── Example Modal ──────────────────────────────────────────────
+  function openExampleModal(commentId) {
+    document.getElementById('exampleModal').classList.add('open');
+  }
+
+  function closeExampleModal() {
+    document.getElementById('exampleModal').classList.remove('open');
+  }
+
+  function attachExample(name) {
+    closeExampleModal();
+    showToast(`Example attached: ${name}`);
+  }
+
+  // ── Filter Sheet ───────────────────────────────────────────────
+  function openFilterSheet() {
+    document.getElementById('filterBackdrop').classList.add('open');
+  }
+
+  function closeFilterSheet() {
+    document.getElementById('filterBackdrop').classList.remove('open');
+  }
+
+  function resetFilters() {
+    activeFilters = { shots: [], students: [] };
+    document.querySelectorAll('.shot-tag-btn').forEach(btn => {
+      btn.classList.remove('active');
+      btn.dataset.active = 'false';
+    });
+    document.querySelectorAll('.filter-student-card').forEach(card => {
+      card.classList.remove('active');
+      card.dataset.active = 'false';
+      const check = card.querySelector('[id^="studentCheck"]');
+      if (check) check.innerHTML = '';
+    });
+    document.getElementById('activeStudentCount').textContent = '0 active';
+    updateFilterPillState();
+  }
+
+  function toggleShotFilter(btn) {
+    const isActive = btn.dataset.active === 'true';
+    if (isActive) {
+      btn.classList.remove('active');
+      btn.dataset.active = 'false';
+    } else {
+      btn.classList.add('active');
+      btn.dataset.active = 'true';
+    }
+  }
+
+  function toggleStudentFilter(card) {
+    const isActive = card.dataset.active === 'true';
+    const checkEl = card.querySelector('[id^="studentCheck"]');
+    if (isActive) {
+      card.classList.remove('active');
+      card.dataset.active = 'false';
+      if (checkEl) checkEl.innerHTML = '';
+    } else {
+      card.classList.add('active');
+      card.dataset.active = 'true';
+      if (checkEl) {
+        checkEl.style.background = '#8FB9A8';
+        checkEl.style.border = '1.5px solid #8FB9A8';
+        checkEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+      }
+    }
+    const count = document.querySelectorAll('.filter-student-card[data-active="true"]').length;
+    document.getElementById('activeStudentCount').textContent = `${count} active`;
+  }
+
+  function applyFilters() {
+    closeFilterSheet();
+    const hasFilters =
+      document.querySelectorAll('.shot-tag-btn[data-active="true"]').length > 0 ||
+      document.querySelectorAll('.filter-student-card[data-active="true"]').length > 0;
+    updateFilterPillState(hasFilters);
+    showToast('Filters applied');
+  }
+
+  function updateFilterPillState(active) {
+    const btn = document.getElementById('filterPillBtn');
+    if (active) {
+      btn.classList.add('has-filters');
+    } else {
+      btn.classList.remove('has-filters');
+    }
+  }
+
+  // ── Misc ───────────────────────────────────────────────────────
+  function goBack() {
+    showToast('Navigate back');
+  }
+
+  function openEditModal() {
+    showToast('Edit session details');
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────
+  let toastTimeout = null;
+  function showToast(message) {
+    closeMenus();
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.remove('show'), 2200);
+  }
+
+  // ── Keyboard Support ───────────────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeViewFrameModal();
+      closeExampleModal();
+      closeFilterSheet();
+      closeMenus();
+    }
+    if (e.key === ' ' && !['INPUT', 'TEXTAREA', 'BUTTON'].includes(document.activeElement.tagName)) {
+      e.preventDefault();
+      togglePlay();
+    }
+    if (e.key === 'ArrowLeft') adjustTime(-1);
+    if (e.key === 'ArrowRight') adjustTime(1);
+  });
+
+  // ── Init ───────────────────────────────────────────────────────
+  updateProgressUI();
+</script>
+</body>
+</html>
