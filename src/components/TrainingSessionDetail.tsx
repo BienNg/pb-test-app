@@ -2684,14 +2684,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         repliesByCommentId[String(comment.id)].map((reply) => {
                           const tsSeconds = (reply.timestampSeconds ?? comment.timestampSeconds) ?? null;
                           const canSeek = tsSeconds != null && !!session?.videoUrl;
-                          const timestampLabel =
-                            tsSeconds != null ? formatTimestamp(tsSeconds) : comment.timestampSeconds != null ? formatTimestamp(comment.timestampSeconds) : null;
                           const _isOwnReply = reply.role === 'You';
                           const isEditing = editingReplyId === reply.id;
                           const isMenuOpen = activeReplyMenuId === reply.id;
                           return (
                             <FrameDetailCard
                               key={reply.id}
+                              highlighted={isActive}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (canSeek && tsSeconds != null) {
@@ -2719,9 +2718,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   }}
                                 >
                                   FRAME DETAIL
-                                  {timestampLabel && (
-                                    <span style={{ color: '#9ca3af', marginLeft: 4 }}>[{timestampLabel}]</span>
-                                  )}
                                 </div>
                                 <div
                                   style={{
@@ -2940,7 +2936,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           );
                         })}
                       {replyingToCommentId === String(comment.id) && (
-                        <FrameDetailCard onClick={(e) => e.stopPropagation()}>
+                        <FrameDetailCard highlighted={isActive} onClick={(e) => e.stopPropagation()}>
                           <div
                             style={{
                               display: 'flex',
@@ -2959,9 +2955,6 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               }}
                             >
                               FRAME DETAIL
-                              <span style={{ color: '#9ca3af', marginLeft: 4 }}>
-                                [{formatTimestamp(replyTimestampSeconds ?? currentVideoTime)}]
-                              </span>
                             </div>
                           </div>
                           <div style={{ position: 'relative', marginBottom: SPACING.sm }}>
