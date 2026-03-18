@@ -1749,8 +1749,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 5,
-            padding: '10px 10px',
+            gap: 'clamp(3px, 1.2vw, 5px)',
+            padding: 'clamp(6px, 2vw, 10px)',
             background: '#fff',
             borderBottom: '1px solid #F5F5F5',
             width: '100%',
@@ -1804,14 +1804,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
 function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
   return {
-    height: 32,
-    minWidth: 36,
-    padding: '0 7px',
+    height: 'clamp(28px, 8vw, 32px)',
+    minWidth: 'clamp(28px, 8.5vw, 36px)',
+    padding: '0 clamp(4px, 1.5vw, 7px)',
     border: '1.5px solid #e2e8f0',
     borderRadius: 999,
     background: '#fff',
     color: '#1C1C1E',
-    fontSize: 11.5,
+    fontSize: 'clamp(9px, 2.5vw, 11.5px)',
     fontWeight: 500,
     cursor: disabled ? 'default' : 'pointer',
     display: 'flex',
@@ -1825,8 +1825,8 @@ function sessionDetailCircleBtn(disabled: boolean): React.CSSProperties {
 
 function sessionDetailPlayPauseBtn(accentColor: string): React.CSSProperties {
   return {
-    width: 44,
-    height: 44,
+    width: 'clamp(34px, 10vw, 44px)',
+    height: 'clamp(34px, 10vw, 44px)',
     flexShrink: 0,
     borderRadius: '50%',
     border: `2px solid ${accentColor}`,
