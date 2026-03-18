@@ -17,6 +17,7 @@ export type ShotVideoCommentRow = {
   author_id: string;
   text: string;
   timestamp_seconds: number | null;
+  loop_end_timestamp_seconds: number | null;
   example_gif: string | null;
   created_at: string;
 };
@@ -35,7 +36,7 @@ export async function fetchShotVideoComments(
   if (!supabase) return [];
   const { data: comments, error } = await supabase
     .from('shot_video_comments')
-    .select('id, shot_video_id, author_id, text, timestamp_seconds, example_gif, created_at')
+    .select('id, shot_video_id, author_id, text, timestamp_seconds, loop_end_timestamp_seconds, example_gif, created_at')
     .eq('shot_video_id', shotVideoId)
     .order('created_at', { ascending: true });
   if (error || !comments) return [];
@@ -268,6 +269,20 @@ export async function updateShotVideoComment(
   const { error } = await supabase
     .from('shot_video_comments')
     .update({ text })
+    .eq('id', commentId);
+  return !error;
+}
+
+/** Update a shot video comment's loop end timestamp. Returns true on success. */
+export async function updateShotVideoCommentLoopEnd(
+  supabase: SupabaseClient | null,
+  commentId: string,
+  loopEndTimestampSeconds: number
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('shot_video_comments')
+    .update({ loop_end_timestamp_seconds: loopEndTimestampSeconds })
     .eq('id', commentId);
   return !error;
 }

@@ -88,6 +88,8 @@ export interface SessionComment {
   text: string;
   /** Timestamp in seconds - clicking jumps video to this point (Frame.io style) */
   timestampSeconds?: number;
+  /** Loop end timestamp in seconds; when set, comment has a loop range. */
+  loopEndTimestampSeconds?: number;
   /** ISO date string when from DB (optional) */
   createdAtIso?: string;
   /** Tagged/mentioned users when from DB */

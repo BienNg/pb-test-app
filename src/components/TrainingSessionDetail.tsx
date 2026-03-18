@@ -57,6 +57,7 @@ import {
   insertSessionComment,
   insertSessionCommentReply,
   updateSessionComment,
+  updateSessionCommentLoopEnd,
   updateCommentExampleGif,
   deleteSessionComment,
   mapDbCommentToSessionComment,
@@ -74,6 +75,7 @@ import {
   insertShotVideoCommentReply,
   mapShotVideoCommentToSessionComment,
   updateShotVideoComment,
+  updateShotVideoCommentLoopEnd,
   updateShotVideoCommentReply,
   deleteShotVideoComment,
   deleteShotVideoCommentReply,
@@ -2133,7 +2135,23 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               </span>
                               <button
                                 type="button"
-                                onClick={() => setAddLoopState(null)}
+                                onClick={async () => {
+                                  if (!isValidLoop || !sessionId || !supabase) return;
+                                  const endTs = currentVideoTime;
+                                  const success = isShotVideo
+                                    ? await updateShotVideoCommentLoopEnd(supabase, String(addLoopState.commentId), endTs)
+                                    : await updateSessionCommentLoopEnd(supabase, String(addLoopState.commentId), endTs);
+                                  if (success) {
+                                    setComments((prev) =>
+                                      prev.map((c) =>
+                                        c.id === addLoopState.commentId
+                                          ? { ...c, loopEndTimestampSeconds: endTs }
+                                          : c
+                                      )
+                                    );
+                                    setAddLoopState(null);
+                                  }
+                                }}
                                 disabled={!isValidLoop}
                                 style={{
                                   padding: '6px 12px',
@@ -2496,7 +2514,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 }}
                               >
                                 <IconPlay size={14} style={{ flexShrink: 0 }} />
-                                {formatTimestamp(comment.timestampSeconds)}
+                                {comment.loopEndTimestampSeconds != null
+                                  ? `${formatTimestamp(comment.timestampSeconds)} → ${formatTimestamp(comment.loopEndTimestampSeconds)}`
+                                  : formatTimestamp(comment.timestampSeconds)}
                               </button>
                             </>
                           )}

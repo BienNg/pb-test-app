@@ -10,6 +10,7 @@ export type SessionCommentRow = {
   author_id: string;
   text: string;
   timestamp_seconds: number | null;
+  loop_end_timestamp_seconds: number | null;
   example_gif: string | null;
   created_at: string;
 };
@@ -67,6 +68,7 @@ export function mapDbCommentToSessionComment(
     createdAtIso: row.created_at,
     text: row.text,
     timestampSeconds: row.timestamp_seconds ?? undefined,
+    loopEndTimestampSeconds: row.loop_end_timestamp_seconds ?? undefined,
     exampleGif: row.example_gif ?? undefined,
     taggedUsers: (row.mentions ?? []).map((m) => ({
       id: m.profile_id,
@@ -114,6 +116,7 @@ export async function fetchSessionComments(
       author_id,
       text,
       timestamp_seconds,
+      loop_end_timestamp_seconds,
       example_gif,
       created_at
     `)
@@ -457,6 +460,20 @@ export async function updateSessionComment(
   const { error } = await supabase
     .from('session_comments')
     .update({ text })
+    .eq('id', commentId);
+  return !error;
+}
+
+/** Update a comment's loop end timestamp. Returns true on success. */
+export async function updateSessionCommentLoopEnd(
+  supabase: SupabaseClient | null,
+  commentId: string,
+  loopEndTimestampSeconds: number
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { error } = await supabase
+    .from('session_comments')
+    .update({ loop_end_timestamp_seconds: loopEndTimestampSeconds })
     .eq('id', commentId);
   return !error;
 }
