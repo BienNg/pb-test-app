@@ -322,13 +322,36 @@ export const LessonCard: React.FC<LessonCardProps> = ({
               <div key={group.subcategoryLabel} style={{ flexShrink: 0 }}>
                 <div
                   style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: accent,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
                     marginBottom: 6,
                   }}
                 >
-                  {group.subcategoryLabel}
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                      color: COLORS.textMuted,
+                      backgroundColor: '#f1f5f9',
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      alignSelf: 'flex-start',
+                    }}
+                  >
+                    To improve
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: accent,
+                    }}
+                  >
+                    {group.subcategoryLabel}
+                  </span>
                 </div>
                 <div
                   style={{

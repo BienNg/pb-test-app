@@ -3,7 +3,7 @@
  * Matches the Shot Detail / Roadmap header style across the app.
  */
 import React from 'react';
-import { COLORS, SPACING } from '../styles/theme';
+import { COLORS } from '../styles/theme';
 import { IconArrowLeft } from './Icons';
 
 const BREADCRUMB_BORDER = 'rgba(143, 185, 168, 0.1)';
