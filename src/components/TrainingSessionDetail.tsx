@@ -243,6 +243,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
   /** Tab for shot session detail: comments (default) or technique checklist. Only used when isShotVideo. */
   const [shotDetailTab, setShotDetailTab] = useState<'comments' | 'technique'>('comments');
+  /** When set, show Add Loop UI below video controls (start = comment timestamp, end = current video time). */
+  const [addLoopState, setAddLoopState] = useState<{
+    commentId: string | number;
+    startTimestamp: number;
+  } | null>(null);
   /** When shot has sub-categories (e.g. Forehand Dink: Normal, Topspin, Slice), which sub is selected. */
   const [selectedTechniqueSubId, setSelectedTechniqueSubId] = useState<string | null>(null);
   /** In admin view, which technique points are checked (keyed by item label, or "subId:label" when using sub-categories). */
@@ -2095,6 +2100,60 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     setAddUrlError(null);
                     setAddUrlDraft('');
                   }}
+                  renderBelowTimeControls={
+                    addLoopState && (
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: SPACING.md,
+                          padding: `${SPACING.sm}px ${SPACING.md}px`,
+                          background: '#fff',
+                          borderBottom: '1px solid #F5F5F5',
+                          width: '100%',
+                          minWidth: 0,
+                        }}
+                      >
+                        {(() => {
+                          const isValidLoop =
+                            currentVideoTime >= addLoopState.startTimestamp &&
+                            currentVideoTime - addLoopState.startTimestamp >= 2;
+                          return (
+                            <>
+                              <span style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ padding: '2px 8px', borderRadius: RADIUS.md, backgroundColor: COLORS.backgroundLight }}>
+                                  {formatTimestamp(addLoopState.startTimestamp)}
+                                </span>
+                                {' → '}
+                                <span style={{ padding: '2px 8px', borderRadius: RADIUS.md, backgroundColor: COLORS.backgroundLight, fontWeight: 700 }}>
+                                  {formatTimestamp(currentVideoTime)}
+                                </span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setAddLoopState(null)}
+                                disabled={!isValidLoop}
+                                style={{
+                                  padding: '6px 12px',
+                                  borderRadius: RADIUS.md,
+                                  border: 'none',
+                                  backgroundColor: isValidLoop ? REFERENCE_PRIMARY : COLORS.backgroundLight,
+                                  color: isValidLoop ? '#fff' : COLORS.textSecondary,
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  cursor: isValidLoop ? 'pointer' : 'default',
+                                }}
+                              >
+                                Add Loop
+                              </button>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )
+                  }
                 />
               )}
               </div>
@@ -2504,6 +2563,30 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   }}
                                 >
                                   Add Frame Comment
+                                </button>
+                              )}
+                              {(isDbSession || isShotVideo) && user?.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const startTs = comment.timestampSeconds ?? currentVideoTime;
+                                    setAddLoopState({ commentId: comment.id, startTimestamp: startTs });
+                                    setActiveCommentMenu(null);
+                                    seekToTimestampIfNeeded(startTs);
+                                  }}
+                                  style={{
+                                    display: 'block',
+                                    width: '100%',
+                                    textAlign: 'left',
+                                    padding: `${SPACING.sm}px ${SPACING.md}px`,
+                                    background: 'none',
+                                    border: 'none',
+                                    ...TYPOGRAPHY.bodySmall,
+                                    color: COLORS.textPrimary,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Add loop
                                 </button>
                               )}
                               <div

@@ -103,6 +103,9 @@ export interface VideoPlayerProps {
   onPlay?: () => void;
   /** Called when any playback control (skip or play/pause) is pressed. */
   onControlPressed?: () => void;
+
+  /** Optional content to render below the time controls (sessionDetail variant). */
+  renderBelowTimeControls?: React.ReactNode;
 }
 
 export interface FrameMarkerState {
@@ -142,6 +145,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     frameDetailMarkerReadOnly = false,
     onPlay: onPlayProp,
     onControlPressed,
+    renderBelowTimeControls,
   },
   ref
 ) {
@@ -1798,6 +1802,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           </button>
         </div>
       )}
+      {renderBelowTimeControls}
     </div>
   );
 });
