@@ -38,14 +38,19 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [showNotSupported, setShowNotSupported] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
   useEffect(() => {
     const err = searchParams.get('error');
+    const message = searchParams.get('message');
     if (err === 'auth_callback') {
-      setError('Sign in with Google failed. Please try again.');
+      setError(message ? decodeURIComponent(message) : 'Sign in with Google failed. Please try again.');
     }
   }, [searchParams]);
 
@@ -82,8 +87,206 @@ function LoginContent() {
     setShowNotSupported(true);
   }
 
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase || !forgotPasswordEmail.trim()) return;
+    setError(null);
+    setForgotPasswordLoading(true);
+    try {
+      const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/auth/reset-password` : '';
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotPasswordEmail.trim(), {
+        redirectTo,
+      });
+      if (resetError) {
+        setError(resetError.message);
+        return;
+      }
+      setForgotPasswordSuccess(true);
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  }
+
+  function openForgotPassword() {
+    setShowForgotPassword(true);
+    setForgotPasswordEmail(email);
+    setForgotPasswordSuccess(false);
+    setError(null);
+  }
+
   return (
     <>
+      {showForgotPassword && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="forgot-password-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+            background: 'rgba(15, 23, 42, 0.4)',
+            backdropFilter: 'blur(4px)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          onClick={() => setShowForgotPassword(false)}
+        >
+          <style>{`
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+          `}</style>
+          <div
+            style={{
+              background: 'white',
+              borderRadius: styles.radius2xl,
+              padding: 24,
+              maxWidth: 380,
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+              animation: 'slideUp 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p
+              id="forgot-password-title"
+              style={{
+                fontFamily: styles.fontDisplay,
+                fontSize: 18,
+                fontWeight: 600,
+                color: styles.slate[900],
+                margin: '0 0 12px',
+              }}
+            >
+              Forgot password?
+            </p>
+            {forgotPasswordSuccess ? (
+              <>
+                <p
+                  style={{
+                    fontFamily: styles.fontDisplay,
+                    fontSize: 14,
+                    color: styles.slate[500],
+                    margin: '0 0 20px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Check your email for a link to reset your password. If it doesn&apos;t appear within a few minutes, check your spam folder.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(false)}
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    borderRadius: styles.radiusXl,
+                    border: 'none',
+                    background: styles.primary,
+                    color: 'white',
+                    fontFamily: styles.fontDisplay,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  OK
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleForgotPassword}>
+                <p
+                  style={{
+                    fontFamily: styles.fontDisplay,
+                    fontSize: 14,
+                    color: styles.slate[500],
+                    margin: '0 0 16px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Enter your email and we&apos;ll send you a link to reset your password.
+                </p>
+                <label
+                  htmlFor="forgot-email"
+                  style={{
+                    display: 'block',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: styles.slate[700],
+                    marginBottom: 6,
+                  }}
+                >
+                  Email
+                </label>
+                <input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  style={{
+                    width: '100%',
+                    height: 44,
+                    borderRadius: styles.radiusXl,
+                    border: `1px solid ${styles.slate[200]}`,
+                    background: styles.slate[50],
+                    padding: '0 16px',
+                    fontSize: 16,
+                    color: styles.slate[900],
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    marginBottom: 16,
+                  }}
+                />
+                {error && <p style={{ color: '#dc2626', fontSize: 14, margin: '0 0 12px' }}>{error}</p>}
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(false)}
+                    style={{
+                      flex: 1,
+                      height: 44,
+                      borderRadius: styles.radiusXl,
+                      border: `1px solid ${styles.slate[200]}`,
+                      background: 'white',
+                      fontFamily: styles.fontDisplay,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: styles.slate[700],
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotPasswordLoading}
+                    style={{
+                      flex: 1,
+                      height: 44,
+                      borderRadius: styles.radiusXl,
+                      border: 'none',
+                      background: styles.primary,
+                      color: 'white',
+                      fontFamily: styles.fontDisplay,
+                      fontSize: 15,
+                      fontWeight: 600,
+                      cursor: forgotPasswordLoading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {forgotPasswordLoading ? '…' : 'Send link'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {showNotSupported && (
         <div
           role="dialog"
@@ -326,6 +529,26 @@ function LoginContent() {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+              {!isSignUp && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+                  <button
+                    type="button"
+                    onClick={openForgotPassword}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontFamily: 'inherit',
+                      fontSize: 14,
+                      color: styles.primary,
+                      cursor: 'pointer',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
 
             {error && (
