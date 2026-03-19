@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, RoadmapSkillsChecklist, type TrainingSession } from './GameAnalyticsPage';
+import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
@@ -196,6 +197,9 @@ export function StudentShell() {
         }}
         aria-hidden={!showSessions}
       >
+        {loadingSessions ? (
+          <PlayerProfileLoadingScreen />
+        ) : (
         <GameAnalyticsPage
           hideSegmentSwitcher
           onOpenRoadmap={() => setActiveTab('roadmap')}
@@ -211,9 +215,10 @@ export function StudentShell() {
             setOverrideSession(session);
             setActiveTrainingSessionId(session.id);
           }}
-          sessions={loadingSessions ? [] : sessionsForStudent}
+          sessions={sessionsForStudent}
           onOpenLibrary={() => setActiveTab('library')}
         />
+        )}
       </div>
       {/* Library tab — hide when session overlay is open so view switches to detail */}
       <div

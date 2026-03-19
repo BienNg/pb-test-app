@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-surface-variant": "#57615c",
+              "surface-bright": "#f6faf6",
+              "error-dim": "#67040d",
+              "primary-fixed-dim": "#b3decc",
+              "primary-dim": "#335b4d",
+              "surface-dim": "#d2ddd6",
+              "on-surface": "#2b3530",
+              "on-tertiary-container": "#215b65",
+              "on-secondary-fixed-variant": "#496057",
+              "surface-container": "#e8f0ea",
+              "error": "#a83836",
+              "secondary-dim": "#40584f",
+              "on-secondary-container": "#3f574d",
+              "tertiary-fixed-dim": "#a9e0ed",
+              "secondary": "#4c645a",
+              "surface-container-lowest": "#ffffff",
+              "surface-tint": "#3f6758",
+              "inverse-surface": "#0b0f0d",
+              "surface-container-highest": "#dae5de",
+              "outline": "#737d78",
+              "secondary-fixed-dim": "#c0dace",
+              "on-primary-fixed-variant": "#3c6355",
+              "surface-container-high": "#e1eae4",
+              "on-secondary": "#e5fff2",
+              "primary-container": "#c0ecda",
+              "surface": "#f6faf6",
+              "on-error-container": "#6e0a12",
+              "surface-container-low": "#eff5f0",
+              "on-error": "#fff7f6",
+              "error-container": "#fa746f",
+              "tertiary": "#2e6771",
+              "on-primary": "#e5fff2",
+              "tertiary-dim": "#205a65",
+              "inverse-primary": "#ccf8e5",
+              "tertiary-container": "#b7effb",
+              "on-primary-fixed": "#1e4639",
+              "surface-variant": "#dae5de",
+              "on-background": "#2b3530",
+              "tertiary-fixed": "#b7effb",
+              "primary": "#3f6758",
+              "inverse-on-surface": "#999e9a",
+              "secondary-fixed": "#cee9dc",
+              "outline-variant": "#aab4ae",
+              "secondary-container": "#cee9dc",
+              "on-tertiary-fixed": "#034852",
+              "on-primary-container": "#32594b",
+              "primary-fixed": "#c0ecda",
+              "on-tertiary-fixed-variant": "#2c656f",
+              "background": "#f6faf6",
+              "on-tertiary": "#edfbff",
+              "on-secondary-fixed": "#2d443b"
+            },
+            fontFamily: {
+              "headline": ["Lexend"],
+              "body": ["Lexend"],
+              "label": ["Lexend"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes soft-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .animate-soft-pulse {
+            animation: soft-pulse 3s ease-in-out infinite;
+        }
+        @keyframes slow-rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-slow-rotate {
+            animation: slow-rotate 8s linear infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- Screen Shell: Focused Loading State (Suppressed Navs per Hierarchy) -->
+<main class="relative min-h-screen w-full flex flex-col items-center justify-center px-8 overflow-hidden">
+<!-- Abstract Background Elements -->
+<div class="absolute top-[-10%] right-[-10%] w-96 h-96 bg-primary-container/20 blur-[120px] rounded-full"></div>
+<div class="absolute bottom-[-5%] left-[-5%] w-80 h-80 bg-secondary-container/30 blur-[100px] rounded-full"></div>
+<!-- Central Loading Anchor -->
+<div class="relative flex flex-col items-center z-10">
+<!-- Icon Composition -->
+<div class="relative mb-12 flex items-center justify-center">
+<!-- Circular Track -->
+<div class="absolute w-48 h-48 border border-primary/5 rounded-full"></div>
+<!-- Rotating Loading Ring -->
+<div class="absolute w-40 h-40 border-t-2 border-r-2 border-transparent border-t-primary/40 border-r-primary/10 rounded-full animate-slow-rotate"></div>
+<!-- Minimalist Pickleball Visual -->
+<div class="relative w-32 h-32 flex items-center justify-center bg-surface-container-lowest rounded-full shadow-[0_10px_40px_rgba(43,53,48,0.06)] animate-soft-pulse">
+<span class="material-symbols-outlined text-primary text-6xl" data-icon="sports_tennis" style="font-variation-settings: 'FILL' 0, 'wght' 200;">sports_tennis</span>
+<!-- Decorative Holes (Pickleball detail) -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-1.5 h-1.5 bg-primary/20 rounded-full absolute top-8 left-12"></div>
+<div class="w-1.5 h-1.5 bg-primary/20 rounded-full absolute bottom-8 right-12"></div>
+<div class="w-1.5 h-1.5 bg-primary/20 rounded-full absolute top-14 right-10"></div>
+<div class="w-1.5 h-1.5 bg-primary/20 rounded-full absolute bottom-14 left-10"></div>
+</div>
+</div>
+</div>
+<!-- Content Hierarchy -->
+<div class="text-center max-w-xs">
+<h1 class="font-headline text-2xl font-semibold tracking-tight text-on-surface mb-3">
+                    Sancutary
+                </h1>
+<!-- Sequential Messaging Concept (Static for UI Demo) -->
+<div class="flex flex-col items-center space-y-2">
+<p class="text-on-surface-variant font-medium tracking-wide text-sm flex items-center gap-2">
+                        Prepping your court...
+                    </p>
+<div class="flex gap-1.5 mt-4">
+<span class="w-1.5 h-1.5 bg-primary rounded-full opacity-100"></span>
+<span class="w-1.5 h-1.5 bg-primary/40 rounded-full"></span>
+<span class="w-1.5 h-1.5 bg-primary/10 rounded-full"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- Subliminal Lifestyle Image Layer (Low Opacity) -->
+<div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03]">
+<img class="w-full h-full object-cover grayscale" data-alt="Soft focused detail of an outdoor sports court surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDZvQATjXe9OPXvHpB4sq4Z0gYsCNrPR6xGqnOH6YIptAbitGyasHqtI-SWB_Lk-rLZELdHg7dkKtet1YsT9ohDX33iS07wvVoGpzVknVA4l_mPqLrVgYgaO41kX9dbqYFqfUhdovXhdmHK_3N_gRDGRM9FQfy00DHM21KLBGLulxe-df0AvN7uQeQJA-9hRyZqbZmjBSB9UqyZ3NrfIlKTUsxEzkFoEp-EVdXQNnrIQCzE9In1a7hE2I77YE3gRRWo5v20ks4QU1C"/>
+</div>
+</main>
+<!-- Branding Signature Footer -->
+<footer class="fixed bottom-12 w-full text-center px-6">
+<p class="font-label text-[11px] text-on-surface-variant/60 tracking-widest uppercase">
+            Analyzing your swing
+        </p>
+</footer>
+</body></html>

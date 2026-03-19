@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './providers/AuthProvider';
+import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -24,20 +25,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, [user, loading, router]);
 
   if (loading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '60vh',
-          fontFamily: 'system-ui',
-          color: '#8E8E93',
-        }}
-      >
-        Loading…
-      </div>
-    );
+    return <PlayerProfileLoadingScreen />;
   }
 
   if (!user) {
