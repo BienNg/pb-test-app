@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
@@ -1532,12 +1533,17 @@ function ProfileMenuButton({
   const { signOut } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        !buttonRef.current?.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
         setOpen(false);
       }
     };
@@ -1547,78 +1553,91 @@ function ProfileMenuButton({
 
   const isSettings = variant === 'settings';
 
-  return (
-    <div style={{ position: 'relative', flexShrink: 0 }} ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-label={isSettings ? 'Settings' : 'Profile menu'}
-        aria-expanded={open}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: size,
-          height: size,
-          padding: isSettings ? 8 : 0,
-          borderRadius: '50%',
-          border: isSettings ? 'none' : '1px solid rgba(143, 185, 168, 0.3)',
-          background: isSettings ? COLORS.white : 'rgba(143, 185, 168, 0.2)',
-          color: isSettings ? COLORS.brandDark : '#2d3a38',
-          cursor: 'pointer',
-          overflow: 'hidden',
-          boxShadow: isSettings ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
-        }}
-      >
-        {isSettings ? <IconSettings size={20} /> : <IconUser size={22} />}
-      </button>
-      {open && (
-        <div
-          role="menu"
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: '100%',
-            marginTop: 4,
-            minWidth: 140,
-            padding: 4,
-            background: COLORS.white,
-            borderRadius: 8,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-            zIndex: 10,
-          }}
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={async () => {
-              setOpen(false);
-              await signOut();
-              router.replace('/login');
-            }}
+  const menuContent =
+    open &&
+    buttonRef.current &&
+    typeof document !== 'undefined' ? (
+      (() => {
+        const rect = buttonRef.current.getBoundingClientRect();
+        return createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              border: 'none',
-              borderRadius: 6,
-              background: 'transparent',
-              color: COLORS.textPrimary,
-              ...TYPOGRAPHY.body,
-              textAlign: 'left',
-              cursor: 'pointer',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = COLORS.backgroundLight;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
+              position: 'fixed',
+              top: rect.bottom + 4,
+              right: window.innerWidth - rect.right,
+              minWidth: 140,
+              padding: 4,
+              background: COLORS.white,
+              borderRadius: 8,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+              zIndex: 9999,
             }}
           >
-            Log out
-          </button>
-        </div>
-      )}
-    </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={async () => {
+                setOpen(false);
+                await signOut();
+                router.replace('/login');
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: 'none',
+                borderRadius: 6,
+                background: 'transparent',
+                color: COLORS.textPrimary,
+                ...TYPOGRAPHY.body,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = COLORS.backgroundLight;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Log out
+            </button>
+          </div>,
+          document.body
+        );
+      })()
+    ) : null;
+
+  return (
+    <>
+      <div style={{ position: 'relative', flexShrink: 0 }} ref={buttonRef}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={isSettings ? 'Settings' : 'Profile menu'}
+          aria-expanded={open}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: size,
+            height: size,
+            padding: isSettings ? 8 : 0,
+            borderRadius: '50%',
+            border: isSettings ? 'none' : '1px solid rgba(143, 185, 168, 0.3)',
+            background: isSettings ? COLORS.white : 'rgba(143, 185, 168, 0.2)',
+            color: isSettings ? COLORS.brandDark : '#2d3a38',
+            cursor: 'pointer',
+            overflow: 'hidden',
+            boxShadow: isSettings ? '0 1px 3px rgba(0, 0, 0, 0.1)' : 'none',
+          }}
+        >
+          {isSettings ? <IconSettings size={20} /> : <IconUser size={22} />}
+        </button>
+      </div>
+      {menuContent}
+    </>
   );
 }
 
