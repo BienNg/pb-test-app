@@ -311,21 +311,35 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   }, []);
 
   // Load YouTube API and create player when we have a YouTube video
+  // Use youtube-nocookie.com for privacy-enhanced embed (may reduce "More videos" overlay)
   useEffect(() => {
     if (!isYoutube || !youtubeVideoId || !playerContainerRef.current) return;
 
     let pollId: ReturnType<typeof setInterval> | null = null;
+    const container = playerContainerRef.current;
 
     const createPlayer = (yt: NonNullable<typeof window.YT>) => {
-      playerRef.current = new yt.Player(playerContainerRef.current!, {
-        videoId: youtubeVideoId,
-        playerVars: {
-          controls: 0,
-          disablekb: 0,
-          playsinline: 1,
-          rel: 0,
-          ...(shouldAutoplay ? { autoplay: 1, mute: 1 } : {}),
-        },
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const params = new URLSearchParams({
+        enablejsapi: '1',
+        origin,
+        controls: '0',
+        disablekb: '0',
+        playsinline: '1',
+        rel: '0',
+        ...(shouldAutoplay ? { autoplay: '1', mute: '1' } : {}),
+      });
+      const iframe = document.createElement('iframe');
+      iframe.id = `yt-nocookie-${youtubeVideoId}-${videoKey ?? ''}`;
+      iframe.src = `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?${params.toString()}`;
+      iframe.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block;';
+      iframe.setAttribute('frameborder', '0');
+      iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+      iframe.setAttribute('allowfullscreen', 'true');
+      container.innerHTML = '';
+      container.appendChild(iframe);
+
+      playerRef.current = new yt.Player(iframe, {
         events: {
           onReady: (e: { target: YTPlayer }) => {
             const p = e.target;
