@@ -558,6 +558,25 @@ function AdminStudentsPage({
           title="Student Sessions"
           students={students}
           onSelectStudent={setSelectedStudent}
+          onDeleteStudent={async (student) => {
+            try {
+              const res = await fetch('/api/admin/delete-student', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: student.id }),
+              });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) {
+                setError(data.error ?? `Failed to delete student (${res.status})`);
+                return;
+              }
+              setError(null);
+              if (selectedStudent?.id === student.id) setSelectedStudent(null);
+              await reloadStudents();
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Failed to delete student');
+            }
+          }}
           showGameAnalyticsTab={false}
         />
       )}

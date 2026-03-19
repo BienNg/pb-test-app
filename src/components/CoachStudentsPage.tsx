@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
-import { IconUser, IconChevronRight, IconSearch } from './Icons';
+import { IconUser, IconChevronRight, IconSearch, IconPencil, IconTrash } from './Icons';
 import { LessonCard } from './Cards';
 import type { TrainingSession } from './GameAnalyticsPage';
 
@@ -268,6 +268,7 @@ interface CoachStudentsPageProps {
   title?: string;
   students?: StudentInfo[];
   onSelectStudent: (student: StudentInfo) => void;
+  onDeleteStudent?: (student: StudentInfo) => void | Promise<void>;
   onOpenSession?: (sessionId: string) => void;
   showGameAnalyticsTab?: boolean;
   sessions?: TrainingSession[];
@@ -279,11 +280,14 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   title = 'Student Directory',
   students = MOCK_STUDENTS,
   onSelectStudent,
+  onDeleteStudent,
   onOpenSession,
   showGameAnalyticsTab = true,
   sessions = [],
 }) => {
   const [selectedSegment, setSelectedSegment] = useState<'students' | 'mySession'>('students');
+  const [studentToDelete, setStudentToDelete] = useState<StudentInfo | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [selectedSubSegment, setSelectedSubSegment] = useState<'completed' | 'new'>('completed');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy] = useState<SortField>('name');
@@ -801,10 +805,29 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                             <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 600, color: COLORS.textPrimary }}>
                               {student.lessonsCompleted} <span style={{ color: '#9BC1B9', fontWeight: 400 }}>lessons</span>
                             </td>
-                            <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                              <button style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', color: '#9BC1B9' }}>
-                                <span style={{ fontSize: '20px' }}>✎</span>
-                              </button>
+                            <td style={{ padding: '16px 24px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => onSelectStudent(student)}
+                                  style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', color: '#9BC1B9' }}
+                                  title="Edit"
+                                  aria-label="Edit student"
+                                >
+                                  <IconPencil size={20} />
+                                </button>
+                                {onDeleteStudent && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setStudentToDelete(student)}
+                                    style={{ background: 'transparent', border: 'none', padding: '8px', cursor: 'pointer', color: '#dc2626' }}
+                                    title="Delete student"
+                                    aria-label="Delete student"
+                                  >
+                                    <IconTrash size={20} />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -904,6 +927,91 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {studentToDelete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-student-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: SPACING.lg,
+          }}
+          onClick={() => !deleting && setStudentToDelete(null)}
+        >
+          <div
+            style={{
+              background: COLORS.white,
+              borderRadius: RADIUS.lg,
+              padding: SPACING.xl,
+              maxWidth: 400,
+              width: '100%',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="delete-student-title" style={{ ...TYPOGRAPHY.h3, margin: 0, marginBottom: SPACING.sm }}>
+              Delete student account
+            </h3>
+            <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0, marginBottom: SPACING.xl }}>
+              Are you sure you want to permanently delete <strong>{studentToDelete.name}</strong>? This will remove their account and all associated data. This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: SPACING.md, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => !deleting && setStudentToDelete(null)}
+                disabled={deleting}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: RADIUS.md,
+                  border: '1px solid rgba(0,0,0,0.15)',
+                  background: COLORS.white,
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!onDeleteStudent || deleting) return;
+                  setDeleting(true);
+                  try {
+                    await onDeleteStudent(studentToDelete);
+                    setStudentToDelete(null);
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: RADIUS.md,
+                  border: 'none',
+                  background: '#dc2626',
+                  color: 'white',
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  opacity: deleting ? 0.6 : 1,
+                }}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
