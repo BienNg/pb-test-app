@@ -581,9 +581,7 @@ function ShotDetailView({
   hideShotAnalyticsTab?: boolean;
 }) {
   const heroImageUrl =
-    skill.id === 'backhand-dink'
-      ? 'https://cdn.pickleball.com/news/1738690596502/psxuRaIs.jpeg?width=1320&height=528&optimizer=image'
-      : 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800';
+    'https://cdn.pickleball.com/news/1738690596502/psxuRaIs.jpeg?width=1320&height=528&optimizer=image';
   const [activeTab, setActiveTab] = useState<ShotDetailTab>(hideShotAnalyticsTab ? 'sessions' : 'analytics');
   const [addSessionModalOpen, setAddSessionModalOpen] = useState(false);
   const [addSessionYoutubeUrl, setAddSessionYoutubeUrl] = useState('');
