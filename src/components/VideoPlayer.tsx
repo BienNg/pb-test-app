@@ -90,6 +90,8 @@ export interface VideoPlayerProps {
 
   /** UI variant: sessionDetail = progress overlay on video, play accent, controls in card below. */
   variant?: 'default' | 'sessionDetail';
+  /** When true, video autoplays when loaded. Defaults to true for sessionDetail variant. */
+  autoplay?: boolean;
   /** Accent color for sessionDetail variant (e.g. #8FB9A8). */
   accentColor?: string;
 
@@ -149,6 +151,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     onRequestAddUrl,
     pauseRequested,
     variant = 'default',
+    autoplay,
     accentColor = COLORS.primary,
     showFrameDetailReplyOverlay = false,
     frameDetailMarkerInitial = null,
@@ -162,6 +165,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   ref
 ) {
   const isSessionDetail = variant === 'sessionDetail';
+  const shouldAutoplay = autoplay ?? isSessionDetail;
   const youtubeVideoId = resolveYoutubeVideoId(videoUrl || undefined);
   const isYoutube = !!youtubeVideoId;
 
@@ -320,16 +324,24 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           disablekb: 0,
           playsinline: 1,
           rel: 0,
+          ...(shouldAutoplay ? { autoplay: 1, mute: 1 } : {}),
         },
         events: {
           onReady: (e: { target: YTPlayer }) => {
             const p = e.target;
             const dur = p.getDuration();
             if (dur && isFinite(dur)) setVideoDuration(dur);
-            setIsMuted(p.isMuted());
-            if (typeof p.getVolume === 'function') {
-              const v = p.getVolume();
-              if (Number.isFinite(v)) setVolume(v / 100);
+            if (shouldAutoplay) {
+              setIsMuted(false);
+              setVolume(1);
+              if (typeof p.unMute === 'function') p.unMute();
+              if (typeof p.setVolume === 'function') p.setVolume(100);
+            } else {
+              setIsMuted(p.isMuted());
+              if (typeof p.getVolume === 'function') {
+                const v = p.getVolume();
+                if (Number.isFinite(v)) setVolume(v / 100);
+              }
             }
             setIsPlayerReady(true);
             onPlayerReady?.();
@@ -374,7 +386,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       if (playerRef.current?.pauseVideo) playerRef.current.pauseVideo();
       playerRef.current = null;
     };
-  }, [isYoutube, youtubeVideoId, videoKey, retryCount, onPlayerReady]);
+  }, [isYoutube, youtubeVideoId, videoKey, retryCount, onPlayerReady, shouldAutoplay]);
 
   const handlePlayPause = useCallback(async () => {
     setVideoError(null);
@@ -1273,6 +1285,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               key={`${videoKey ?? 'video'}-${retryCount}`}
               ref={videoRef}
               muted={isMuted}
+              autoPlay={shouldAutoplay}
               playsInline
               preload="metadata"
               style={{
@@ -1299,6 +1312,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 if (w && h) setVideoAspectRatio(`${w} / ${h}`);
                 setIsPlayerReady(true);
                 onPlayerReady?.();
+                if (shouldAutoplay) {
+                  v.muted = false;
+                  v.play()
+                    .then(() => {
+                      setIsMuted(false);
+                    })
+                    .catch(() => {
+                      v.muted = true;
+                      setIsMuted(true);
+                      v.play().catch(() => {});
+                    });
+                }
               }}
               onError={() => {
                 setVideoError('Video failed to load. The source may be unavailable or blocked.');
