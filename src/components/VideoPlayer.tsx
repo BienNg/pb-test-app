@@ -113,6 +113,9 @@ export interface VideoPlayerProps {
    * playback reaches end. Used for looping through a comment's timestamp range.
    */
   loopRange?: { start: number; end: number } | null;
+
+  /** Called when the video player is ready (YouTube onReady or native canplay). */
+  onPlayerReady?: () => void;
 }
 
 export interface FrameMarkerState {
@@ -154,6 +157,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     onControlPressed,
     renderBelowTimeControls,
     loopRange = null,
+    onPlayerReady,
   },
   ref
 ) {
@@ -184,6 +188,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isLoopActive, setIsLoopActive] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const [videoAspectRatio, setVideoAspectRatio] = useState<string | null>(null);
@@ -220,6 +226,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     setVideoDuration(0);
     setVideoError(null);
     setIsVideoPlaying(false);
+    setIsPlayerReady(false);
+    setRetryCount(0);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [videoKey]);
 
@@ -323,6 +331,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               const v = p.getVolume();
               if (Number.isFinite(v)) setVolume(v / 100);
             }
+            setIsPlayerReady(true);
+            onPlayerReady?.();
             pollId = setInterval(() => {
               if (!playerRef.current) return;
               try {
@@ -344,6 +354,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               setIsVideoPlaying(false);
             }
           },
+          onError: () => {
+            setVideoError('Video couldn\'t load. Check your connection and try again.');
+          },
         },
       });
     };
@@ -361,7 +374,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       if (playerRef.current?.pauseVideo) playerRef.current.pauseVideo();
       playerRef.current = null;
     };
-  }, [isYoutube, youtubeVideoId, videoKey]);
+  }, [isYoutube, youtubeVideoId, videoKey, retryCount, onPlayerReady]);
 
   const handlePlayPause = useCallback(async () => {
     setVideoError(null);
@@ -600,6 +613,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   // Auto-activate loop only when user newly selects a comment with a loop range (not on every re-render)
   const hadLoopRangeRef = useRef(false);
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const hasLoopRange = Boolean(loopRange && loopRange.end > loopRange.start);
     if (hasLoopRange && !hadLoopRangeRef.current) {
@@ -625,6 +639,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       seekTo(start);
     }
   }, [currentVideoTime, isLoopActive, loopRange, seekTo]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Notify parent about current time / duration
   useEffect(() => {
@@ -758,7 +773,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           >
             <div
               ref={playerContainerRef}
-              key={`yt-${videoKey ?? youtubeVideoId}`}
+              key={`yt-${videoKey ?? youtubeVideoId}-${retryCount}`}
               style={{
                 position: 'absolute',
                 inset: 0,
@@ -790,6 +805,70 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
             >
             </div>
+            {!isPlayerReady && !videoError && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.md,
+                  background: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                }}
+                aria-live="polite"
+              >
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    border: '3px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'video-loading-spin 0.8s linear infinite',
+                  }}
+                />
+                <span style={{ ...TYPOGRAPHY.bodySmall, fontWeight: 500 }}>Loading video…</span>
+              </div>
+            )}
+            {videoError && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.md,
+                  background: 'rgba(0,0,0,0.75)',
+                  color: '#fff',
+                  padding: SPACING.lg,
+                  textAlign: 'center',
+                }}
+              >
+                <span style={{ ...TYPOGRAPHY.bodySmall }}>{videoError}</span>
+                <button
+                  type="button"
+                  onClick={() => setRetryCount((c) => c + 1)}
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                    borderRadius: RADIUS.md,
+                    border: 'none',
+                    backgroundColor: '#fff',
+                    color: '#1C1C1E',
+                    ...TYPOGRAPHY.labelMed,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
             {skipIndicator && (
               <div
                 aria-live="polite"
@@ -1097,20 +1176,74 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               tabIndex={0}
               aria-label={isVideoPlaying ? 'Pause video' : 'Play video'}
             >
-              {videoError && (
+            </div>
+            {!isPlayerReady && !videoError && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.md,
+                  background: 'rgba(0,0,0,0.6)',
+                  color: '#fff',
+                }}
+                aria-live="polite"
+              >
                 <div
                   style={{
-                    padding: SPACING.md,
-                    textAlign: 'center',
-                    color: 'rgba(255,255,255,0.95)',
-                    ...TYPOGRAPHY.bodySmall,
-                    maxWidth: 280,
+                    width: 40,
+                    height: 40,
+                    border: '3px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'video-loading-spin 0.8s linear infinite',
+                  }}
+                />
+                <span style={{ ...TYPOGRAPHY.bodySmall, fontWeight: 500 }}>Loading video…</span>
+              </div>
+            )}
+            {videoError && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: SPACING.md,
+                  background: 'rgba(0,0,0,0.75)',
+                  color: '#fff',
+                  padding: SPACING.lg,
+                  textAlign: 'center',
+                }}
+              >
+                <span style={{ ...TYPOGRAPHY.bodySmall }}>{videoError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoError(null);
+                    setRetryCount((c) => c + 1);
+                  }}
+                  style={{
+                    padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                    borderRadius: RADIUS.md,
+                    border: 'none',
+                    backgroundColor: '#fff',
+                    color: '#1C1C1E',
+                    ...TYPOGRAPHY.labelMed,
+                    cursor: 'pointer',
                   }}
                 >
-                  {videoError}
-                </div>
-              )}
-            </div>
+                  Retry
+                </button>
+              </div>
+            )}
             {skipIndicator && (
               <div
                 aria-live="polite"
@@ -1139,7 +1272,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               </div>
             )}
             <video
-              key={videoKey}
+              key={`${videoKey ?? 'video'}-${retryCount}`}
               ref={videoRef}
               muted={isMuted}
               playsInline
@@ -1166,6 +1299,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 const w = v.videoWidth;
                 const h = v.videoHeight;
                 if (w && h) setVideoAspectRatio(`${w} / ${h}`);
+                setIsPlayerReady(true);
+                onPlayerReady?.();
               }}
               onError={() => {
                 setVideoError('Video failed to load. The source may be unavailable or blocked.');

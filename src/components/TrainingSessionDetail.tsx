@@ -190,6 +190,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** When set, shows the lightweight "view example" modal. commentId is set when opened from a comment so admin can edit. */
   const [viewExampleModal, setViewExampleModal] = useState<{ src: string; title: string; commentId?: number | string } | null>(null);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsError, setCommentsError] = useState<string | null>(null);
+  const [commentsRetryTrigger, setCommentsRetryTrigger] = useState(0);
   const [postingComment, setPostingComment] = useState(false);
   const [taggableProfiles, setTaggableProfiles] = useState<{ id: string; name: string }[]>([]);
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
@@ -583,9 +585,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   }, [isNarrow, videoStickyBox]);
 
   // Load comments and taggable profiles when viewing a DB session or shot video
+  const COMMENTS_FETCH_TIMEOUT_MS = 15000;
   useEffect(() => {
     if (!sessionId) return;
     setCommentsLoading(true);
+    setCommentsError(null);
     const commentsPromise = isDbSession
       ? fetchSessionComments(supabase, sessionId)
       : isShotVideo
@@ -597,26 +601,36 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         : isShotVideo
           ? fetchShotVideoCommentReplies(supabase, sessionId, user?.id ?? null)
           : Promise.resolve([]);
-    Promise.all([commentsPromise, repliesPromise, fetchSessionTaggableProfiles(supabase, sessionId)])
-      .then(([rows, replyRows, taggable]) => {
-        if (Array.isArray(rows) && rows.length > 0) {
+    const taggablePromise = fetchSessionTaggableProfiles(supabase, sessionId);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('Taking longer than usual. Check your connection.')), COMMENTS_FETCH_TIMEOUT_MS);
+    });
+    let cancelled = false;
+    Promise.race([
+      Promise.all([commentsPromise, repliesPromise, taggablePromise]),
+      timeoutPromise,
+    ])
+      .then(([commentRows, replyRowsData, taggable]) => {
+        if (cancelled) return;
+        if (Array.isArray(commentRows) && commentRows.length > 0) {
           const mapped = isShotVideo
-            ? (rows as ShotVideoCommentWithAuthor[]).map((r) =>
+            ? (commentRows as ShotVideoCommentWithAuthor[]).map((r) =>
                 mapShotVideoCommentToSessionComment(r, user?.id ?? null)
               )
-            : (rows as SessionCommentWithAuthor[]).map((r) =>
+            : (commentRows as SessionCommentWithAuthor[]).map((r) =>
                 mapDbCommentToSessionComment(r, user?.id ?? null)
               );
           setComments(mapped);
         } else {
           setComments([]);
         }
-        if (Array.isArray(replyRows) && replyRows.length > 0) {
+        if (Array.isArray(replyRowsData) && replyRowsData.length > 0) {
           const mappedReplies = isDbSession
-            ? (replyRows as Parameters<typeof mapDbReplyToSessionCommentReply>[0][]).map((r) =>
+            ? (replyRowsData as Parameters<typeof mapDbReplyToSessionCommentReply>[0][]).map((r) =>
                 mapDbReplyToSessionCommentReply(r, user?.id ?? null)
               )
-            : (replyRows as SessionCommentReply[]);
+            : (replyRowsData as SessionCommentReply[]);
           const grouped: Record<string, SessionCommentReply[]> = {};
           for (const reply of mappedReplies) {
             const key = reply.parentCommentId;
@@ -629,8 +643,20 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         }
         setTaggableProfiles(taggable);
       })
-      .finally(() => setCommentsLoading(false));
-  }, [supabase, isDbSession, isShotVideo, sessionId, user?.id]);
+      .catch((err) => {
+        if (!cancelled) {
+          setCommentsError(err instanceof Error ? err.message : 'Couldn\'t load comments.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCommentsLoading(false);
+        if (timeoutId != null) clearTimeout(timeoutId);
+      });
+    return () => {
+      cancelled = true;
+      if (timeoutId != null) clearTimeout(timeoutId);
+    };
+  }, [supabase, isDbSession, isShotVideo, sessionId, user?.id, commentsRetryTrigger]);
 
   // Video player keyboard shortcuts when comment section / any edit box is not focused
   useEffect(() => {
@@ -2336,9 +2362,85 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 </button>
               </div>
               {commentsLoading ? (
-                <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
-                  Loading comments…
-                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md, padding: `${SPACING.sm}px 0` }}>
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} style={{ display: 'flex', gap: SPACING.sm, alignItems: 'flex-start' }}>
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          backgroundColor: '#e8ecf1',
+                          flexShrink: 0,
+                          animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                        }}
+                      />
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div
+                          style={{
+                            height: 14,
+                            width: `${60 + (i % 3) * 15}%`,
+                            borderRadius: 4,
+                            backgroundColor: '#e8ecf1',
+                            animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                            animationDelay: `${i * 0.1}s`,
+                          }}
+                        />
+                        <div
+                          style={{
+                            height: 12,
+                            width: '100%',
+                            borderRadius: 4,
+                            backgroundColor: '#e8ecf1',
+                            animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                            animationDelay: `${i * 0.1 + 0.05}s`,
+                          }}
+                        />
+                        <div
+                          style={{
+                            height: 10,
+                            width: `${40 + (i % 2) * 20}%`,
+                            borderRadius: 4,
+                            backgroundColor: '#e8ecf1',
+                            animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                            animationDelay: `${i * 0.1 + 0.1}s`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : commentsError ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: SPACING.md,
+                    padding: SPACING.lg,
+                    textAlign: 'center',
+                  }}
+                >
+                  <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
+                    {commentsError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCommentsRetryTrigger((t) => t + 1)}
+                    style={{
+                      padding: `${SPACING.sm}px ${SPACING.lg}px`,
+                      borderRadius: RADIUS.md,
+                      border: `2px solid ${REFERENCE_PRIMARY}`,
+                      backgroundColor: `${REFERENCE_PRIMARY}1A`,
+                      color: REFERENCE_PRIMARY,
+                      ...TYPOGRAPHY.labelMed,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Retry
+                  </button>
+                </div>
               ) : comments.length === 0 ? (
                 <p
                   style={{

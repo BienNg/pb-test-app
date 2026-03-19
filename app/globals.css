@@ -158,6 +158,25 @@ a {
   }
 }
 
+@keyframes video-loading-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* Mobile-first / App.css */
 @media (max-width: 768px) {
   body {
