@@ -1533,6 +1533,10 @@ function ProfileMenuButton({
   const { signOut } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -1551,62 +1555,76 @@ function ProfileMenuButton({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) {
+      queueMicrotask(() => setMenuPosition(null));
+      return;
+    }
+    const raf = requestAnimationFrame(() => {
+      if (buttonRef.current && typeof document !== 'undefined') {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setMenuPosition({
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right,
+        });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open]);
+
   const isSettings = variant === 'settings';
 
   const menuContent =
     open &&
-    buttonRef.current &&
+    menuPosition &&
     typeof document !== 'undefined' ? (
-      (() => {
-        const rect = buttonRef.current.getBoundingClientRect();
-        return createPortal(
-          <div
-            ref={menuRef}
-            role="menu"
+      createPortal(
+        <div
+          ref={menuRef}
+          role="menu"
+          style={{
+            position: 'fixed',
+            top: menuPosition.top,
+            right: menuPosition.right,
+            minWidth: 140,
+            padding: 4,
+            background: COLORS.white,
+            borderRadius: 8,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+            zIndex: 9999,
+          }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={async () => {
+              setOpen(false);
+              await signOut();
+              router.replace('/login');
+            }}
             style={{
-              position: 'fixed',
-              top: rect.bottom + 4,
-              right: window.innerWidth - rect.right,
-              minWidth: 140,
-              padding: 4,
-              background: COLORS.white,
-              borderRadius: 8,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-              zIndex: 9999,
+              width: '100%',
+              padding: '10px 12px',
+              border: 'none',
+              borderRadius: 6,
+              background: 'transparent',
+              color: COLORS.textPrimary,
+              ...TYPOGRAPHY.body,
+              textAlign: 'left',
+              cursor: 'pointer',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = COLORS.backgroundLight;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
             }}
           >
-            <button
-              type="button"
-              role="menuitem"
-              onClick={async () => {
-                setOpen(false);
-                await signOut();
-                router.replace('/login');
-              }}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                border: 'none',
-                borderRadius: 6,
-                background: 'transparent',
-                color: COLORS.textPrimary,
-                ...TYPOGRAPHY.body,
-                textAlign: 'left',
-                cursor: 'pointer',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = COLORS.backgroundLight;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent';
-              }}
-            >
-              Log out
-            </button>
-          </div>,
-          document.body
-        );
-      })()
+            Log out
+          </button>
+        </div>,
+        document.body
+      )
     ) : null;
 
   return (

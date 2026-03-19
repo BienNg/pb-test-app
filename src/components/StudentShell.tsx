@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
-import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
+import { COLORS, TYPOGRAPHY, SHADOWS, SPACING } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, RoadmapSkillsChecklist, type TrainingSession } from './GameAnalyticsPage';
 import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
@@ -71,6 +71,7 @@ export function StudentShell() {
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
+  const [showTutorialsComingSoon, setShowTutorialsComingSoon] = useState(false);
 
   const handleTabClick = (tabId: TabId) => {
     setActiveTab(tabId);
@@ -117,7 +118,7 @@ export function StudentShell() {
   const showSessionOverlay = activeTrainingSessionId != null;
   const hideBottomNav = showSessionOverlay || viewingLessonDetail;
 
-  const tabs: { id: TabId; label: string; icon: ReactNode }[] = [
+  const allTabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
       id: 'sessions',
       label: 'Game Analytics',
@@ -148,6 +149,8 @@ export function StudentShell() {
       ),
     },
   ];
+  // Hide Library tab for now
+  const tabs = allTabs.filter((t) => t.id !== 'library');
 
   return (
     <main
@@ -175,10 +178,7 @@ export function StudentShell() {
         <RoadmapSkillsChecklist
           sessionCountByShotId={shotVideoCountByShotId}
           onShotDetailOpenChange={setShotDetailOpen}
-          onWatchTutorial={() => {
-            setShotDetailOpen(false);
-            setActiveTab('library');
-          }}
+          onWatchTutorial={() => setShowTutorialsComingSoon(true)}
           onOpenShotVideo={(session) => {
             setOverrideSession(session);
             setActiveTrainingSessionId(session.id);
@@ -216,7 +216,7 @@ export function StudentShell() {
             setActiveTrainingSessionId(session.id);
           }}
           sessions={sessionsForStudent}
-          onOpenLibrary={() => setActiveTab('library')}
+          onOpenLibrary={() => setShowTutorialsComingSoon(true)}
         />
         )}
       </div>
@@ -341,6 +341,63 @@ export function StudentShell() {
             })}
           </div>
         </nav>
+      )}
+
+      {/* Tutorials coming soon info popup (library is deactivated) */}
+      {showTutorialsComingSoon && (
+        <div
+          role="presentation"
+          onClick={() => setShowTutorialsComingSoon(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 300,
+            backgroundColor: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: SPACING.lg,
+          }}
+        >
+          <div
+            role="dialog"
+            aria-label="Tutorials coming soon"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.key === 'Escape' && setShowTutorialsComingSoon(false)}
+            style={{
+              backgroundColor: COLORS.white,
+              borderRadius: 12,
+              padding: SPACING.xl,
+              maxWidth: 320,
+              width: '100%',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            }}
+          >
+            <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: `0 0 ${SPACING.md}px` }}>
+              Tutorials coming soon
+            </h3>
+            <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: `0 0 ${SPACING.lg}px` }}>
+              Video tutorials are on the way. Check back soon!
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowTutorialsComingSoon(false)}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                borderRadius: 8,
+                backgroundColor: COLORS.libraryPrimary,
+                color: COLORS.textPrimary,
+                border: 'none',
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: 'pointer',
+              }}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
       )}
     </main>
   );
