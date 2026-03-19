@@ -613,11 +613,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   // Auto-activate loop only when user newly selects a comment with a loop range (not on every re-render)
   const hadLoopRangeRef = useRef(false);
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     const hasLoopRange = Boolean(loopRange && loopRange.end > loopRange.start);
     if (hasLoopRange && !hadLoopRangeRef.current) {
-      setIsLoopActive(true);
+      queueMicrotask(() => setIsLoopActive(true));
     }
     hadLoopRangeRef.current = hasLoopRange;
   }, [loopRange]);
@@ -628,18 +627,17 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const { start, end } = loopRange;
     if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
     if (currentVideoTime < start) {
-      setIsLoopActive(false);
+      queueMicrotask(() => setIsLoopActive(false));
       return;
     }
     if (currentVideoTime > end + 0.5) {
-      setIsLoopActive(false);
+      queueMicrotask(() => setIsLoopActive(false));
       return;
     }
     if (currentVideoTime >= end) {
       seekTo(start);
     }
   }, [currentVideoTime, isLoopActive, loopRange, seekTo]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Notify parent about current time / duration
   useEffect(() => {
