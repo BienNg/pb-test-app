@@ -49,15 +49,14 @@ body {
   flex-shrink: 0;
 }
 
-.court-bg {
+#ytPlayer,
+#ytPlayer iframe {
   position: absolute;
   inset: 0;
-  background: linear-gradient(175deg, #2d6a4f 0%, #3a7d5a 40%, #2d6050 60%, #1e4d3a 100%);
-}
-
-.court-lines {
-  position: absolute;
-  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
 }
 
 .video-top-bar {
@@ -98,29 +97,6 @@ body {
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-}
-
-/* Center play/pause button */
-.video-center-btn {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 58px;
-  height: 58px;
-  background: rgba(0,0,0,0.55);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: none;
-  z-index: 4;
-  transition: background 0.15s, transform 0.1s;
-}
-.video-center-btn:active {
-  background: rgba(0,0,0,0.75);
-  transform: translate(-50%, -50%) scale(0.93);
 }
 
 /* Skip indicator overlay */

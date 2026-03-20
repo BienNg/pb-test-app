@@ -118,7 +118,7 @@ const MOCK = {
 };
 
 // ── State ──────────────────────────────────────────────────────────────
-const DURATION = MOCK.session.duration;
+let DURATION = MOCK.session.duration;
 let currentTime = 0;
 let isPlaying = false;
 let playInterval = null;
@@ -128,6 +128,9 @@ let activeAnnotationTimeout = null;
 let activeFrameId = null;
 let activeTechSubTab = 'normal';
 let skipIndicatorTimeout = null;
+let ytPlayer = null;
+let ytReady = false;
+let progressRAF = null;
 
 // ── DOM Helpers ────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
@@ -142,57 +145,119 @@ function fmt(seconds) {
 }
 
 function updateProgressUI() {
-  const pct = (currentTime / DURATION) * 100;
+  const pct = DURATION > 0 ? (currentTime / DURATION) * 100 : 0;
   $('progressFill').style.width = pct + '%';
   $('progressThumb').style.left = pct + '%';
   $('videoCurrentTime').textContent = fmt(currentTime);
+  const durEl = $('videoDuration');
+  if (durEl) durEl.textContent = fmt(DURATION);
+}
+
+// ── YouTube Player ─────────────────────────────────────────────────────
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('ytPlayer', {
+    videoId: 'qZRiKBCIdFo',
+    playerVars: {
+      controls: 0,
+      modestbranding: 1,
+      rel: 0,
+      showinfo: 0,
+      iv_load_policy: 3,
+      disablekb: 1,
+      fs: 0,
+      playsinline: 1,
+    },
+    events: {
+      onReady: onPlayerReady,
+      onStateChange: onPlayerStateChange,
+    },
+  });
+}
+window.onYouTubeIframeAPIReady = onYouTubeIframeAPIReady;
+
+function onPlayerReady() {
+  ytReady = true;
+  DURATION = ytPlayer.getDuration() || MOCK.session.duration;
+  updateProgressUI();
+}
+
+function onPlayerStateChange(event) {
+  const state = event.data;
+  if (state === YT.PlayerState.PLAYING) {
+    isPlaying = true;
+    setPlayIcons(true);
+    startProgressSync();
+  } else if (state === YT.PlayerState.PAUSED || state === YT.PlayerState.ENDED) {
+    isPlaying = false;
+    setPlayIcons(false);
+    stopProgressSync();
+    syncTimeFromPlayer();
+  }
+}
+
+function startProgressSync() {
+  stopProgressSync();
+  const loopComment = MOCK.comments.find(
+    (c) => c.id === activeCommentId && c.loopEnd !== null
+  );
+  function tick() {
+    if (!ytReady || !isPlaying) return;
+    currentTime = ytPlayer.getCurrentTime();
+
+    if (loopComment && currentTime >= loopComment.loopEnd) {
+      ytPlayer.seekTo(loopComment.timestamp, true);
+      currentTime = loopComment.timestamp;
+    }
+
+    updateProgressUI();
+    progressRAF = requestAnimationFrame(tick);
+  }
+  progressRAF = requestAnimationFrame(tick);
+}
+
+function stopProgressSync() {
+  if (progressRAF) {
+    cancelAnimationFrame(progressRAF);
+    progressRAF = null;
+  }
+}
+
+function syncTimeFromPlayer() {
+  if (ytReady) {
+    currentTime = ytPlayer.getCurrentTime();
+    updateProgressUI();
+  }
 }
 
 // ── Playback ───────────────────────────────────────────────────────────
 function togglePlay() {
-  isPlaying = !isPlaying;
+  if (!ytReady) return;
   if (isPlaying) {
-    setPlayIcons(true);
-    hideAnnotation();
-    clearInterval(playInterval);
-
-    const loopComment = MOCK.comments.find(
-      (c) => c.id === activeCommentId && c.loopEnd !== null
-    );
-
-    playInterval = setInterval(() => {
-      currentTime += 0.1;
-
-      if (loopComment && currentTime >= loopComment.loopEnd) {
-        currentTime = loopComment.timestamp;
-      }
-
-      if (currentTime >= DURATION) {
-        currentTime = DURATION;
-        stopPlayback();
-      }
-      updateProgressUI();
-    }, 100);
+    ytPlayer.pauseVideo();
   } else {
-    stopPlayback();
+    hideAnnotation();
+    ytPlayer.playVideo();
   }
 }
 
 function setPlayIcons(playing) {
-  $('bigPlayIcon').style.display = playing ? 'none' : 'block';
-  $('bigPauseIcon').style.display = playing ? 'block' : 'none';
   $('tcPlayIcon').style.display = playing ? 'none' : 'block';
   $('tcPauseIcon').style.display = playing ? 'block' : 'none';
 }
 
 function stopPlayback() {
+  if (ytReady && isPlaying) {
+    ytPlayer.pauseVideo();
+  }
   isPlaying = false;
-  clearInterval(playInterval);
+  stopProgressSync();
   setPlayIcons(false);
 }
 
 function adjustTime(delta) {
+  if (!ytReady) return;
   currentTime = Math.max(0, Math.min(DURATION, currentTime + delta));
+  ytPlayer.seekTo(currentTime, true);
   updateProgressUI();
   showSkipIndicator(delta);
 }
@@ -213,6 +278,7 @@ function showSkipIndicator(delta) {
 
 function seekToTime(t, showAnn) {
   currentTime = Math.max(0, Math.min(DURATION, t));
+  if (ytReady) ytPlayer.seekTo(currentTime, true);
   updateProgressUI();
   if (showAnn) showFrameAnnotation();
 }
@@ -223,6 +289,7 @@ function seekFromBar(e) {
   const x = e.clientX - rect.left;
   const pct = Math.max(0, Math.min(1, x / rect.width));
   currentTime = pct * DURATION;
+  if (ytReady) ytPlayer.seekTo(currentTime, true);
   updateProgressUI();
 }
 
