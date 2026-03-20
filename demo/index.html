@@ -7,7 +7,48 @@
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-<div class="app-shell" id="appShell">
+
+  <!-- ─── LANDING PAGE HEADER ─── -->
+  <header class="landing-header">
+    <a href="#" class="landing-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/>
+      </svg>
+      CourtVision Academy
+    </a>
+    <a href="#demo" class="landing-cta" style="padding: 10px 20px; font-size: 14px; box-shadow: none;">Try Demo</a>
+  </header>
+
+  <!-- ─── HERO SECTION ─── -->
+  <section class="landing-hero">
+    <h1 class="landing-headline">See exactly what to fix in your pickleball game.</h1>
+    <p class="landing-subheadline">Your app turns match and practice videos into time-coded coach feedback, skill roadmaps, and performance analytics so you know exactly what to improve and how to improve it.</p>
+    <a href="#demo" class="landing-cta">Experience the Platform</a>
+  </section>
+
+  <!-- ─── DEMO SECTION ─── -->
+  <section class="demo-container" id="demo">
+    <div class="demo-info">
+      <h3>Interactive Coaching Demo</h3>
+      <p>Explore a real session. Watch how match footage is transformed into precise, time-coded feedback. Click on the timeline or comments to jump directly to annotated frames.</p>
+      <ul class="demo-features-list">
+        <li>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Time-coded video feedback
+        </li>
+        <li>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          On-screen drawing & annotations
+        </li>
+        <li>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Detailed shot technique breakdown
+        </li>
+      </ul>
+    </div>
+
+    <!-- ─── APP SHELL ─── -->
+    <div class="app-shell" id="appShell">
 
   <!-- ═══ VIDEO PLAYER ═══ -->
   <div class="video-wrapper" id="videoWrapper">
@@ -131,6 +172,37 @@
   </div>
 
 </div><!-- /.app-shell -->
+  </section>
+
+  <!-- ─── FEATURES SECTION ─── -->
+  <section class="features-section">
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <h4 class="feature-title">Time-Coded Coaching</h4>
+      <p class="feature-desc">No more guessing where you went wrong. Jump straight to the exact moment in your footage with pinpoint feedback from expert coaches.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </div>
+      <h4 class="feature-title">Performance Analytics</h4>
+      <p class="feature-desc">Track your progress over time. Our video intelligence platform breaks down your shots, highlighting trends in your technique and positioning.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1 2-2h11"/></svg>
+      </div>
+      <h4 class="feature-title">Personalized Roadmaps</h4>
+      <p class="feature-desc">Turn feedback into action. Get a clear, personalized improvement path tailored to your specific strengths and weaknesses.</p>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="landing-footer">
+    &copy; 2026 CourtVision Academy. All rights reserved.
+  </footer>
 
 
 <!-- ═══ VIEW FRAME MODAL ═══ -->
