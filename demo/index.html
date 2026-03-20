@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Session Detail – Forehand Dink Demo</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app-shell" id="appShell">
+
+  <!-- ═══ VIDEO PLAYER ═══ -->
+  <div class="video-wrapper" id="videoWrapper">
+    <div class="court-bg"></div>
+
+    <!-- SVG court scene -->
+    <svg class="court-lines" viewBox="0 0 430 242" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5a9a78"/>
+          <stop offset="40%" stop-color="#3a7d5a"/>
+        </linearGradient>
+      </defs>
+      <!-- Background wall -->
+      <rect x="0" y="0" width="430" height="130" fill="url(#wallGrad)" opacity="0.7"/>
+      <text x="55" y="80" fill="rgba(255,255,255,0.3)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+      <text x="200" y="60" fill="rgba(255,255,255,0.15)" font-size="28" font-weight="800" font-family="Arial">SWIN</text>
+      <text x="340" y="80" fill="rgba(255,255,255,0.3)" font-size="18" font-weight="800" font-family="Arial">SWIN</text>
+      <!-- Court floor -->
+      <polygon points="0,135 430,135 350,242 80,242" fill="#4a8c62" opacity="0.6"/>
+      <!-- Net -->
+      <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(0,0,0,0.5)" stroke-width="1.5"/>
+      <rect x="50" y="100" width="3" height="35" fill="rgba(0,0,0,0.4)"/>
+      <rect x="377" y="100" width="3" height="35" fill="rgba(0,0,0,0.4)"/>
+      <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>
+      <line x1="50" y1="115" x2="380" y2="115" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>
+      <!-- Court lines -->
+      <rect x="55" y="108" width="320" height="120" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+      <line x1="215" y1="108" x2="215" y2="228" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+      <line x1="55" y1="168" x2="375" y2="168" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+      <!-- Player (right side) -->
+      <ellipse cx="295" cy="155" rx="12" ry="20" fill="rgba(0,0,0,0.65)"/>
+      <circle cx="295" cy="130" r="9" fill="rgba(0,0,0,0.65)"/>
+      <line x1="295" y1="148" x2="325" y2="158" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="331" cy="160" rx="10" ry="6" fill="rgba(0,0,0,0.5)" transform="rotate(-15 331 160)"/>
+      <line x1="290" y1="175" x2="283" y2="200" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+      <line x1="300" y1="175" x2="305" y2="200" stroke="rgba(0,0,0,0.6)" stroke-width="5" stroke-linecap="round"/>
+      <!-- Player (left side background) -->
+      <ellipse cx="130" cy="118" rx="8" ry="13" fill="rgba(0,0,0,0.35)"/>
+      <circle cx="130" cy="103" r="6" fill="rgba(0,0,0,0.35)"/>
+    </svg>
+
+    <!-- Top info bar -->
+    <div class="video-top-bar">
+      <div class="video-avatar">B</div>
+      <div class="video-title">Ben Session 1 Forehand Dink</div>
+      <div class="video-share">Share ↗</div>
+    </div>
+
+    <!-- Center play/pause -->
+    <button class="video-center-btn" id="videoCenterBtn" onclick="togglePlay()" aria-label="Play/Pause">
+      <svg id="bigPlayIcon" width="26" height="26" viewBox="0 0 24 24" fill="white" style="margin-left:3px;">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="bigPauseIcon" width="26" height="26" viewBox="0 0 24 24" fill="white" style="display:none;">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+    </button>
+
+    <!-- Skip indicator -->
+    <div class="skip-indicator" id="skipIndicator"></div>
+
+    <!-- Red circle annotation overlay -->
+    <div class="frame-annotation-overlay" id="frameAnnotation">
+      <svg width="100%" height="100%" viewBox="0 0 430 242" preserveAspectRatio="xMidYMid meet">
+        <circle id="annotationCircle" cx="295" cy="130" r="28"
+          fill="none" stroke="#FF3B30" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95">
+          <animateTransform attributeName="transform" type="rotate"
+            from="0 295 130" to="360 295 130" dur="8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="295" cy="130" r="22"
+          fill="rgba(255,59,48,0.08)" stroke="rgba(255,59,48,0.4)" stroke-width="1"/>
+      </svg>
+    </div>
+
+    <!-- Bottom controls -->
+    <div class="video-controls-bottom">
+      <div class="progress-track" id="progressTrack" onclick="seekFromBar(event)">
+        <div class="loop-range-bar" id="loopRangeBar" style="display:none;"></div>
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        <div class="progress-thumb" id="progressThumb" style="left:0%"></div>
+      </div>
+      <div class="video-time-row">
+        <span class="video-time-text" id="videoCurrentTime">0:00</span>
+        <span class="video-loop-icon" id="loopIcon" style="display:none;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+            <polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+          </svg>
+          Loop
+        </span>
+        <span class="video-time-text">3:22</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TIME CONTROLS ═══ -->
+  <div class="time-controls">
+    <button class="tc-btn" onclick="adjustTime(-1/30)" title="Back 1 frame (←)">−1f</button>
+    <button class="tc-btn" onclick="adjustTime(-10)" title="Back 10 seconds (Y)">−10s</button>
+    <button class="tc-btn" onclick="adjustTime(-5)" title="Back 5 seconds (A)">−5s</button>
+    <button class="tc-btn" onclick="adjustTime(-1)" title="Back 1 second (Q)">−1s</button>
+    <button class="tc-play-btn" id="tcPlayBtn" onclick="togglePlay()" aria-label="Play/Pause (Space)">
+      <svg id="tcPlayIcon" width="19" height="19" viewBox="0 0 24 24" fill="#8FB9A8" style="margin-left:2px;">
+        <polygon points="5,3 19,12 5,21"/>
+      </svg>
+      <svg id="tcPauseIcon" width="19" height="19" viewBox="0 0 24 24" fill="#8FB9A8" style="display:none;">
+        <rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>
+      </svg>
+    </button>
+    <button class="tc-btn" onclick="adjustTime(1)" title="Forward 1 second (W)">+1s</button>
+    <button class="tc-btn" onclick="adjustTime(5)" title="Forward 5 seconds (S)">+5s</button>
+    <button class="tc-btn" onclick="adjustTime(10)" title="Forward 10 seconds (X)">+10s</button>
+    <button class="tc-btn" onclick="adjustTime(1/30)" title="Forward 1 frame (→)">+1f</button>
+  </div>
+
+  <!-- ═══ TABS ═══ -->
+  <div class="tabs-row" role="tablist">
+    <button class="tab-btn active" id="tab-comments" role="tab" aria-selected="true"
+      onclick="switchTab('comments')">Comments</button>
+    <button class="tab-btn" id="tab-shot" role="tab" aria-selected="false"
+      onclick="switchTab('shot')">Shot technique</button>
+  </div>
+
+  <!-- ═══ COMMENTS ═══ -->
+  <div class="comments-scroll" id="commentsArea" role="tabpanel">
+    <!-- Rendered by JS -->
+  </div>
+
+  <!-- ═══ SHOT TECHNIQUE PANEL ═══ -->
+  <div class="shot-technique-panel" id="shotTechniquePanel" role="tabpanel">
+    <div class="technique-header">
+      <div class="technique-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8FB9A8" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+      </div>
+      <div>
+        <div class="technique-title">Forehand Dink</div>
+        <div class="technique-subtitle">Shot technique analysis</div>
+      </div>
+    </div>
+
+    <!-- Sub-category tabs -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-subtab="normal" onclick="switchSubTab('normal')">Normal</button>
+      <button class="sub-tab" data-subtab="topspin" onclick="switchSubTab('topspin')">Topspin</button>
+      <button class="sub-tab" data-subtab="slice" onclick="switchSubTab('slice')">Slice</button>
+    </div>
+
+    <div class="technique-list" id="techniqueList">
+      <!-- Rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ═══ COMMENT COMPOSER ═══ -->
+  <div class="composer">
+    <input class="composer-input" id="composerInput"
+      type="text" placeholder="Add a comment at current time…" autocomplete="off"/>
+    <button class="composer-send" onclick="handleComposerSend()" aria-label="Send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+
+</div><!-- /.app-shell -->
+
+
+<!-- ═══ VIEW FRAME MODAL ═══ -->
+<div class="modal-backdrop" id="viewFrameModal" onclick="closeViewFrameModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="viewFrameModalTitle">Frame Detail</span>
+      <button class="modal-close-btn" onclick="closeViewFrameModal()" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-frame-area">
+      <div class="modal-court-bg"></div>
+      <svg style="position:absolute;inset:0;width:100%;height:100%;"
+        viewBox="0 0 430 242" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="430" height="130" fill="#5a9a78" opacity="0.55"/>
+        <text x="55" y="80" fill="rgba(255,255,255,0.25)" font-size="18" font-weight="800"
+          font-family="Arial">SWIN</text>
+        <text x="340" y="80" fill="rgba(255,255,255,0.25)" font-size="18" font-weight="800"
+          font-family="Arial">SWIN</text>
+        <polygon points="0,135 430,135 350,242 80,242" fill="#4a8c62" opacity="0.55"/>
+        <line x1="50" y1="108" x2="380" y2="108" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+        <rect x="55" y="108" width="320" height="120" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+        <line x1="215" y1="108" x2="215" y2="228" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+        <!-- Player -->
+        <ellipse cx="295" cy="155" rx="12" ry="20" fill="rgba(0,0,0,0.6)"/>
+        <circle cx="295" cy="130" r="9" fill="rgba(0,0,0,0.6)"/>
+        <line x1="295" y1="148" x2="325" y2="158" stroke="rgba(0,0,0,0.55)" stroke-width="5"
+          stroke-linecap="round"/>
+        <ellipse cx="331" cy="160" rx="10" ry="6" fill="rgba(0,0,0,0.45)"
+          transform="rotate(-15 331 160)"/>
+        <line x1="290" y1="175" x2="283" y2="200" stroke="rgba(0,0,0,0.55)" stroke-width="5"
+          stroke-linecap="round"/>
+        <line x1="300" y1="175" x2="305" y2="200" stroke="rgba(0,0,0,0.55)" stroke-width="5"
+          stroke-linecap="round"/>
+      </svg>
+      <!-- Red annotation circle -->
+      <svg class="modal-annotation-svg" viewBox="0 0 430 242" preserveAspectRatio="xMidYMid meet">
+        <circle id="modalCircle" cx="295" cy="130" r="28"
+          fill="none" stroke="#FF3B30" stroke-width="2.5" stroke-dasharray="7 4">
+          <animateTransform attributeName="transform" type="rotate"
+            from="0 295 130" to="360 295 130" dur="8s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="295" cy="130" r="22"
+          fill="rgba(255,59,48,0.08)" stroke="rgba(255,59,48,0.35)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="modal-body">
+      <div class="modal-frame-note" id="viewFrameModalNote"></div>
+      <div class="modal-timestamp-badge" id="viewFrameModalBadge">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="#8FB9A8"><polygon points="5,3 19,12 5,21"/></svg>
+        0:10
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ EXAMPLE MODAL ═══ -->
+<div class="example-modal-backdrop" id="exampleModal" onclick="closeExampleModal()">
+  <div class="example-modal-card" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">Attach Example</span>
+      <button class="modal-close-btn" onclick="closeExampleModal()" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="example-list">
+      <p class="example-list-desc">Select a technique example to attach to this comment:</p>
+      <button class="example-card" onclick="attachExample('Forehand Dink – Professional Form')">
+        <div class="example-thumb" style="background:linear-gradient(135deg,#3a7d5a,#4a8c62);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </div>
+        <div>
+          <div class="example-card-title">Forehand Dink – Professional Form</div>
+          <div class="example-card-desc">Stable head, bent knees, compact swing</div>
+        </div>
+      </button>
+      <button class="example-card" onclick="attachExample('Head Stability Drill')">
+        <div class="example-thumb" style="background:linear-gradient(135deg,#5b8675,#6a9a95);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </div>
+        <div>
+          <div class="example-card-title">Head Stability Drill</div>
+          <div class="example-card-desc">Keep head level throughout the stroke</div>
+        </div>
+      </button>
+      <button class="example-card" onclick="attachExample('Reach Correction Exercise')">
+        <div class="example-thumb" style="background:linear-gradient(135deg,#8FB9A8,#6a9a95);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="2">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+        </div>
+        <div>
+          <div class="example-card-title">Reach Correction Exercise</div>
+          <div class="example-card-desc">Let the ball come to you, don't reach</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
