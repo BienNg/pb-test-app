@@ -906,6 +906,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   };
   const frameDetailOverlayTextTrimmed = (frameDetailOverlayText ?? '').trim();
   const hasFrameDetailOverlayText = frameDetailOverlayTextTrimmed.length > 0;
+  const isFrameTextBoxActive =
+    isDraggingFrameTextBox || isResizingFrameTextBoxWidth || isResizingFrameTextBoxHeight;
+  const frameTextBoxCursor = frameDetailMarkerReadOnly
+    ? 'default'
+    : isDraggingFrameTextBox
+      ? 'grabbing'
+      : 'grab';
 
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
@@ -1488,18 +1495,26 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       transform: 'translate(-50%, -50%)',
                       width: `${frameDetailTextBoxWidth}%`,
                       height: `${frameDetailTextBoxHeight}%`,
-                      minHeight: 28,
-                      borderRadius: 8,
-                      backgroundColor: 'rgba(0,0,0,0.72)',
-                      border: '2px solid rgba(255,255,255,0.85)',
-                      boxShadow: '0 3px 8px rgba(0,0,0,0.45)',
-                      color: '#fff',
+                      minHeight: 32,
+                      borderRadius: 18,
+                      background: '#ffffff',
+                      backdropFilter: 'none',
+                      WebkitBackdropFilter: 'none',
+                      border: 'none',
+                      boxShadow: isFrameTextBoxActive
+                        ? '0 10px 26px rgba(0,0,0,0.22)'
+                        : '0 6px 18px rgba(0,0,0,0.16)',
+                      color: '#111111',
                       fontSize: 13,
-                      lineHeight: 1.35,
-                      padding: '8px 10px',
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      letterSpacing: '-0.01em',
+                      padding: '10px 12px',
                       overflow: 'hidden',
-                      cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameTextBox ? 'grabbing' : 'grab',
+                      cursor: frameTextBoxCursor,
                       pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                      transition: 'box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease',
+                      userSelect: 'none',
                     }}
                     onPointerDown={handleFrameTextBoxPointerDown}
                     onPointerMove={handleFrameTextBoxPointerMove}
@@ -1519,14 +1534,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         left: `calc(${frameDetailTextBoxPosition.x}% + ${frameDetailTextBoxWidth / 2}%)`,
                         top: `${frameDetailTextBoxPosition.y}%`,
                         transform: 'translate(-50%, -50%)',
-                        width: 14,
-                        height: 14,
-                        borderRadius: 2,
-                        backgroundColor: '#fff',
-                        border: '2px solid #1d4ed8',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
                         cursor: 'ew-resize',
                         pointerEvents: 'auto',
+                        transition: 'transform 120ms ease',
                       }}
                       onPointerDown={handleFrameTextResizeWidthPointerDown}
                       onPointerMove={handleFrameTextResizeWidthPointerMove}
@@ -1541,14 +1557,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         left: `${frameDetailTextBoxPosition.x}%`,
                         top: `calc(${frameDetailTextBoxPosition.y}% + ${frameDetailTextBoxHeight / 2}%)`,
                         transform: 'translate(-50%, -50%)',
-                        width: 14,
-                        height: 14,
-                        borderRadius: 2,
-                        backgroundColor: '#fff',
-                        border: '2px solid #1d4ed8',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
                         cursor: 'ns-resize',
                         pointerEvents: 'auto',
+                        transition: 'transform 120ms ease',
                       }}
                       onPointerDown={handleFrameTextResizeHeightPointerDown}
                       onPointerMove={handleFrameTextResizeHeightPointerMove}
@@ -2093,18 +2110,26 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       transform: 'translate(-50%, -50%)',
                       width: `${frameDetailTextBoxWidth}%`,
                       height: `${frameDetailTextBoxHeight}%`,
-                      minHeight: 28,
-                      borderRadius: 8,
-                      backgroundColor: 'rgba(0,0,0,0.72)',
-                      border: '2px solid rgba(255,255,255,0.85)',
-                      boxShadow: '0 3px 8px rgba(0,0,0,0.45)',
-                      color: '#fff',
+                      minHeight: 32,
+                      borderRadius: 18,
+                      background: '#ffffff',
+                      backdropFilter: 'none',
+                      WebkitBackdropFilter: 'none',
+                      border: 'none',
+                      boxShadow: isFrameTextBoxActive
+                        ? '0 10px 26px rgba(0,0,0,0.22)'
+                        : '0 6px 18px rgba(0,0,0,0.16)',
+                      color: '#111111',
                       fontSize: 13,
-                      lineHeight: 1.35,
-                      padding: '8px 10px',
+                      fontWeight: 500,
+                      lineHeight: 1.4,
+                      letterSpacing: '-0.01em',
+                      padding: '10px 12px',
                       overflow: 'hidden',
-                      cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameTextBox ? 'grabbing' : 'grab',
+                      cursor: frameTextBoxCursor,
                       pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                      transition: 'box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease',
+                      userSelect: 'none',
                     }}
                     onPointerDown={handleFrameTextBoxPointerDown}
                     onPointerMove={handleFrameTextBoxPointerMove}
@@ -2124,14 +2149,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         left: `calc(${frameDetailTextBoxPosition.x}% + ${frameDetailTextBoxWidth / 2}%)`,
                         top: `${frameDetailTextBoxPosition.y}%`,
                         transform: 'translate(-50%, -50%)',
-                        width: 14,
-                        height: 14,
-                        borderRadius: 2,
-                        backgroundColor: '#fff',
-                        border: '2px solid #1d4ed8',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
                         cursor: 'ew-resize',
                         pointerEvents: 'auto',
+                        transition: 'transform 120ms ease',
                       }}
                       onPointerDown={handleFrameTextResizeWidthPointerDown}
                       onPointerMove={handleFrameTextResizeWidthPointerMove}
@@ -2146,14 +2172,15 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         left: `${frameDetailTextBoxPosition.x}%`,
                         top: `calc(${frameDetailTextBoxPosition.y}% + ${frameDetailTextBoxHeight / 2}%)`,
                         transform: 'translate(-50%, -50%)',
-                        width: 14,
-                        height: 14,
-                        borderRadius: 2,
-                        backgroundColor: '#fff',
-                        border: '2px solid #1d4ed8',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        border: '1px solid rgba(255,255,255,0.9)',
+                        boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
                         cursor: 'ns-resize',
                         pointerEvents: 'auto',
+                        transition: 'transform 120ms ease',
                       }}
                       onPointerDown={handleFrameTextResizeHeightPointerDown}
                       onPointerMove={handleFrameTextResizeHeightPointerMove}
