@@ -571,7 +571,7 @@ function AdminStudentsPage({
                 return;
               }
               setError(null);
-              if (selectedStudent?.id === student.id) setSelectedStudent(null);
+              setSelectedStudent((prev) => (prev?.id === student.id ? null : prev));
               await reloadStudents();
             } catch (err) {
               setError(err instanceof Error ? err.message : 'Failed to delete student');
