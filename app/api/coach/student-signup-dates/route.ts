@@ -14,7 +14,10 @@ export async function POST(request: Request) {
       : [];
 
     if (studentIds.length === 0) {
-      return NextResponse.json({ signupDates: {} as Record<string, string> });
+      return NextResponse.json({
+        signupDates: {} as Record<string, string>,
+        lastLoginDates: {} as Record<string, string>,
+      });
     }
 
     const supabase = await createClient();
@@ -43,12 +46,12 @@ export async function POST(request: Request) {
     }
 
     const entries = await Promise.all(
-      studentIds.map(async (studentId): Promise<[string, string | null]> => {
+      studentIds.map(async (studentId): Promise<[string, string | null, string | null]> => {
         const { data, error } = await adminClient.auth.admin.getUserById(studentId);
-        if (error || !data.user?.created_at) {
-          return [studentId, null];
+        if (error || !data.user) {
+          return [studentId, null, null];
         }
-        return [studentId, data.user.created_at];
+        return [studentId, data.user.created_at ?? null, data.user.last_sign_in_at ?? null];
       })
     );
 
@@ -57,7 +60,12 @@ export async function POST(request: Request) {
       return acc;
     }, {});
 
-    return NextResponse.json({ signupDates });
+    const lastLoginDates = entries.reduce<Record<string, string>>((acc, [studentId, , lastSignInAt]) => {
+      if (lastSignInAt) acc[studentId] = lastSignInAt;
+      return acc;
+    }, {});
+
+    return NextResponse.json({ signupDates, lastLoginDates });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Failed to load signup dates' },

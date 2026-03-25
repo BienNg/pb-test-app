@@ -15,19 +15,28 @@ import { insertShotVideo } from '@/lib/shotVideos';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
-async function fetchSignupDatesForStudentIds(studentIds: string[]): Promise<Record<string, string>> {
-  if (studentIds.length === 0) return {};
+async function fetchAuthDatesForStudentIds(studentIds: string[]): Promise<{
+  signupDates: Record<string, string>;
+  lastLoginDates: Record<string, string>;
+}> {
+  if (studentIds.length === 0) return { signupDates: {}, lastLoginDates: {} };
   try {
     const res = await fetch('/api/coach/student-signup-dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentIds }),
     });
-    if (!res.ok) return {};
-    const data = (await res.json()) as { signupDates?: Record<string, string> };
-    return data.signupDates ?? {};
+    if (!res.ok) return { signupDates: {}, lastLoginDates: {} };
+    const data = (await res.json()) as {
+      signupDates?: Record<string, string>;
+      lastLoginDates?: Record<string, string>;
+    };
+    return {
+      signupDates: data.signupDates ?? {},
+      lastLoginDates: data.lastLoginDates ?? {},
+    };
   } catch {
-    return {};
+    return { signupDates: {}, lastLoginDates: {} };
   }
 }
 
@@ -82,7 +91,7 @@ export const CoachApp: React.FC = () => {
       const studentIds = filtered.map((r) => r.id);
       const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
       const lastSessionDates = await fetchLastSessionDateForStudentIds(supabase, studentIds);
-      const signupDates = await fetchSignupDatesForStudentIds(studentIds);
+      const { signupDates, lastLoginDates } = await fetchAuthDatesForStudentIds(studentIds);
       
       setStudents(
         filtered.map((r) => {
@@ -108,6 +117,18 @@ export const CoachApp: React.FC = () => {
               });
             }
           }
+          const lastLoginDate = lastLoginDates[r.id];
+          let lastLoginDateLabel = '—';
+          if (lastLoginDate) {
+            const d = new Date(lastLoginDate);
+            if (!Number.isNaN(d.getTime())) {
+              lastLoginDateLabel = d.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              });
+            }
+          }
           return {
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
@@ -116,6 +137,7 @@ export const CoachApp: React.FC = () => {
             lastActive: joinedDate,
             joinedDate: joinedDate,
             signupDate: signupDateLabel,
+            lastLoginDate: lastLoginDateLabel,
           };
         })
       );
