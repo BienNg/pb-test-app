@@ -102,6 +102,10 @@ export interface VideoPlayerLoopCommentOverlay {
   end: number;
   text: string;
   id?: string | number;
+  textBoxXPercent?: number;
+  textBoxYPercent?: number;
+  textBoxWidthPercent?: number;
+  textBoxHeightPercent?: number;
 }
 
 export interface VideoPlayerProps {
@@ -168,6 +172,12 @@ export interface VideoPlayerProps {
   loopRange?: { start: number; end: number } | null;
   /** Optional loop-comment ranges that should show a text box while current time is within range. */
   loopCommentOverlays?: VideoPlayerLoopCommentOverlay[];
+  /** When set, allow editing this loop comment overlay's text-box layout. */
+  editableLoopCommentId?: string | number | null;
+  /** Initial text-box layout for the editable loop comment overlay. */
+  editableLoopCommentTextBoxInitial?: { x: number; y: number; width: number; height: number } | null;
+  /** Called when editable loop comment text-box layout changes. */
+  onEditableLoopCommentTextBoxChange?: (layout: { x: number; y: number; width: number; height: number }) => void;
 
   /** Called when the video player is ready (YouTube onReady or native canplay). */
   onPlayerReady?: () => void;
@@ -220,6 +230,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     renderBelowTimeControls,
     loopRange = null,
     loopCommentOverlays = [],
+    editableLoopCommentId = null,
+    editableLoopCommentTextBoxInitial = null,
+    onEditableLoopCommentTextBoxChange,
     onPlayerReady,
   },
   ref
@@ -235,7 +248,11 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const fullscreenRootRef = useRef<HTMLDivElement>(null);
   const frameDetailOverlayRef = useRef<HTMLDivElement>(null);
   const onPlayPropRef = useRef(onPlayProp);
+  const onTimeUpdateRef = useRef(onTimeUpdate);
+  const onActiveMarkerChangeRef = useRef(onActiveMarkerChange);
   useEffect(() => { onPlayPropRef.current = onPlayProp; });
+  useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; });
+  useEffect(() => { onActiveMarkerChangeRef.current = onActiveMarkerChange; });
 
   const [frameDetailCirclePosition, setFrameDetailCirclePosition] = useState({ x: 50, y: 50 });
   // radiusX and radiusY are stored as percentages of the overlay's width/height
@@ -256,6 +273,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const FRAME_TEXT_BOX_WIDTH_MAX = 70;
   const FRAME_TEXT_BOX_HEIGHT_MIN = 6;
   const FRAME_TEXT_BOX_HEIGHT_MAX = 40;
+  const LOOP_TEXT_BOX_WIDTH_MIN = 14;
+  const LOOP_TEXT_BOX_WIDTH_MAX = 72;
+  const LOOP_TEXT_BOX_HEIGHT_MIN = 8;
+  const LOOP_TEXT_BOX_HEIGHT_MAX = 42;
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -278,6 +299,30 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [visibleLoopCommentText, setVisibleLoopCommentText] = useState<string | null>(null);
   const [isLoopCommentBubbleVisible, setIsLoopCommentBubbleVisible] = useState(false);
   const loopCommentHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emittedLoopLayoutRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const lastNotifiedActiveMarkerKeyRef = useRef<string>('__init__');
+  const appliedLoopLayoutKeyRef = useRef<string | null>(null);
+  const [loopCommentTextBoxPosition, setLoopCommentTextBoxPosition] = useState({ x: 22, y: 12 });
+  const [loopCommentTextBoxWidth, setLoopCommentTextBoxWidth] = useState(32);
+  const [loopCommentTextBoxHeight, setLoopCommentTextBoxHeight] = useState(18);
+  const [isDraggingLoopTextBox, setIsDraggingLoopTextBox] = useState(false);
+  const [isResizingLoopTextBoxWidth, setIsResizingLoopTextBoxWidth] = useState(false);
+  const [isResizingLoopTextBoxHeight, setIsResizingLoopTextBoxHeight] = useState(false);
+
+  const clampLoopTextLayout = useCallback((layout: { x: number; y: number; width: number; height: number }) => {
+    const width = Math.max(LOOP_TEXT_BOX_WIDTH_MIN, Math.min(LOOP_TEXT_BOX_WIDTH_MAX, layout.width));
+    const height = Math.max(LOOP_TEXT_BOX_HEIGHT_MIN, Math.min(LOOP_TEXT_BOX_HEIGHT_MAX, layout.height));
+    const minX = width / 2;
+    const maxX = 100 - width / 2;
+    const minY = height / 2;
+    const maxY = 100 - height / 2;
+    return {
+      width,
+      height,
+      x: Math.max(minX, Math.min(maxX, layout.x)),
+      y: Math.max(minY, Math.min(maxY, layout.y)),
+    };
+  }, [LOOP_TEXT_BOX_WIDTH_MIN, LOOP_TEXT_BOX_WIDTH_MAX, LOOP_TEXT_BOX_HEIGHT_MIN, LOOP_TEXT_BOX_HEIGHT_MAX]);
 
   // Responsive: on small screens, skip buttons fill full width (no maxWidth cap)
   const [skipButtonsFillWidth, setSkipButtonsFillWidth] = useState(false);
@@ -473,6 +518,99 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     setIsResizingFrameTextBoxHeight(false);
   }, []);
 
+  const handleLoopTextBoxPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDraggingLoopTextBox(true);
+  }, []);
+  const handleLoopTextBoxPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingLoopTextBox) return;
+    const parent = (e.currentTarget as HTMLElement).parentElement;
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    const clamped = clampLoopTextLayout({ x, y, width: loopCommentTextBoxWidth, height: loopCommentTextBoxHeight });
+    setLoopCommentTextBoxPosition((prev) =>
+      prev.x === clamped.x && prev.y === clamped.y ? prev : { x: clamped.x, y: clamped.y }
+    );
+  }, [isDraggingLoopTextBox, clampLoopTextLayout, loopCommentTextBoxWidth, loopCommentTextBoxHeight]);
+  const handleLoopTextBoxPointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsDraggingLoopTextBox(false);
+  }, []);
+  const handleLoopTextResizeWidthPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizingLoopTextBoxWidth(true);
+  }, []);
+  const handleLoopTextResizeHeightPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizingLoopTextBoxHeight(true);
+  }, []);
+  const handleLoopTextResizeWidthPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingLoopTextBoxWidth) return;
+    const parent = (e.currentTarget as HTMLElement).parentElement;
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const centerX = rect.left + (loopCommentTextBoxPosition.x / 100) * rect.width;
+    const width = Math.round(
+      Math.max(LOOP_TEXT_BOX_WIDTH_MIN, Math.min(LOOP_TEXT_BOX_WIDTH_MAX, (Math.abs(e.clientX - centerX) / rect.width) * 200))
+    );
+    const clamped = clampLoopTextLayout({
+      x: loopCommentTextBoxPosition.x,
+      y: loopCommentTextBoxPosition.y,
+      width,
+      height: loopCommentTextBoxHeight,
+    });
+    setLoopCommentTextBoxWidth((prev) => (prev === clamped.width ? prev : clamped.width));
+    setLoopCommentTextBoxPosition((prev) =>
+      prev.x === clamped.x && prev.y === clamped.y ? prev : { x: clamped.x, y: clamped.y }
+    );
+  }, [
+    isResizingLoopTextBoxWidth,
+    loopCommentTextBoxPosition.x,
+    loopCommentTextBoxPosition.y,
+    loopCommentTextBoxHeight,
+    LOOP_TEXT_BOX_WIDTH_MIN,
+    LOOP_TEXT_BOX_WIDTH_MAX,
+    clampLoopTextLayout,
+  ]);
+  const handleLoopTextResizeHeightPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingLoopTextBoxHeight) return;
+    const parent = (e.currentTarget as HTMLElement).parentElement;
+    if (!parent) return;
+    const rect = parent.getBoundingClientRect();
+    const centerY = rect.top + (loopCommentTextBoxPosition.y / 100) * rect.height;
+    const height = Math.round(
+      Math.max(LOOP_TEXT_BOX_HEIGHT_MIN, Math.min(LOOP_TEXT_BOX_HEIGHT_MAX, (Math.abs(e.clientY - centerY) / rect.height) * 200))
+    );
+    const clamped = clampLoopTextLayout({
+      x: loopCommentTextBoxPosition.x,
+      y: loopCommentTextBoxPosition.y,
+      width: loopCommentTextBoxWidth,
+      height,
+    });
+    setLoopCommentTextBoxHeight((prev) => (prev === clamped.height ? prev : clamped.height));
+    setLoopCommentTextBoxPosition((prev) =>
+      prev.x === clamped.x && prev.y === clamped.y ? prev : { x: clamped.x, y: clamped.y }
+    );
+  }, [
+    isResizingLoopTextBoxHeight,
+    loopCommentTextBoxPosition.x,
+    loopCommentTextBoxPosition.y,
+    loopCommentTextBoxWidth,
+    LOOP_TEXT_BOX_HEIGHT_MIN,
+    LOOP_TEXT_BOX_HEIGHT_MAX,
+    clampLoopTextLayout,
+  ]);
+  const handleLoopTextResizePointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsResizingLoopTextBoxWidth(false);
+    setIsResizingLoopTextBoxHeight(false);
+  }, []);
+
   // Load YouTube API and create player when we have a YouTube video
   // Use youtube-nocookie.com for privacy-enhanced embed (may reduce "More videos" overlay)
   useEffect(() => {
@@ -526,9 +664,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               if (!playerRef.current) return;
               try {
                 const t = playerRef.current.getCurrentTime();
-                if (isFinite(t)) setCurrentVideoTime(t);
+                if (isFinite(t)) {
+                  setCurrentVideoTime((prev) => (Math.abs(prev - t) < 0.01 ? prev : t));
+                }
                 const d = playerRef.current.getDuration();
-                if (isFinite(d) && d > 0) setVideoDuration(d);
+                if (isFinite(d) && d > 0) {
+                  setVideoDuration((prev) => (Math.abs(prev - d) < 0.01 ? prev : d));
+                }
               } catch {
                 // ignore getCurrentTime/getDuration errors
               }
@@ -893,25 +1035,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   // Notify parent about current time / duration
   useEffect(() => {
-    if (onTimeUpdate) {
-      onTimeUpdate(currentVideoTime, videoDuration);
+    if (onTimeUpdateRef.current) {
+      onTimeUpdateRef.current(currentVideoTime, videoDuration);
     }
-  }, [currentVideoTime, videoDuration, onTimeUpdate]);
+  }, [currentVideoTime, videoDuration]);
 
   // Determine active marker based on current playback time
   useEffect(() => {
-    if (!onActiveMarkerChange || sortedMarkerTimes.length === 0) return;
+    if (!onActiveMarkerChangeRef.current || sortedMarkerTimes.length === 0) return;
     const activeTime =
       sortedMarkerTimes.filter((t) => t <= currentVideoTime + 0.5).pop() ?? null;
     if (activeTime == null) {
-      onActiveMarkerChange(null);
+      if (lastNotifiedActiveMarkerKeyRef.current !== 'null') {
+        lastNotifiedActiveMarkerKeyRef.current = 'null';
+        onActiveMarkerChangeRef.current(null);
+      }
       return;
     }
     const marker =
       markers.find((m) => m.time === activeTime) ??
       { time: activeTime };
-    onActiveMarkerChange(marker);
-  }, [currentVideoTime, sortedMarkerTimes, markers, onActiveMarkerChange]);
+    const markerKey = marker.id != null ? `id:${String(marker.id)}` : `t:${activeTime}`;
+    if (lastNotifiedActiveMarkerKeyRef.current === markerKey) return;
+    lastNotifiedActiveMarkerKeyRef.current = markerKey;
+    onActiveMarkerChangeRef.current(marker);
+  }, [currentVideoTime, sortedMarkerTimes, markers]);
 
   const formatTimestamp = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -927,20 +1075,32 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     : isDraggingFrameTextBox
       ? 'grabbing'
       : 'grab';
-  const activeLoopCommentOverlayText = useMemo(() => {
+  const activeLoopCommentOverlay = useMemo(() => {
     if (!loopCommentOverlays.length) return null;
-    const active = loopCommentOverlays
+    if (editableLoopCommentId != null) {
+      const editing = loopCommentOverlays.find(
+        (item) => item.id != null && String(item.id) === String(editableLoopCommentId)
+      );
+      if (editing) return editing;
+    }
+    return loopCommentOverlays
       .filter((item) => {
         if (!Number.isFinite(item.start) || !Number.isFinite(item.end)) return false;
         if (item.end <= item.start) return false;
         // Start showing 1s early and keep visible until 1s after end.
         return currentVideoTime >= item.start - 1 && currentVideoTime <= item.end + 1;
       })
-      .sort((a, b) => b.start - a.start)[0];
-    if (!active) return null;
-    const text = active.text.trim();
+      .sort((a, b) => b.start - a.start)[0] ?? null;
+  }, [loopCommentOverlays, currentVideoTime, editableLoopCommentId]);
+  const activeLoopCommentOverlayText = useMemo(() => {
+    if (!activeLoopCommentOverlay) return null;
+    const text = activeLoopCommentOverlay.text.trim();
     return text.length ? text : null;
-  }, [loopCommentOverlays, currentVideoTime]);
+  }, [activeLoopCommentOverlay]);
+  const isEditingLoopCommentOverlay =
+    editableLoopCommentId != null &&
+    activeLoopCommentOverlay?.id != null &&
+    String(activeLoopCommentOverlay.id) === String(editableLoopCommentId);
 
   useEffect(() => {
     if (loopCommentHideTimeoutRef.current) {
@@ -960,6 +1120,91 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       loopCommentHideTimeoutRef.current = null;
     }, 220);
   }, [activeLoopCommentOverlayText]);
+
+  useEffect(() => {
+    if (editableLoopCommentId == null) {
+      appliedLoopLayoutKeyRef.current = null;
+      return;
+    }
+    // Avoid re-initializing on every render/time tick. Only initialize once per edited comment id.
+    if (!isEditingLoopCommentOverlay) return;
+    const initKey = String(editableLoopCommentId);
+    if (appliedLoopLayoutKeyRef.current === initKey) return;
+    appliedLoopLayoutKeyRef.current = initKey;
+
+    let source: { x: number; y: number; width: number; height: number };
+    if (
+      editableLoopCommentTextBoxInitial != null &&
+      typeof editableLoopCommentTextBoxInitial.x === 'number' &&
+      typeof editableLoopCommentTextBoxInitial.y === 'number' &&
+      typeof editableLoopCommentTextBoxInitial.width === 'number' &&
+      typeof editableLoopCommentTextBoxInitial.height === 'number'
+    ) {
+      source = {
+        x: editableLoopCommentTextBoxInitial.x,
+        y: editableLoopCommentTextBoxInitial.y,
+        width: editableLoopCommentTextBoxInitial.width,
+        height: editableLoopCommentTextBoxInitial.height,
+      };
+    } else if (
+      activeLoopCommentOverlay &&
+      typeof activeLoopCommentOverlay.textBoxXPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxYPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxWidthPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxHeightPercent === 'number'
+    ) {
+      source = {
+        x: activeLoopCommentOverlay.textBoxXPercent,
+        y: activeLoopCommentOverlay.textBoxYPercent,
+        width: activeLoopCommentOverlay.textBoxWidthPercent,
+        height: activeLoopCommentOverlay.textBoxHeightPercent,
+      };
+    } else {
+      source = { x: 22, y: 12, width: 32, height: 18 };
+    }
+
+    const clamped = clampLoopTextLayout(source);
+    setLoopCommentTextBoxPosition((prev) =>
+      prev.x === clamped.x && prev.y === clamped.y ? prev : { x: clamped.x, y: clamped.y }
+    );
+    setLoopCommentTextBoxWidth((prev) => (prev === clamped.width ? prev : clamped.width));
+    setLoopCommentTextBoxHeight((prev) => (prev === clamped.height ? prev : clamped.height));
+  }, [
+    editableLoopCommentId,
+    isEditingLoopCommentOverlay,
+    editableLoopCommentTextBoxInitial,
+    activeLoopCommentOverlay,
+    clampLoopTextLayout,
+  ]);
+
+  useEffect(() => {
+    if (!isEditingLoopCommentOverlay || !onEditableLoopCommentTextBoxChange) return;
+    const next = {
+      x: loopCommentTextBoxPosition.x,
+      y: loopCommentTextBoxPosition.y,
+      width: loopCommentTextBoxWidth,
+      height: loopCommentTextBoxHeight,
+    };
+    const prev = emittedLoopLayoutRef.current;
+    if (
+      prev &&
+      prev.x === next.x &&
+      prev.y === next.y &&
+      prev.width === next.width &&
+      prev.height === next.height
+    ) {
+      return;
+    }
+    emittedLoopLayoutRef.current = next;
+    onEditableLoopCommentTextBoxChange(next);
+  }, [
+    isEditingLoopCommentOverlay,
+    onEditableLoopCommentTextBoxChange,
+    loopCommentTextBoxPosition.x,
+    loopCommentTextBoxPosition.y,
+    loopCommentTextBoxWidth,
+    loopCommentTextBoxHeight,
+  ]);
 
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
@@ -1193,10 +1438,21 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               <div
                 style={{
                   position: 'absolute',
-                  top: 'clamp(10px, 2vw, 16px)',
-                  left: 'clamp(10px, 2vw, 16px)',
+                  ...(isEditingLoopCommentOverlay
+                    ? {
+                        left: `${loopCommentTextBoxPosition.x}%`,
+                        top: `${loopCommentTextBoxPosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: `${loopCommentTextBoxWidth}%`,
+                        height: `${loopCommentTextBoxHeight}%`,
+                        minHeight: 32,
+                      }
+                    : {
+                        top: 'clamp(10px, 2vw, 16px)',
+                        left: 'clamp(10px, 2vw, 16px)',
+                        maxWidth: 'min(46ch, 62%)',
+                      }),
                   zIndex: 3,
-                  maxWidth: 'min(46ch, 62%)',
                   padding: '10px 14px',
                   borderRadius: 18,
                   background: '#ffffff',
@@ -1206,18 +1462,78 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   lineHeight: 1.38,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
-                  pointerEvents: 'none',
+                  pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
-                  transform: isLoopCommentBubbleVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)',
+                  transform: isEditingLoopCommentOverlay
+                    ? 'translate(-50%, -50%)'
+                    : isLoopCommentBubbleVisible
+                      ? 'translateY(0) scale(1)'
+                      : 'translateY(8px) scale(0.96)',
                   filter: isLoopCommentBubbleVisible ? 'blur(0px)' : 'blur(0.6px)',
                   transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease',
                   transformOrigin: 'top left',
+                  cursor: isDraggingLoopTextBox ? 'grabbing' : isEditingLoopCommentOverlay ? 'grab' : 'default',
+                  userSelect: isEditingLoopCommentOverlay ? 'none' : undefined,
                 }}
+                onPointerDown={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerDown : undefined}
+                onPointerMove={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerMove : undefined}
+                onPointerUp={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
+                onPointerLeave={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
               >
                 {visibleLoopCommentText}
               </div>
+            )}
+            {visibleLoopCommentText && isEditingLoopCommentOverlay && (
+              <>
+                <div
+                  role="presentation"
+                  aria-label="Resize comment text width"
+                  style={{
+                    position: 'absolute',
+                    left: `calc(${loopCommentTextBoxPosition.x}% + ${loopCommentTextBoxWidth / 2}%)`,
+                    top: `${loopCommentTextBoxPosition.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
+                    cursor: 'ew-resize',
+                    pointerEvents: 'auto',
+                  }}
+                  onPointerDown={handleLoopTextResizeWidthPointerDown}
+                  onPointerMove={handleLoopTextResizeWidthPointerMove}
+                  onPointerUp={handleLoopTextResizePointerUp}
+                  onPointerLeave={handleLoopTextResizePointerUp}
+                />
+                <div
+                  role="presentation"
+                  aria-label="Resize comment text height"
+                  style={{
+                    position: 'absolute',
+                    left: `${loopCommentTextBoxPosition.x}%`,
+                    top: `calc(${loopCommentTextBoxPosition.y}% + ${loopCommentTextBoxHeight / 2}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
+                    cursor: 'ns-resize',
+                    pointerEvents: 'auto',
+                  }}
+                  onPointerDown={handleLoopTextResizeHeightPointerDown}
+                  onPointerMove={handleLoopTextResizeHeightPointerMove}
+                  onPointerUp={handleLoopTextResizePointerUp}
+                  onPointerLeave={handleLoopTextResizePointerUp}
+                />
+              </>
             )}
             {isSessionDetail && videoDuration > 0 && (
               <div
@@ -1788,10 +2104,21 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               <div
                 style={{
                   position: 'absolute',
-                  top: 'clamp(10px, 2vw, 16px)',
-                  left: 'clamp(10px, 2vw, 16px)',
+                  ...(isEditingLoopCommentOverlay
+                    ? {
+                        left: `${loopCommentTextBoxPosition.x}%`,
+                        top: `${loopCommentTextBoxPosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: `${loopCommentTextBoxWidth}%`,
+                        height: `${loopCommentTextBoxHeight}%`,
+                        minHeight: 32,
+                      }
+                    : {
+                        top: 'clamp(10px, 2vw, 16px)',
+                        left: 'clamp(10px, 2vw, 16px)',
+                        maxWidth: 'min(46ch, 62%)',
+                      }),
                   zIndex: 3,
-                  maxWidth: 'min(46ch, 62%)',
                   padding: '10px 14px',
                   borderRadius: 18,
                   background: '#ffffff',
@@ -1801,18 +2128,78 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   lineHeight: 1.38,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
-                  pointerEvents: 'none',
+                  pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
-                  transform: isLoopCommentBubbleVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)',
+                  transform: isEditingLoopCommentOverlay
+                    ? 'translate(-50%, -50%)'
+                    : isLoopCommentBubbleVisible
+                      ? 'translateY(0) scale(1)'
+                      : 'translateY(8px) scale(0.96)',
                   filter: isLoopCommentBubbleVisible ? 'blur(0px)' : 'blur(0.6px)',
                   transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease',
                   transformOrigin: 'top left',
+                  cursor: isDraggingLoopTextBox ? 'grabbing' : isEditingLoopCommentOverlay ? 'grab' : 'default',
+                  userSelect: isEditingLoopCommentOverlay ? 'none' : undefined,
                 }}
+                onPointerDown={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerDown : undefined}
+                onPointerMove={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerMove : undefined}
+                onPointerUp={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
+                onPointerLeave={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
               >
                 {visibleLoopCommentText}
               </div>
+            )}
+            {visibleLoopCommentText && isEditingLoopCommentOverlay && (
+              <>
+                <div
+                  role="presentation"
+                  aria-label="Resize comment text width"
+                  style={{
+                    position: 'absolute',
+                    left: `calc(${loopCommentTextBoxPosition.x}% + ${loopCommentTextBoxWidth / 2}%)`,
+                    top: `${loopCommentTextBoxPosition.y}%`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
+                    cursor: 'ew-resize',
+                    pointerEvents: 'auto',
+                  }}
+                  onPointerDown={handleLoopTextResizeWidthPointerDown}
+                  onPointerMove={handleLoopTextResizeWidthPointerMove}
+                  onPointerUp={handleLoopTextResizePointerUp}
+                  onPointerLeave={handleLoopTextResizePointerUp}
+                />
+                <div
+                  role="presentation"
+                  aria-label="Resize comment text height"
+                  style={{
+                    position: 'absolute',
+                    left: `${loopCommentTextBoxPosition.x}%`,
+                    top: `calc(${loopCommentTextBoxPosition.y}% + ${loopCommentTextBoxHeight / 2}%)`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 3,
+                    width: 16,
+                    height: 16,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                    border: '1px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 3px 10px rgba(0,0,0,0.3), 0 0 0 1px rgba(148,163,184,0.38) inset',
+                    cursor: 'ns-resize',
+                    pointerEvents: 'auto',
+                  }}
+                  onPointerDown={handleLoopTextResizeHeightPointerDown}
+                  onPointerMove={handleLoopTextResizeHeightPointerMove}
+                  onPointerUp={handleLoopTextResizePointerUp}
+                  onPointerLeave={handleLoopTextResizePointerUp}
+                />
+              </>
             )}
             <video
               key={`${videoKey ?? 'video'}-${retryCount}`}

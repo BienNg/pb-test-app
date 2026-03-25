@@ -19,6 +19,10 @@ export type ShotVideoCommentRow = {
   timestamp_seconds: number | null;
   loop_end_timestamp_seconds: number | null;
   example_gif: string | null;
+  text_box_x_percent: number | null;
+  text_box_y_percent: number | null;
+  text_box_width_percent: number | null;
+  text_box_height_percent: number | null;
   created_at: string;
 };
 
@@ -36,7 +40,7 @@ export async function fetchShotVideoComments(
   if (!supabase) return [];
   const { data: comments, error } = await supabase
     .from('shot_video_comments')
-    .select('id, shot_video_id, author_id, text, timestamp_seconds, loop_end_timestamp_seconds, example_gif, created_at')
+    .select('id, shot_video_id, author_id, text, timestamp_seconds, loop_end_timestamp_seconds, example_gif, text_box_x_percent, text_box_y_percent, text_box_width_percent, text_box_height_percent, created_at')
     .eq('shot_video_id', shotVideoId)
     .order('created_at', { ascending: true });
   if (error || !comments) return [];
@@ -92,7 +96,7 @@ export async function insertShotVideoComment(
       timestamp_seconds: timestampSeconds,
       example_gif: exampleGif,
     })
-    .select('id, shot_video_id, author_id, text, timestamp_seconds, example_gif, created_at')
+    .select('id, shot_video_id, author_id, text, timestamp_seconds, loop_end_timestamp_seconds, example_gif, text_box_x_percent, text_box_y_percent, text_box_width_percent, text_box_height_percent, created_at')
     .single();
   if (error || !inserted) return null;
   const row = inserted as ShotVideoCommentRow;
@@ -271,12 +275,20 @@ export async function insertShotVideoCommentReply(
 export async function updateShotVideoComment(
   supabase: SupabaseClient | null,
   commentId: string,
-  text: string
+  text: string,
+  textBoxLayout?: { x: number; y: number; width: number; height: number } | null
 ): Promise<boolean> {
   if (!supabase) return false;
+  const updatePayload: Record<string, unknown> = { text };
+  if (textBoxLayout != null) {
+    updatePayload.text_box_x_percent = textBoxLayout.x;
+    updatePayload.text_box_y_percent = textBoxLayout.y;
+    updatePayload.text_box_width_percent = textBoxLayout.width;
+    updatePayload.text_box_height_percent = textBoxLayout.height;
+  }
   const { error } = await supabase
     .from('shot_video_comments')
-    .update({ text })
+    .update(updatePayload)
     .eq('id', commentId);
   return !error;
 }

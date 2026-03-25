@@ -97,6 +97,11 @@ export interface SessionComment {
   taggedUsers?: { id: string; name: string }[];
   /** Filename of an attached shot-example GIF (e.g. "shot-example-Dink-Volley.gif") */
   exampleGif?: string;
+  /** Optional loop-comment text box layout on the video overlay (percent-based). */
+  textBoxXPercent?: number;
+  textBoxYPercent?: number;
+  textBoxWidthPercent?: number;
+  textBoxHeightPercent?: number;
 }
 
 /** A reply to a session comment (stored as a subcomment in the DB). */

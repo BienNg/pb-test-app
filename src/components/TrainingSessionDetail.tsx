@@ -234,6 +234,31 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** When set, this comment is being edited; edit box shows and uses editDraft. */
   const [editingCommentId, setEditingCommentId] = useState<string | number | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  const [editCommentTextBoxDraft, setEditCommentTextBoxDraft] = useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
+  const handleEditableLoopCommentTextBoxChange = useCallback((layout: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }) => {
+    setEditCommentTextBoxDraft((prev) => {
+      if (
+        prev != null &&
+        prev.x === layout.x &&
+        prev.y === layout.y &&
+        prev.width === layout.width &&
+        prev.height === layout.height
+      ) {
+        return prev;
+      }
+      return layout;
+    });
+  }, []);
   const editInputRef = useRef<HTMLDivElement>(null);
   const pendingEditCursorRef = useRef<number | null>(null);
   const commentsScrollRef = useRef<HTMLDivElement>(null);
@@ -1136,7 +1161,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       activeTimestamp != null
         ? sortedComments.find((c) => c.timestampSeconds === activeTimestamp)
         : null;
-    setActiveCommentId(activeComment?.id ?? null);
+    const nextId = activeComment?.id ?? null;
+    setActiveCommentId((prev) => (prev === nextId ? prev : nextId));
   }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
 
   /** Skip seeking only when already at the same frame (exact timestamp), not when within a rounded second. */
@@ -1868,11 +1894,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
   };
 
-  const handleEditComment = async (commentId: string | number, newText: string) => {
+  const handleEditComment = async (
+    commentId: string | number,
+    newText: string,
+    textBoxLayout?: { x: number; y: number; width: number; height: number } | null
+  ) => {
+    const editedFields =
+      textBoxLayout != null
+        ? {
+            textBoxXPercent: textBoxLayout.x,
+            textBoxYPercent: textBoxLayout.y,
+            textBoxWidthPercent: textBoxLayout.width,
+            textBoxHeightPercent: textBoxLayout.height,
+          }
+        : {};
     if (typeof commentId !== 'string') {
       // Local state fallback
       setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText, ...editedFields } : c))
       );
       setEditingCommentId(null);
       setEditDraft('');
@@ -1880,10 +1919,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     }
 
     if (isShotVideo) {
-      const success = await updateShotVideoComment(supabase, commentId, newText);
+      const success = await updateShotVideoComment(supabase, commentId, newText, textBoxLayout);
       if (success) {
         setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+          prev.map((c) => (c.id === commentId ? { ...c, text: newText, ...editedFields } : c))
         );
         setEditingCommentId(null);
         setEditDraft('');
@@ -1894,17 +1933,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     if (!isDbSession) {
       // Local-only session: just update state
       setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText, ...editedFields } : c))
       );
       setEditingCommentId(null);
       setEditDraft('');
       return;
     }
 
-    const success = await updateSessionComment(supabase, commentId, newText);
+    const success = await updateSessionComment(supabase, commentId, newText, textBoxLayout);
     if (success) {
       setComments((prev) =>
-        prev.map((c) => (c.id === commentId ? { ...c, text: newText } : c))
+        prev.map((c) => (c.id === commentId ? { ...c, text: newText, ...editedFields } : c))
       );
       setEditingCommentId(null);
       setEditDraft('');
@@ -2257,11 +2296,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         start: c.timestampSeconds ?? 0,
                         end: c.loopEndTimestampSeconds ?? 0,
                         text: c.text,
+                        textBoxXPercent: c.textBoxXPercent,
+                        textBoxYPercent: c.textBoxYPercent,
+                        textBoxWidthPercent: c.textBoxWidthPercent,
+                        textBoxHeightPercent: c.textBoxHeightPercent,
                       }))
                   }
+                  editableLoopCommentId={editingCommentId}
+                  editableLoopCommentTextBoxInitial={editCommentTextBoxDraft}
+                  onEditableLoopCommentTextBoxChange={handleEditableLoopCommentTextBoxChange}
                   onMarkerClick={(marker) => {
                     if (marker.id != null) {
-                      setActiveCommentId(marker.id);
+                      const nextId: string | number | null = marker.id;
+                      setActiveCommentId((prev) => (prev === nextId ? prev : nextId));
                     }
                   }}
                   onTimeUpdate={(t, dur) => {
@@ -2269,7 +2316,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     setVideoDuration(dur);
                   }}
                   onActiveMarkerChange={(marker) => {
-                    setActiveCommentId(marker?.id ?? null);
+                    const nextId = marker?.id ?? null;
+                    setActiveCommentId((prev) => (prev === nextId ? prev : nextId));
                   }}
                   seekToSeconds={pendingSeekSeconds}
                   onSeekHandled={() => setPendingSeekSeconds(null)}
@@ -2889,6 +2937,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 onClick={() => {
                                   setEditDraft(comment.text);
                                   setEditingCommentId(comment.id);
+                                  setEditCommentTextBoxDraft(
+                                    typeof comment.textBoxXPercent === 'number' &&
+                                    typeof comment.textBoxYPercent === 'number' &&
+                                    typeof comment.textBoxWidthPercent === 'number' &&
+                                    typeof comment.textBoxHeightPercent === 'number'
+                                      ? {
+                                          x: comment.textBoxXPercent,
+                                          y: comment.textBoxYPercent,
+                                          width: comment.textBoxWidthPercent,
+                                          height: comment.textBoxHeightPercent,
+                                        }
+                                      : null
+                                  );
                                   setActiveCommentMenu(null);
                                 }}
                                 style={{
@@ -2988,6 +3049,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 e.stopPropagation();
                                 setEditingCommentId(null);
                                 setEditDraft('');
+                                setEditCommentTextBoxDraft(null);
                               }}
                               style={{
                                 padding: `${SPACING.xs}px ${SPACING.md}px`,
@@ -3005,8 +3067,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleEditComment(comment.id, editDraft.trim());
+                                handleEditComment(comment.id, editDraft.trim(), editCommentTextBoxDraft);
                                 setEditDraft('');
+                                setEditCommentTextBoxDraft(null);
                               }}
                               disabled={!editDraft.trim()}
                               style={{
