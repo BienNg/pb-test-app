@@ -428,6 +428,33 @@ export const ROADMAP_SKILLS: Array<{
       { label: 'Soft hands for touch', completed: false },
       { label: 'Recover forward', completed: false },
     ],
+    subCategories: [
+      {
+        id: 'normal',
+        label: 'Normal',
+        items: [
+          { label: 'Paddle in front during setup', completed: false },
+          { label: 'Balanced stance', completed: false },
+          { label: 'Eyes on ball', completed: false },
+          { label: 'Contact in front of body', completed: false },
+          { label: 'Paddle slightly open', completed: false },
+          { label: 'Smooth low → high swing', completed: false },
+          { label: 'Use legs for control', completed: false },
+          { label: 'Soft hands for touch', completed: false },
+          { label: 'Recover forward', completed: false },
+        ],
+      },
+      {
+        id: 'topspin',
+        label: 'Topspin',
+        items: [],
+      },
+      {
+        id: 'slice',
+        label: 'Slice',
+        items: [],
+      },
+    ],
   },
   {
     id: 'backhand-drop',
