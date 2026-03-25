@@ -299,6 +299,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [addLoopState, setAddLoopState] = useState<{
     commentId: string | number;
     startTimestamp: number;
+    mode: 'add' | 'edit';
   } | null>(null);
   /** When shot has sub-categories (e.g. Forehand Dink: Normal, Topspin, Slice), which sub is selected. */
   const [selectedTechniqueSubId, setSelectedTechniqueSubId] = useState<string | null>(null);
@@ -2404,7 +2405,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   cursor: isValidLoop ? 'pointer' : 'default',
                                 }}
                               >
-                                Add Loop
+                                {addLoopState.mode === 'edit' ? 'Update Loop' : 'Add Loop'}
                               </button>
                             </>
                           );
@@ -2906,9 +2907,18 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   type="button"
                                   onClick={() => {
                                     const startTs = comment.timestampSeconds ?? currentVideoTime;
-                                    setAddLoopState({ commentId: comment.id, startTimestamp: startTs });
+                                    const hasExistingLoop =
+                                      comment.loopEndTimestampSeconds != null &&
+                                      comment.loopEndTimestampSeconds > startTs;
+                                    setAddLoopState({
+                                      commentId: comment.id,
+                                      startTimestamp: startTs,
+                                      mode: hasExistingLoop ? 'edit' : 'add',
+                                    });
                                     setActiveCommentMenu(null);
-                                    seekToTimestampIfNeeded(startTs);
+                                    seekToTimestampIfNeeded(
+                                      hasExistingLoop ? (comment.loopEndTimestampSeconds as number) : startTs
+                                    );
                                   }}
                                   style={{
                                     display: 'block',
@@ -2922,7 +2932,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     cursor: 'pointer',
                                   }}
                                 >
-                                  Add loop
+                                  {comment.loopEndTimestampSeconds != null &&
+                                  comment.loopEndTimestampSeconds > (comment.timestampSeconds ?? currentVideoTime)
+                                    ? 'Edit loop'
+                                    : 'Add loop'}
                                 </button>
                               )}
                               <div
