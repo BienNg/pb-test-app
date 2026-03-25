@@ -297,6 +297,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const skipIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipIndicatorFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [visibleLoopCommentText, setVisibleLoopCommentText] = useState<string | null>(null);
+  const [visibleLoopCommentLayout, setVisibleLoopCommentLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isLoopCommentBubbleVisible, setIsLoopCommentBubbleVisible] = useState(false);
   const loopCommentHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emittedLoopLayoutRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -1101,6 +1102,39 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     editableLoopCommentId != null &&
     activeLoopCommentOverlay?.id != null &&
     String(activeLoopCommentOverlay.id) === String(editableLoopCommentId);
+  const loopCommentDisplayLayout = useMemo(() => {
+    if (isEditingLoopCommentOverlay) {
+      return clampLoopTextLayout({
+        x: loopCommentTextBoxPosition.x,
+        y: loopCommentTextBoxPosition.y,
+        width: loopCommentTextBoxWidth,
+        height: loopCommentTextBoxHeight,
+      });
+    }
+    if (
+      activeLoopCommentOverlay &&
+      typeof activeLoopCommentOverlay.textBoxXPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxYPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxWidthPercent === 'number' &&
+      typeof activeLoopCommentOverlay.textBoxHeightPercent === 'number'
+    ) {
+      return clampLoopTextLayout({
+        x: activeLoopCommentOverlay.textBoxXPercent,
+        y: activeLoopCommentOverlay.textBoxYPercent,
+        width: activeLoopCommentOverlay.textBoxWidthPercent,
+        height: activeLoopCommentOverlay.textBoxHeightPercent,
+      });
+    }
+    return null;
+  }, [
+    isEditingLoopCommentOverlay,
+    activeLoopCommentOverlay,
+    loopCommentTextBoxPosition.x,
+    loopCommentTextBoxPosition.y,
+    loopCommentTextBoxWidth,
+    loopCommentTextBoxHeight,
+    clampLoopTextLayout,
+  ]);
 
   useEffect(() => {
     if (loopCommentHideTimeoutRef.current) {
@@ -1110,6 +1144,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     if (activeLoopCommentOverlayText) {
       requestAnimationFrame(() => {
         setVisibleLoopCommentText(activeLoopCommentOverlayText);
+        setVisibleLoopCommentLayout(loopCommentDisplayLayout);
       });
       requestAnimationFrame(() => setIsLoopCommentBubbleVisible(true));
       return;
@@ -1117,9 +1152,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     requestAnimationFrame(() => setIsLoopCommentBubbleVisible(false));
     loopCommentHideTimeoutRef.current = setTimeout(() => {
       setVisibleLoopCommentText(null);
+      setVisibleLoopCommentLayout(null);
       loopCommentHideTimeoutRef.current = null;
     }, 220);
-  }, [activeLoopCommentOverlayText]);
+  }, [activeLoopCommentOverlayText, loopCommentDisplayLayout]);
 
   useEffect(() => {
     if (editableLoopCommentId == null) {
@@ -1438,13 +1474,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               <div
                 style={{
                   position: 'absolute',
-                  ...(isEditingLoopCommentOverlay
+                  ...(visibleLoopCommentLayout
                     ? {
-                        left: `${loopCommentTextBoxPosition.x}%`,
-                        top: `${loopCommentTextBoxPosition.y}%`,
+                        left: `${visibleLoopCommentLayout.x}%`,
+                        top: `${visibleLoopCommentLayout.y}%`,
                         transform: 'translate(-50%, -50%)',
-                        width: `${loopCommentTextBoxWidth}%`,
-                        height: `${loopCommentTextBoxHeight}%`,
+                        width: `${visibleLoopCommentLayout.width}%`,
+                        height: `${visibleLoopCommentLayout.height}%`,
                         minHeight: 32,
                       }
                     : {
@@ -1466,7 +1502,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
-                  transform: isEditingLoopCommentOverlay
+                  transform: visibleLoopCommentLayout
                     ? 'translate(-50%, -50%)'
                     : isLoopCommentBubbleVisible
                       ? 'translateY(0) scale(1)'
@@ -2104,13 +2140,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               <div
                 style={{
                   position: 'absolute',
-                  ...(isEditingLoopCommentOverlay
+                  ...(visibleLoopCommentLayout
                     ? {
-                        left: `${loopCommentTextBoxPosition.x}%`,
-                        top: `${loopCommentTextBoxPosition.y}%`,
+                        left: `${visibleLoopCommentLayout.x}%`,
+                        top: `${visibleLoopCommentLayout.y}%`,
                         transform: 'translate(-50%, -50%)',
-                        width: `${loopCommentTextBoxWidth}%`,
-                        height: `${loopCommentTextBoxHeight}%`,
+                        width: `${visibleLoopCommentLayout.width}%`,
+                        height: `${visibleLoopCommentLayout.height}%`,
                         minHeight: 32,
                       }
                     : {
@@ -2132,7 +2168,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
-                  transform: isEditingLoopCommentOverlay
+                  transform: visibleLoopCommentLayout
                     ? 'translate(-50%, -50%)'
                     : isLoopCommentBubbleVisible
                       ? 'translateY(0) scale(1)'
