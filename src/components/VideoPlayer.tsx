@@ -1157,6 +1157,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     }, 220);
   }, [activeLoopCommentOverlayText, loopCommentDisplayLayout]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (editableLoopCommentId == null) {
       appliedLoopLayoutKeyRef.current = null;
@@ -1212,6 +1213,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     activeLoopCommentOverlay,
     clampLoopTextLayout,
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!isEditingLoopCommentOverlay || !onEditableLoopCommentTextBoxChange) return;
