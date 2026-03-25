@@ -15,6 +15,7 @@ export interface StudentInfo {
   avatar?: string;
   level?: StudentLevel;
   joinedDate?: string;
+  signupDate?: string;
   progress?: number;
 }
 
@@ -743,6 +744,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>STUDENT</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LEVEL</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>JOINED DATE</th>
+                      <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SIGN UP DATE</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SESSIONS</th>
                       <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ACTIONS</th>
                     </tr>
@@ -750,7 +752,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                   <tbody style={{ background: 'white' }}>
                     {filteredAndSortedStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={5} style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textMuted }}>
+                        <td colSpan={6} style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textMuted }}>
                           No students match your search or filter.
                         </td>
                       </tr>
@@ -801,6 +803,9 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                             </td>
                             <td style={{ padding: '16px 24px', fontSize: '14px', color: '#55877f' }}>
                               {student.joinedDate || student.lastActive}
+                            </td>
+                            <td style={{ padding: '16px 24px', fontSize: '14px', color: '#55877f' }}>
+                              {student.signupDate || '—'}
                             </td>
                             <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 600, color: COLORS.textPrimary }}>
                               {student.lessonsCompleted} <span style={{ color: '#9BC1B9', fontWeight: 400 }}>lessons</span>

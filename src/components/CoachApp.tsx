@@ -15,6 +15,22 @@ import { insertShotVideo } from '@/lib/shotVideos';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
+async function fetchSignupDatesForStudentIds(studentIds: string[]): Promise<Record<string, string>> {
+  if (studentIds.length === 0) return {};
+  try {
+    const res = await fetch('/api/coach/student-signup-dates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentIds }),
+    });
+    if (!res.ok) return {};
+    const data = (await res.json()) as { signupDates?: Record<string, string> };
+    return data.signupDates ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export const CoachApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
@@ -66,9 +82,11 @@ export const CoachApp: React.FC = () => {
       const studentIds = filtered.map((r) => r.id);
       const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
       const firstSessionDates = await fetchFirstSessionDateForStudentIds(supabase, studentIds);
+      const signupDates = await fetchSignupDatesForStudentIds(studentIds);
       
       setStudents(
         filtered.map((r) => {
+          const signupDate = signupDates[r.id];
           const firstSessionDate = firstSessionDates[r.id];
           let joinedDate = '—';
           if (firstSessionDate) {
@@ -79,6 +97,17 @@ export const CoachApp: React.FC = () => {
               year: 'numeric',
             });
           }
+          let signupDateLabel = '—';
+          if (signupDate) {
+            const d = new Date(signupDate);
+            if (!Number.isNaN(d.getTime())) {
+              signupDateLabel = d.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              });
+            }
+          }
           return {
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
@@ -86,6 +115,7 @@ export const CoachApp: React.FC = () => {
             lessonsCompleted: sessionCounts[r.id] ?? 0,
             lastActive: joinedDate,
             joinedDate: joinedDate,
+            signupDate: signupDateLabel,
           };
         })
       );
