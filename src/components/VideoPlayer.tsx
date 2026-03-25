@@ -139,8 +139,12 @@ export interface VideoPlayerProps {
   showFrameDetailReplyOverlay?: boolean;
   /** Initial position/size for the frame marker (e.g. when editing a reply that has saved marker). */
   frameDetailMarkerInitial?: { x: number; y: number; radiusX: number; radiusY: number } | null;
+  /** Initial position/size for the frame-detail text box. */
+  frameDetailTextBoxInitial?: { x: number; y: number; width: number; height: number } | null;
   /** When true, marker is read-only (e.g. when viewing a reply's frame). */
   frameDetailMarkerReadOnly?: boolean;
+  /** Optional frame-detail text to render in a draggable/resizable overlay box. */
+  frameDetailOverlayText?: string | null;
 
   /** Called when playback starts (user pressed play). */
   onPlay?: () => void;
@@ -165,6 +169,10 @@ export interface FrameMarkerState {
   y: number;
   radiusX: number;
   radiusY: number;
+  textBoxX: number;
+  textBoxY: number;
+  textBoxWidth: number;
+  textBoxHeight: number;
 }
 
 export interface VideoPlayerHandle {
@@ -195,7 +203,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     accentColor = COLORS.primary,
     showFrameDetailReplyOverlay = false,
     frameDetailMarkerInitial = null,
+    frameDetailTextBoxInitial = null,
     frameDetailMarkerReadOnly = false,
+    frameDetailOverlayText = null,
     onPlay: onPlayProp,
     onControlPressed,
     renderBelowTimeControls,
@@ -223,9 +233,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [frameDetailCircleRadiusY, setFrameDetailCircleRadiusY] = useState(5);
   const [isDraggingFrameCircle, setIsDraggingFrameCircle] = useState(false);
   const [isResizingFrameCircle, setIsResizingFrameCircle] = useState(false);
+  const [frameDetailTextBoxPosition, setFrameDetailTextBoxPosition] = useState({ x: 68, y: 60 });
+  const [frameDetailTextBoxWidth, setFrameDetailTextBoxWidth] = useState(30);
+  const [frameDetailTextBoxHeight, setFrameDetailTextBoxHeight] = useState(16);
+  const [isDraggingFrameTextBox, setIsDraggingFrameTextBox] = useState(false);
+  const [isResizingFrameTextBoxWidth, setIsResizingFrameTextBoxWidth] = useState(false);
+  const [isResizingFrameTextBoxHeight, setIsResizingFrameTextBoxHeight] = useState(false);
 
   const FRAME_ELLIPSE_RADIUS_MIN = 3;
   const FRAME_ELLIPSE_RADIUS_MAX = 30;
+  const FRAME_TEXT_BOX_WIDTH_MIN = 12;
+  const FRAME_TEXT_BOX_WIDTH_MAX = 70;
+  const FRAME_TEXT_BOX_HEIGHT_MIN = 6;
+  const FRAME_TEXT_BOX_HEIGHT_MAX = 40;
 
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -300,7 +320,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       setFrameDetailCircleRadiusX(5);
       setFrameDetailCircleRadiusY(5);
     }
-  }, [showFrameDetailReplyOverlay, frameDetailMarkerInitial]);
+    if (
+      frameDetailTextBoxInitial != null &&
+      typeof frameDetailTextBoxInitial.x === 'number' &&
+      typeof frameDetailTextBoxInitial.y === 'number' &&
+      typeof frameDetailTextBoxInitial.width === 'number' &&
+      typeof frameDetailTextBoxInitial.height === 'number'
+    ) {
+      setFrameDetailTextBoxPosition({
+        x: frameDetailTextBoxInitial.x,
+        y: frameDetailTextBoxInitial.y,
+      });
+      setFrameDetailTextBoxWidth(frameDetailTextBoxInitial.width);
+      setFrameDetailTextBoxHeight(frameDetailTextBoxInitial.height);
+    } else {
+      const markerX = frameDetailMarkerInitial?.x ?? 50;
+      const markerY = frameDetailMarkerInitial?.y ?? 50;
+      const markerRadiusX = frameDetailMarkerInitial?.radiusX ?? 5;
+      setFrameDetailTextBoxPosition({
+        x: Math.max(8, Math.min(92, markerX + markerRadiusX + 12)),
+        y: Math.max(8, Math.min(92, markerY)),
+      });
+      setFrameDetailTextBoxWidth(30);
+      setFrameDetailTextBoxHeight(16);
+    }
+  }, [showFrameDetailReplyOverlay, frameDetailMarkerInitial, frameDetailTextBoxInitial]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleFrameCirclePointerDown = useCallback((e: React.PointerEvent) => {
@@ -354,6 +398,66 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const handleFrameResizePointerUp = useCallback((e: React.PointerEvent) => {
     (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     setIsResizingFrameCircle(false);
+  }, []);
+
+  const handleFrameTextBoxPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsDraggingFrameTextBox(true);
+  }, []);
+
+  const handleFrameTextBoxPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingFrameTextBox) return;
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+    setFrameDetailTextBoxPosition({ x, y });
+  }, [isDraggingFrameTextBox]);
+
+  const handleFrameTextBoxPointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsDraggingFrameTextBox(false);
+  }, []);
+
+  const handleFrameTextResizeWidthPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizingFrameTextBoxWidth(true);
+  }, []);
+
+  const handleFrameTextResizeHeightPointerDown = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    setIsResizingFrameTextBoxHeight(true);
+  }, []);
+
+  const handleFrameTextResizeWidthPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingFrameTextBoxWidth) return;
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const centerX = rect.left + (frameDetailTextBoxPosition.x / 100) * rect.width;
+    const width = Math.round(
+      Math.max(FRAME_TEXT_BOX_WIDTH_MIN, Math.min(FRAME_TEXT_BOX_WIDTH_MAX, (Math.abs(e.clientX - centerX) / rect.width) * 200))
+    );
+    setFrameDetailTextBoxWidth(width);
+  }, [isResizingFrameTextBoxWidth, frameDetailTextBoxPosition.x]);
+
+  const handleFrameTextResizeHeightPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isResizingFrameTextBoxHeight) return;
+    if (!frameDetailOverlayRef.current) return;
+    const rect = frameDetailOverlayRef.current.getBoundingClientRect();
+    const centerY = rect.top + (frameDetailTextBoxPosition.y / 100) * rect.height;
+    const height = Math.round(
+      Math.max(FRAME_TEXT_BOX_HEIGHT_MIN, Math.min(FRAME_TEXT_BOX_HEIGHT_MAX, (Math.abs(e.clientY - centerY) / rect.height) * 200))
+    );
+    setFrameDetailTextBoxHeight(height);
+  }, [isResizingFrameTextBoxHeight, frameDetailTextBoxPosition.y]);
+
+  const handleFrameTextResizePointerUp = useCallback((e: React.PointerEvent) => {
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    setIsResizingFrameTextBoxWidth(false);
+    setIsResizingFrameTextBoxHeight(false);
   }, []);
 
   // Load YouTube API and create player when we have a YouTube video
@@ -645,6 +749,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       y: frameDetailCirclePosition.y,
       radiusX: frameDetailCircleRadiusX,
       radiusY: frameDetailCircleRadiusY,
+      textBoxX: frameDetailTextBoxPosition.x,
+      textBoxY: frameDetailTextBoxPosition.y,
+      textBoxWidth: frameDetailTextBoxWidth,
+      textBoxHeight: frameDetailTextBoxHeight,
     };
   }, [
     showFrameDetailReplyOverlay,
@@ -652,6 +760,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     frameDetailCirclePosition.y,
     frameDetailCircleRadiusX,
     frameDetailCircleRadiusY,
+    frameDetailTextBoxPosition.x,
+    frameDetailTextBoxPosition.y,
+    frameDetailTextBoxWidth,
+    frameDetailTextBoxHeight,
   ]);
 
   useImperativeHandle(
@@ -792,6 +904,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     const s = Math.floor(seconds % 60);
     return `${m.toString().padStart(1, '0')}:${s.toString().padStart(2, '0')}`;
   };
+  const frameDetailOverlayTextTrimmed = (frameDetailOverlayText ?? '').trim();
+  const hasFrameDetailOverlayText = frameDetailOverlayTextTrimmed.length > 0;
 
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
@@ -1290,7 +1404,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   pointerEvents:
                     frameDetailMarkerReadOnly
                       ? 'none'
-                      : isDraggingFrameCircle || isResizingFrameCircle
+                      : isDraggingFrameCircle || isResizingFrameCircle || isDraggingFrameTextBox || isResizingFrameTextBoxWidth || isResizingFrameTextBoxHeight
                         ? 'auto'
                         : 'none',
                 }}
@@ -1361,6 +1475,85 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       onPointerMove={handleFrameResizeHeightPointerMove}
                       onPointerUp={handleFrameResizePointerUp}
                       onPointerLeave={handleFrameResizePointerUp}
+                    />
+                  </>
+                )}
+                {hasFrameDetailOverlayText && (
+                  <div
+                    role="presentation"
+                    style={{
+                      position: 'absolute',
+                      left: `${frameDetailTextBoxPosition.x}%`,
+                      top: `${frameDetailTextBoxPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: `${frameDetailTextBoxWidth}%`,
+                      height: `${frameDetailTextBoxHeight}%`,
+                      minHeight: 28,
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(0,0,0,0.72)',
+                      border: '2px solid rgba(255,255,255,0.85)',
+                      boxShadow: '0 3px 8px rgba(0,0,0,0.45)',
+                      color: '#fff',
+                      fontSize: 13,
+                      lineHeight: 1.35,
+                      padding: '8px 10px',
+                      overflow: 'hidden',
+                      cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameTextBox ? 'grabbing' : 'grab',
+                      pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                    }}
+                    onPointerDown={handleFrameTextBoxPointerDown}
+                    onPointerMove={handleFrameTextBoxPointerMove}
+                    onPointerUp={handleFrameTextBoxPointerUp}
+                    onPointerLeave={handleFrameTextBoxPointerUp}
+                  >
+                    {frameDetailOverlayTextTrimmed}
+                  </div>
+                )}
+                {!frameDetailMarkerReadOnly && hasFrameDetailOverlayText && (
+                  <>
+                    <div
+                      role="presentation"
+                      aria-label="Resize frame text width"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${frameDetailTextBoxPosition.x}% + ${frameDetailTextBoxWidth / 2}%)`,
+                        top: `${frameDetailTextBoxPosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #1d4ed8',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ew-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameTextResizeWidthPointerDown}
+                      onPointerMove={handleFrameTextResizeWidthPointerMove}
+                      onPointerUp={handleFrameTextResizePointerUp}
+                      onPointerLeave={handleFrameTextResizePointerUp}
+                    />
+                    <div
+                      role="presentation"
+                      aria-label="Resize frame text height"
+                      style={{
+                        position: 'absolute',
+                        left: `${frameDetailTextBoxPosition.x}%`,
+                        top: `calc(${frameDetailTextBoxPosition.y}% + ${frameDetailTextBoxHeight / 2}%)`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #1d4ed8',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ns-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameTextResizeHeightPointerDown}
+                      onPointerMove={handleFrameTextResizeHeightPointerMove}
+                      onPointerUp={handleFrameTextResizePointerUp}
+                      onPointerLeave={handleFrameTextResizePointerUp}
                     />
                   </>
                 )}
@@ -1816,7 +2009,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   pointerEvents:
                     frameDetailMarkerReadOnly
                       ? 'none'
-                      : isDraggingFrameCircle || isResizingFrameCircle
+                      : isDraggingFrameCircle || isResizingFrameCircle || isDraggingFrameTextBox || isResizingFrameTextBoxWidth || isResizingFrameTextBoxHeight
                         ? 'auto'
                         : 'none',
                 }}
@@ -1887,6 +2080,85 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       onPointerMove={handleFrameResizeHeightPointerMove}
                       onPointerUp={handleFrameResizePointerUp}
                       onPointerLeave={handleFrameResizePointerUp}
+                    />
+                  </>
+                )}
+                {hasFrameDetailOverlayText && (
+                  <div
+                    role="presentation"
+                    style={{
+                      position: 'absolute',
+                      left: `${frameDetailTextBoxPosition.x}%`,
+                      top: `${frameDetailTextBoxPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: `${frameDetailTextBoxWidth}%`,
+                      height: `${frameDetailTextBoxHeight}%`,
+                      minHeight: 28,
+                      borderRadius: 8,
+                      backgroundColor: 'rgba(0,0,0,0.72)',
+                      border: '2px solid rgba(255,255,255,0.85)',
+                      boxShadow: '0 3px 8px rgba(0,0,0,0.45)',
+                      color: '#fff',
+                      fontSize: 13,
+                      lineHeight: 1.35,
+                      padding: '8px 10px',
+                      overflow: 'hidden',
+                      cursor: frameDetailMarkerReadOnly ? 'default' : isDraggingFrameTextBox ? 'grabbing' : 'grab',
+                      pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                    }}
+                    onPointerDown={handleFrameTextBoxPointerDown}
+                    onPointerMove={handleFrameTextBoxPointerMove}
+                    onPointerUp={handleFrameTextBoxPointerUp}
+                    onPointerLeave={handleFrameTextBoxPointerUp}
+                  >
+                    {frameDetailOverlayTextTrimmed}
+                  </div>
+                )}
+                {!frameDetailMarkerReadOnly && hasFrameDetailOverlayText && (
+                  <>
+                    <div
+                      role="presentation"
+                      aria-label="Resize frame text width"
+                      style={{
+                        position: 'absolute',
+                        left: `calc(${frameDetailTextBoxPosition.x}% + ${frameDetailTextBoxWidth / 2}%)`,
+                        top: `${frameDetailTextBoxPosition.y}%`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #1d4ed8',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ew-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameTextResizeWidthPointerDown}
+                      onPointerMove={handleFrameTextResizeWidthPointerMove}
+                      onPointerUp={handleFrameTextResizePointerUp}
+                      onPointerLeave={handleFrameTextResizePointerUp}
+                    />
+                    <div
+                      role="presentation"
+                      aria-label="Resize frame text height"
+                      style={{
+                        position: 'absolute',
+                        left: `${frameDetailTextBoxPosition.x}%`,
+                        top: `calc(${frameDetailTextBoxPosition.y}% + ${frameDetailTextBoxHeight / 2}%)`,
+                        transform: 'translate(-50%, -50%)',
+                        width: 14,
+                        height: 14,
+                        borderRadius: 2,
+                        backgroundColor: '#fff',
+                        border: '2px solid #1d4ed8',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        cursor: 'ns-resize',
+                        pointerEvents: 'auto',
+                      }}
+                      onPointerDown={handleFrameTextResizeHeightPointerDown}
+                      onPointerMove={handleFrameTextResizeHeightPointerMove}
+                      onPointerUp={handleFrameTextResizePointerUp}
+                      onPointerLeave={handleFrameTextResizePointerUp}
                     />
                   </>
                 )}

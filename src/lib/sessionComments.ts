@@ -28,6 +28,10 @@ export type SessionCommentReplyRow = {
   marker_y_percent: number | null;
   marker_radius_x: number | null;
   marker_radius_y: number | null;
+  marker_text_box_x_percent: number | null;
+  marker_text_box_y_percent: number | null;
+  marker_text_box_width_percent: number | null;
+  marker_text_box_height_percent: number | null;
 };
 
 export type SessionCommentWithAuthor = SessionCommentRow & {
@@ -99,6 +103,10 @@ export function mapDbReplyToSessionCommentReply(
     markerYPercent: row.marker_y_percent ?? undefined,
     markerRadiusX: row.marker_radius_x ?? undefined,
     markerRadiusY: row.marker_radius_y ?? undefined,
+    markerTextBoxXPercent: row.marker_text_box_x_percent ?? undefined,
+    markerTextBoxYPercent: row.marker_text_box_y_percent ?? undefined,
+    markerTextBoxWidthPercent: row.marker_text_box_width_percent ?? undefined,
+    markerTextBoxHeightPercent: row.marker_text_box_height_percent ?? undefined,
   };
 }
 
@@ -219,7 +227,11 @@ export async function fetchSessionCommentReplies(
       marker_x_percent,
       marker_y_percent,
       marker_radius_x,
-      marker_radius_y
+      marker_radius_y,
+      marker_text_box_x_percent,
+      marker_text_box_y_percent,
+      marker_text_box_width_percent,
+      marker_text_box_height_percent
     `)
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true });
@@ -334,6 +346,10 @@ export type ReplyFrameMarker = {
   markerYPercent: number;
   markerRadiusX: number;
   markerRadiusY: number;
+  markerTextBoxXPercent?: number;
+  markerTextBoxYPercent?: number;
+  markerTextBoxWidthPercent?: number;
+  markerTextBoxHeightPercent?: number;
 };
 
 /** Insert a reply (subcomment) for a comment. Returns the new reply row or null on error. */
@@ -359,8 +375,12 @@ export async function insertSessionCommentReply(
     insertPayload.marker_y_percent = marker.markerYPercent;
     insertPayload.marker_radius_x = marker.markerRadiusX;
     insertPayload.marker_radius_y = marker.markerRadiusY;
+    insertPayload.marker_text_box_x_percent = marker.markerTextBoxXPercent ?? null;
+    insertPayload.marker_text_box_y_percent = marker.markerTextBoxYPercent ?? null;
+    insertPayload.marker_text_box_width_percent = marker.markerTextBoxWidthPercent ?? null;
+    insertPayload.marker_text_box_height_percent = marker.markerTextBoxHeightPercent ?? null;
   }
-  const selectCols = 'id, session_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y';
+  const selectCols = 'id, session_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y, marker_text_box_x_percent, marker_text_box_y_percent, marker_text_box_width_percent, marker_text_box_height_percent';
   const { data: inserted, error } = await supabase
     .from('session_comment_replies')
     .insert(insertPayload)
@@ -415,6 +435,10 @@ export async function updateSessionCommentReply(
     updatePayload.marker_y_percent = marker.markerYPercent;
     updatePayload.marker_radius_x = marker.markerRadiusX;
     updatePayload.marker_radius_y = marker.markerRadiusY;
+    updatePayload.marker_text_box_x_percent = marker.markerTextBoxXPercent ?? null;
+    updatePayload.marker_text_box_y_percent = marker.markerTextBoxYPercent ?? null;
+    updatePayload.marker_text_box_width_percent = marker.markerTextBoxWidthPercent ?? null;
+    updatePayload.marker_text_box_height_percent = marker.markerTextBoxHeightPercent ?? null;
   }
   const { error } = await supabase
     .from('session_comment_replies')

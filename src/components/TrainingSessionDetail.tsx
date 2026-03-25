@@ -310,10 +310,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     isFilterSheetOpen;
 
   const activeReplyForMarkerId = editingReplyId ?? activeFrameReplyId;
-  const { frameDetailMarkerInitial, frameDetailMarkerReadOnly } = useMemo(() => {
+  const { frameDetailMarkerInitial, frameDetailTextBoxInitial, frameDetailMarkerReadOnly } = useMemo(() => {
     const readOnly = activeFrameReplyId != null;
     if (activeReplyForMarkerId == null) {
-      return { frameDetailMarkerInitial: null as { x: number; y: number; radiusX: number; radiusY: number } | null, frameDetailMarkerReadOnly: readOnly };
+      return {
+        frameDetailMarkerInitial: null as { x: number; y: number; radiusX: number; radiusY: number } | null,
+        frameDetailTextBoxInitial: null as { x: number; y: number; width: number; height: number } | null,
+        frameDetailMarkerReadOnly: readOnly,
+      };
     }
     const reply = getReplyById(repliesByCommentId, activeReplyForMarkerId);
     if (
@@ -330,11 +334,32 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           radiusX: reply.markerRadiusX,
           radiusY: reply.markerRadiusY,
         },
+        frameDetailTextBoxInitial:
+          typeof reply.markerTextBoxXPercent === 'number' &&
+          typeof reply.markerTextBoxYPercent === 'number' &&
+          typeof reply.markerTextBoxWidthPercent === 'number' &&
+          typeof reply.markerTextBoxHeightPercent === 'number'
+            ? {
+                x: reply.markerTextBoxXPercent,
+                y: reply.markerTextBoxYPercent,
+                width: reply.markerTextBoxWidthPercent,
+                height: reply.markerTextBoxHeightPercent,
+              }
+            : null,
         frameDetailMarkerReadOnly: readOnly,
       };
     }
-    return { frameDetailMarkerInitial: null, frameDetailMarkerReadOnly: readOnly };
+    return { frameDetailMarkerInitial: null, frameDetailTextBoxInitial: null, frameDetailMarkerReadOnly: readOnly };
   }, [activeReplyForMarkerId, activeFrameReplyId, repliesByCommentId]);
+
+  const frameDetailOverlayText = useMemo(() => {
+    if (editingReplyId != null) return editReplyDraft;
+    if (replyingToCommentId != null) return replyDraft;
+    if (activeFrameReplyId != null) {
+      return getReplyById(repliesByCommentId, activeFrameReplyId)?.text ?? '';
+    }
+    return '';
+  }, [editingReplyId, editReplyDraft, replyingToCommentId, replyDraft, activeFrameReplyId, repliesByCommentId]);
 
   // Keep ref in sync with state every render so the seek effect can read the current time
   // without needing it as a reactive dependency (which would cause re-seeks on every time update).
@@ -1242,6 +1267,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               markerYPercent: markerState.y,
               markerRadiusX: markerState.radiusX,
               markerRadiusY: markerState.radiusY,
+              markerTextBoxXPercent: markerState.textBoxX,
+              markerTextBoxYPercent: markerState.textBoxY,
+              markerTextBoxWidthPercent: markerState.textBoxWidth,
+              markerTextBoxHeightPercent: markerState.textBoxHeight,
             }
           : undefined;
 
@@ -1321,6 +1350,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 markerYPercent: markerState.y,
                 markerRadiusX: markerState.radiusX,
                 markerRadiusY: markerState.radiusY,
+                markerTextBoxXPercent: markerState.textBoxX,
+                markerTextBoxYPercent: markerState.textBoxY,
+                markerTextBoxWidthPercent: markerState.textBoxWidth,
+                markerTextBoxHeightPercent: markerState.textBoxHeight,
               }
             : undefined;
         const ok = isShotVideo
@@ -1342,6 +1375,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             markerYPercent: marker.markerYPercent,
                             markerRadiusX: marker.markerRadiusX,
                             markerRadiusY: marker.markerRadiusY,
+                            markerTextBoxXPercent: marker.markerTextBoxXPercent,
+                            markerTextBoxYPercent: marker.markerTextBoxYPercent,
+                            markerTextBoxWidthPercent: marker.markerTextBoxWidthPercent,
+                            markerTextBoxHeightPercent: marker.markerTextBoxHeightPercent,
                           }
                         : {}),
                     }
@@ -2179,7 +2216,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     (activeFrameReplyId != null && frameDetailMarkerInitial != null)
                   }
                   frameDetailMarkerInitial={frameDetailMarkerInitial}
+                  frameDetailTextBoxInitial={frameDetailTextBoxInitial}
                   frameDetailMarkerReadOnly={frameDetailMarkerReadOnly}
+                  frameDetailOverlayText={frameDetailOverlayText}
                   onPlay={() => setActiveFrameReplyId(null)}
                   onControlPressed={() => {
                     // When user uses time controls (±1s, ±5s, frames, play/pause), exit any active frame-detail view

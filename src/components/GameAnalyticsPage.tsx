@@ -110,6 +110,10 @@ export interface SessionCommentReply extends Omit<SessionComment, 'id'> {
   markerYPercent?: number;
   markerRadiusX?: number;
   markerRadiusY?: number;
+  markerTextBoxXPercent?: number;
+  markerTextBoxYPercent?: number;
+  markerTextBoxWidthPercent?: number;
+  markerTextBoxHeightPercent?: number;
 }
 
 const CARD_ANIMATION_DURATION_MS = 480;

@@ -144,6 +144,10 @@ export type ShotVideoCommentReplyRow = {
   marker_y_percent: number | null;
   marker_radius_x: number | null;
   marker_radius_y: number | null;
+  marker_text_box_x_percent: number | null;
+  marker_text_box_y_percent: number | null;
+  marker_text_box_width_percent: number | null;
+  marker_text_box_height_percent: number | null;
 };
 
 export type ShotVideoCommentReplyWithAuthor = ShotVideoCommentReplyRow & {
@@ -160,7 +164,7 @@ export async function fetchShotVideoCommentReplies(
   const { data: replies, error } = await supabase
     .from('shot_video_comment_replies')
     .select(
-      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y'
+      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y, marker_text_box_x_percent, marker_text_box_y_percent, marker_text_box_width_percent, marker_text_box_height_percent'
     )
     .eq('shot_video_id', shotVideoId)
     .order('created_at', { ascending: true });
@@ -224,12 +228,16 @@ export async function insertShotVideoCommentReply(
     insertPayload.marker_y_percent = marker.markerYPercent;
     insertPayload.marker_radius_x = marker.markerRadiusX;
     insertPayload.marker_radius_y = marker.markerRadiusY;
+    insertPayload.marker_text_box_x_percent = marker.markerTextBoxXPercent ?? null;
+    insertPayload.marker_text_box_y_percent = marker.markerTextBoxYPercent ?? null;
+    insertPayload.marker_text_box_width_percent = marker.markerTextBoxWidthPercent ?? null;
+    insertPayload.marker_text_box_height_percent = marker.markerTextBoxHeightPercent ?? null;
   }
   const { data: inserted, error } = await supabase
     .from('shot_video_comment_replies')
     .insert(insertPayload)
     .select(
-      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y'
+      'id, shot_video_id, parent_comment_id, author_id, text, timestamp_seconds, example_gif, created_at, marker_x_percent, marker_y_percent, marker_radius_x, marker_radius_y, marker_text_box_x_percent, marker_text_box_y_percent, marker_text_box_width_percent, marker_text_box_height_percent'
     )
     .single();
   if (error || !inserted) return null;
@@ -301,6 +309,10 @@ export async function updateShotVideoCommentReply(
     updatePayload.marker_y_percent = marker.markerYPercent;
     updatePayload.marker_radius_x = marker.markerRadiusX;
     updatePayload.marker_radius_y = marker.markerRadiusY;
+    updatePayload.marker_text_box_x_percent = marker.markerTextBoxXPercent ?? null;
+    updatePayload.marker_text_box_y_percent = marker.markerTextBoxYPercent ?? null;
+    updatePayload.marker_text_box_width_percent = marker.markerTextBoxWidthPercent ?? null;
+    updatePayload.marker_text_box_height_percent = marker.markerTextBoxHeightPercent ?? null;
   }
   const { error } = await supabase
     .from('shot_video_comment_replies')
