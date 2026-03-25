@@ -100,6 +100,44 @@ export async function fetchFirstSessionDateForStudentIds(
   return firstDates;
 }
 
+/** Fetch the date of the most recent session for each student. Returns a map of student_id -> last_session_date. */
+export async function fetchLastSessionDateForStudentIds(
+  supabase: SupabaseClient | null,
+  studentIds: string[]
+): Promise<Record<string, string>> {
+  if (!supabase || studentIds.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from('session_students')
+    .select('student_id, session_id, sessions!inner(date)')
+    .in('student_id', studentIds);
+
+  if (error || !data) return {};
+
+  const rows = data as unknown as Array<{
+    student_id: string;
+    session_id: string;
+    sessions: { date: string } | { date: string }[];
+  }>;
+
+  const lastDates: Record<string, string> = {};
+
+  for (const row of rows) {
+    const studentId = row.student_id;
+    const sessionDate = Array.isArray(row.sessions)
+      ? row.sessions[0]?.date
+      : row.sessions.date;
+
+    if (!sessionDate) continue;
+
+    if (!lastDates[studentId] || sessionDate > lastDates[studentId]) {
+      lastDates[studentId] = sessionDate;
+    }
+  }
+
+  return lastDates;
+}
+
 /** Fetch sessions for a student from DB (session_students -> sessions). Returns [] on error or no Supabase. */
 export async function fetchSessionsForStudent(
   supabase: SupabaseClient | null,

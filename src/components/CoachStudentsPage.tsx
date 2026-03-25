@@ -743,7 +743,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                     <tr>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>STUDENT</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LEVEL</th>
-                      <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>JOINED DATE</th>
+                      <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LAST SESSION DATE</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SIGN UP DATE</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SESSIONS</th>
                       <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ACTIONS</th>

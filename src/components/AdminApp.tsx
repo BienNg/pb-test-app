@@ -9,7 +9,7 @@ import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, type TrainingSession } from './GameAnalyticsPage';
 import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
-import { fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } from '@/lib/studentSessions';
+import { fetchSessionCountsForStudentIds, fetchLastSessionDateForStudentIds } from '@/lib/studentSessions';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { insertShotVideo } from '@/lib/shotVideos';
 
@@ -166,16 +166,16 @@ function AdminStudentsPage({
       const filtered = rows.filter((r) => r.role === 'student' || !r.role);
       const studentIds = filtered.map((r) => r.id);
       const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
-      const firstSessionDates = await fetchFirstSessionDateForStudentIds(supabase, studentIds);
+      const lastSessionDates = await fetchLastSessionDateForStudentIds(supabase, studentIds);
       const signupDates = await fetchSignupDatesForStudentIds(studentIds);
       
       setStudents(
         filtered.map((r) => {
           const signupDate = signupDates[r.id];
-          const firstSessionDate = firstSessionDates[r.id];
+          const lastSessionDate = lastSessionDates[r.id];
           let joinedDate = '—';
-          if (firstSessionDate) {
-            const d = new Date(firstSessionDate + 'T12:00:00');
+          if (lastSessionDate) {
+            const d = new Date(lastSessionDate + 'T12:00:00');
             joinedDate = d.toLocaleDateString('en-US', {
               month: 'short',
               day: 'numeric',
