@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
 import {
@@ -298,7 +298,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const skipIndicatorFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [visibleLoopCommentText, setVisibleLoopCommentText] = useState<string | null>(null);
   const [visibleLoopCommentLayout, setVisibleLoopCommentLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [loopOverlaySizePx, setLoopOverlaySizePx] = useState({ width: 0, height: 0 });
   const [isLoopCommentBubbleVisible, setIsLoopCommentBubbleVisible] = useState(false);
+  const loopCommentBubbleRef = useRef<HTMLDivElement | null>(null);
   const loopCommentHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emittedLoopLayoutRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const lastNotifiedActiveMarkerKeyRef = useRef<string>('__init__');
@@ -1244,6 +1246,132 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     loopCommentTextBoxHeight,
   ]);
 
+  useEffect(() => {
+    const el = frameDetailOverlayRef.current;
+    if (!el) return;
+    const updateSize = () => {
+      const rect = el.getBoundingClientRect();
+      setLoopOverlaySizePx({ width: rect.width, height: rect.height });
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isSessionDetail, isFullscreen, videoUrl]);
+
+  const loopCommentBubbleSizing = useMemo(() => {
+    if (!visibleLoopCommentLayout || !visibleLoopCommentText?.trim()) {
+      return {
+        fontSize: 13,
+        lineHeight: 1.38,
+        padding: '10px 14px',
+      };
+    }
+    const boxWidthPx = (loopOverlaySizePx.width * visibleLoopCommentLayout.width) / 100;
+    const boxHeightPx = (loopOverlaySizePx.height * visibleLoopCommentLayout.height) / 100;
+    if (boxWidthPx <= 0 || boxHeightPx <= 0) {
+      return { fontSize: 13, lineHeight: 1.38, padding: '10px 14px' };
+    }
+
+    const minFont = 8;
+    const maxFont = 13;
+    let best = minFont;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { fontSize: 13, lineHeight: 1.38, padding: '10px 14px' };
+
+    const fits = (fontSize: number, hPad: number, vPad: number, lineHeight: number) => {
+      const contentWidth = Math.max(4, boxWidthPx - hPad * 2);
+      const contentHeight = Math.max(4, boxHeightPx - vPad * 2);
+      ctx.font = `${500} ${fontSize}px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      const approxCharWidth = Math.max(1, fontSize * 0.55);
+      const maxCharsPerLine = Math.max(1, Math.floor(contentWidth / approxCharWidth));
+      let lineCount = 0;
+      for (const rawLine of visibleLoopCommentText.split('\n')) {
+        const line = rawLine.trim();
+        if (!line.length) {
+          lineCount += 1;
+          continue;
+        }
+        // Conservative estimate so we undershoot size rather than overflow.
+        const charsBasedLines = Math.ceil(line.length / maxCharsPerLine);
+        let longestToken = 0;
+        for (const token of line.split(/\s+/)) {
+          longestToken = Math.max(longestToken, token.length);
+        }
+        const tokenBasedLines = Math.ceil(longestToken / maxCharsPerLine);
+        lineCount += Math.max(charsBasedLines, tokenBasedLines);
+      }
+      return lineCount * fontSize * lineHeight <= contentHeight;
+    };
+
+    for (let fs = minFont; fs <= maxFont; fs += 0.5) {
+      const scale = (fs - minFont) / (maxFont - minFont || 1);
+      const hPad = 6 + scale * 8;
+      const vPad = 4 + scale * 6;
+      const lineHeight = 1.2 + scale * 0.18;
+      if (fits(fs, hPad, vPad, lineHeight)) best = fs;
+      else break;
+    }
+
+    const scale = (best - minFont) / (maxFont - minFont || 1);
+    const hPad = 6 + scale * 8;
+    const vPad = 4 + scale * 6;
+    return {
+      fontSize: Number(best.toFixed(1)),
+      lineHeight: Number((1.2 + scale * 0.18).toFixed(2)),
+      padding: `${Math.round(vPad)}px ${Math.round(hPad)}px`,
+    };
+  }, [visibleLoopCommentLayout, visibleLoopCommentText, loopOverlaySizePx.width, loopOverlaySizePx.height]);
+
+  useLayoutEffect(() => {
+    const el = loopCommentBubbleRef.current;
+    if (!el || !visibleLoopCommentLayout || !visibleLoopCommentText?.trim()) return;
+
+    const minFont = 6;
+    const maxFont = 13;
+    const parsePadding = (value: string) => {
+      const [v, h] = value.split(' ');
+      return {
+        vertical: Number.parseFloat(v || '8') || 8,
+        horizontal: Number.parseFloat(h || v || '10') || 10,
+      };
+    };
+    const applySize = (fontSize: number) => {
+      const scale = (fontSize - minFont) / (maxFont - minFont || 1);
+      const vertical = 3 + scale * 7;
+      const horizontal = 4 + scale * 10;
+      const lineHeight = 1.12 + scale * 0.22;
+      el.style.fontSize = `${fontSize}px`;
+      el.style.lineHeight = String(Number(lineHeight.toFixed(2)));
+      el.style.padding = `${Math.round(vertical)}px ${Math.round(horizontal)}px`;
+    };
+
+    // Start from computed responsive baseline, then shrink until no overflow.
+    const baseFont = Math.max(minFont, Math.min(maxFont, loopCommentBubbleSizing.fontSize));
+    const parsedBasePad = parsePadding(loopCommentBubbleSizing.padding);
+    el.style.fontSize = `${baseFont}px`;
+    el.style.lineHeight = String(loopCommentBubbleSizing.lineHeight);
+    el.style.padding = `${Math.round(parsedBasePad.vertical)}px ${Math.round(parsedBasePad.horizontal)}px`;
+
+    let currentFont = baseFont;
+    let safety = 0;
+    while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && currentFont > minFont && safety < 20) {
+      currentFont = Number((currentFont - 0.5).toFixed(2));
+      applySize(currentFont);
+      safety += 1;
+    }
+  }, [
+    visibleLoopCommentLayout,
+    visibleLoopCommentText,
+    isLoopCommentBubbleVisible,
+    loopCommentBubbleSizing.fontSize,
+    loopCommentBubbleSizing.lineHeight,
+    loopCommentBubbleSizing.padding,
+    loopOverlaySizePx.width,
+    loopOverlaySizePx.height,
+  ]);
+
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
       return (
@@ -1474,6 +1602,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             )}
             {visibleLoopCommentText && (
               <div
+                ref={loopCommentBubbleRef}
                 style={{
                   position: 'absolute',
                   ...(visibleLoopCommentLayout
@@ -1491,18 +1620,20 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         maxWidth: 'min(46ch, 62%)',
                       }),
                   zIndex: 3,
-                  padding: '10px 14px',
+                  padding: loopCommentBubbleSizing.padding,
                   borderRadius: 18,
                   background: '#ffffff',
                   color: '#111111',
-                  fontSize: 13,
+                  fontSize: loopCommentBubbleSizing.fontSize,
                   fontWeight: 500,
-                  lineHeight: 1.38,
+                  lineHeight: loopCommentBubbleSizing.lineHeight,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
                   pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
                   whiteSpace: 'normal',
+                  wordBreak: 'break-word',
                   overflowWrap: 'anywhere',
+                  overflow: visibleLoopCommentLayout ? 'hidden' : undefined,
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
                   transform: visibleLoopCommentLayout
                     ? 'translate(-50%, -50%)'
@@ -2140,6 +2271,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             )}
             {visibleLoopCommentText && (
               <div
+                ref={loopCommentBubbleRef}
                 style={{
                   position: 'absolute',
                   ...(visibleLoopCommentLayout
@@ -2157,18 +2289,20 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         maxWidth: 'min(46ch, 62%)',
                       }),
                   zIndex: 3,
-                  padding: '10px 14px',
+                  padding: loopCommentBubbleSizing.padding,
                   borderRadius: 18,
                   background: '#ffffff',
                   color: '#111111',
-                  fontSize: 13,
+                  fontSize: loopCommentBubbleSizing.fontSize,
                   fontWeight: 500,
-                  lineHeight: 1.38,
+                  lineHeight: loopCommentBubbleSizing.lineHeight,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
                   pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
                   whiteSpace: 'normal',
+                  wordBreak: 'break-word',
                   overflowWrap: 'anywhere',
+                  overflow: visibleLoopCommentLayout ? 'hidden' : undefined,
                   opacity: isLoopCommentBubbleVisible ? 1 : 0,
                   transform: visibleLoopCommentLayout
                     ? 'translate(-50%, -50%)'
