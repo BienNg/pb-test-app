@@ -275,6 +275,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [skipIndicatorFadeOut, setSkipIndicatorFadeOut] = useState(false);
   const skipIndicatorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipIndicatorFadeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [visibleLoopCommentText, setVisibleLoopCommentText] = useState<string | null>(null);
+  const [isLoopCommentBubbleVisible, setIsLoopCommentBubbleVisible] = useState(false);
+  const loopCommentHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Responsive: on small screens, skip buttons fill full width (no maxWidth cap)
   const [skipButtonsFillWidth, setSkipButtonsFillWidth] = useState(false);
@@ -790,6 +793,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   useEffect(() => () => {
     if (skipIndicatorTimeoutRef.current) clearTimeout(skipIndicatorTimeoutRef.current);
     if (skipIndicatorFadeTimeoutRef.current) clearTimeout(skipIndicatorFadeTimeoutRef.current);
+    if (loopCommentHideTimeoutRef.current) clearTimeout(loopCommentHideTimeoutRef.current);
   }, []);
 
   const sortedMarkerTimes = useMemo(
@@ -929,13 +933,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       .filter((item) => {
         if (!Number.isFinite(item.start) || !Number.isFinite(item.end)) return false;
         if (item.end <= item.start) return false;
-        return currentVideoTime >= item.start && currentVideoTime <= item.end;
+        // Start showing 1s early and keep visible until 1s after end.
+        return currentVideoTime >= item.start - 1 && currentVideoTime <= item.end + 1;
       })
       .sort((a, b) => b.start - a.start)[0];
     if (!active) return null;
     const text = active.text.trim();
     return text.length ? text : null;
   }, [loopCommentOverlays, currentVideoTime]);
+
+  useEffect(() => {
+    if (loopCommentHideTimeoutRef.current) {
+      clearTimeout(loopCommentHideTimeoutRef.current);
+      loopCommentHideTimeoutRef.current = null;
+    }
+    if (activeLoopCommentOverlayText) {
+      setVisibleLoopCommentText(activeLoopCommentOverlayText);
+      requestAnimationFrame(() => setIsLoopCommentBubbleVisible(true));
+      return;
+    }
+    setIsLoopCommentBubbleVisible(false);
+    loopCommentHideTimeoutRef.current = setTimeout(() => {
+      setVisibleLoopCommentText(null);
+      loopCommentHideTimeoutRef.current = null;
+    }, 220);
+  }, [activeLoopCommentOverlayText]);
 
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
@@ -1165,7 +1187,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 {skipIndicator.label}
               </div>
             )}
-            {activeLoopCommentOverlayText && (
+            {visibleLoopCommentText && (
               <div
                 style={{
                   position: 'absolute',
@@ -1185,9 +1207,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   pointerEvents: 'none',
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
+                  opacity: isLoopCommentBubbleVisible ? 1 : 0,
+                  transform: isLoopCommentBubbleVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)',
+                  filter: isLoopCommentBubbleVisible ? 'blur(0px)' : 'blur(0.6px)',
+                  transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease',
+                  transformOrigin: 'top left',
                 }}
               >
-                {activeLoopCommentOverlayText}
+                {visibleLoopCommentText}
               </div>
             )}
             {isSessionDetail && videoDuration > 0 && (
@@ -1755,7 +1782,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 {skipIndicator.label}
               </div>
             )}
-            {activeLoopCommentOverlayText && (
+            {visibleLoopCommentText && (
               <div
                 style={{
                   position: 'absolute',
@@ -1775,9 +1802,14 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   pointerEvents: 'none',
                   whiteSpace: 'normal',
                   overflowWrap: 'anywhere',
+                  opacity: isLoopCommentBubbleVisible ? 1 : 0,
+                  transform: isLoopCommentBubbleVisible ? 'translateY(0) scale(1)' : 'translateY(8px) scale(0.96)',
+                  filter: isLoopCommentBubbleVisible ? 'blur(0px)' : 'blur(0.6px)',
+                  transition: 'opacity 180ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease',
+                  transformOrigin: 'top left',
                 }}
               >
-                {activeLoopCommentOverlayText}
+                {visibleLoopCommentText}
               </div>
             )}
             <video
