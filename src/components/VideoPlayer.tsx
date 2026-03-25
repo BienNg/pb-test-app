@@ -948,11 +948,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       loopCommentHideTimeoutRef.current = null;
     }
     if (activeLoopCommentOverlayText) {
-      setVisibleLoopCommentText(activeLoopCommentOverlayText);
+      requestAnimationFrame(() => {
+        setVisibleLoopCommentText(activeLoopCommentOverlayText);
+      });
       requestAnimationFrame(() => setIsLoopCommentBubbleVisible(true));
       return;
     }
-    setIsLoopCommentBubbleVisible(false);
+    requestAnimationFrame(() => setIsLoopCommentBubbleVisible(false));
     loopCommentHideTimeoutRef.current = setTimeout(() => {
       setVisibleLoopCommentText(null);
       loopCommentHideTimeoutRef.current = null;
