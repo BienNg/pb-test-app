@@ -1,70 +1,22 @@
 'use client';
 
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { COLORS, TYPOGRAPHY, SHADOWS, SPACING } from '../styles/theme';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, RoadmapSkillsChecklist, type TrainingSession } from './GameAnalyticsPage';
 import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
-import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { fetchShotVideoCountsByShot } from '@/lib/shotVideos';
 import { useAuth } from './providers/AuthProvider';
 
-const SESSION_DETAIL_TRANSITION_MS = 280;
-
-/** Wraps session detail overlay and runs enter animation (slide-up) when visible. Opaque immediately so the view switches. */
-function SessionDetailOverlay({
-  visible,
-  height,
-  children,
-}: {
-  visible: boolean;
-  height: string;
-  children: ReactNode;
-}) {
-  const [entered, setEntered] = useState(false);
-  useEffect(() => {
-    if (!visible) {
-      const id = requestAnimationFrame(() => setEntered(false));
-      return () => cancelAnimationFrame(id);
-    }
-    const id = requestAnimationFrame(() => {
-      setEntered(true);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [visible]);
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        height,
-        overflow: 'hidden',
-        display: visible ? 'flex' : 'none',
-        flexDirection: 'column',
-        backgroundColor: '#f6f8f8',
-        zIndex: 50,
-        opacity: visible ? 1 : 0,
-        transform: visible && entered ? 'translateY(0)' : 'translateY(16px)',
-        transition: `transform ${SESSION_DETAIL_TRANSITION_MS}ms ease-out`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 type TabId = 'roadmap' | 'sessions' | 'library';
 
 export function StudentShell() {
   const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabId>('sessions');
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
-  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [viewingLessonDetail, setViewingLessonDetail] = useState(false);
   const [_shotDetailOpen, setShotDetailOpen] = useState(false);
   const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
@@ -115,8 +67,7 @@ export function StudentShell() {
   const showRoadmap = activeTab === 'roadmap';
   const showSessions = activeTab === 'sessions';
   const showLibrary = activeTab === 'library';
-  const showSessionOverlay = activeTrainingSessionId != null;
-  const hideBottomNav = showSessionOverlay || viewingLessonDetail;
+  const hideBottomNav = viewingLessonDetail;
 
   const allTabs: { id: TabId; label: string; icon: ReactNode }[] = [
     {
@@ -163,10 +114,10 @@ export function StudentShell() {
         backgroundColor: '#f6f8f8',
       }}
     >
-      {/* Roadmap tab content — hide when session overlay is open so view switches to detail */}
+      {/* Roadmap tab content */}
       <div
         style={{
-          display: showRoadmap && !showSessionOverlay ? 'block' : 'none',
+          display: showRoadmap ? 'block' : 'none',
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
           padding: 24,
@@ -180,8 +131,7 @@ export function StudentShell() {
           onShotDetailOpenChange={setShotDetailOpen}
           onWatchTutorial={() => setShowTutorialsComingSoon(true)}
           onOpenShotVideo={(session) => {
-            setOverrideSession(session);
-            setActiveTrainingSessionId(session.id);
+            router.push(`/session/${session.id}`);
           }}
           openShotTitle={openShotTitle}
           onOpenShotTitleConsumed={() => setOpenShotTitle(null)}
@@ -191,7 +141,7 @@ export function StudentShell() {
       {/* Game Analytics tab content */}
       <div
         style={{
-          display: showSessions && !showSessionOverlay ? 'block' : 'none',
+          display: showSessions ? 'block' : 'none',
           height: 'calc(100vh - 80px)',
           overflow: 'auto',
         }}
@@ -208,22 +158,20 @@ export function StudentShell() {
             setActiveTab('roadmap');
           }}
           onOpenSession={(sessionId) => {
-            setOverrideSession(null);
-            setActiveTrainingSessionId(sessionId);
+            router.push(`/session/${sessionId}`);
           }}
           onOpenShotVideo={(session) => {
-            setOverrideSession(session);
-            setActiveTrainingSessionId(session.id);
+            router.push(`/session/${session.id}`);
           }}
           sessions={sessionsForStudent}
           onOpenLibrary={() => setShowTutorialsComingSoon(true)}
         />
         )}
       </div>
-      {/* Library tab — hide when session overlay is open so view switches to detail */}
+      {/* Library tab */}
       <div
         style={{
-          display: showLibrary && !showSessionOverlay ? 'block' : 'none',
+          display: showLibrary ? 'block' : 'none',
           height: hideBottomNav && viewingLessonDetail ? '100vh' : 'calc(100vh - 80px)',
           overflow: 'auto',
         }}
@@ -231,39 +179,6 @@ export function StudentShell() {
       >
         <LessonsPage onLessonViewChange={setViewingLessonDetail} />
       </div>
-      {/* Keep session detail mounted when a session is open so video position is preserved; hide when on another tab and pause video */}
-      {activeTrainingSessionId != null && (
-        <SessionDetailOverlay
-          visible={showSessionOverlay}
-          height={showSessionOverlay ? '100vh' : 'calc(100vh - 80px)'}
-        >
-          <TrainingSessionDetail
-            sessionId={activeTrainingSessionId}
-            onBack={() => {
-              const wasFromRoadmap = overrideSession != null;
-              setActiveTrainingSessionId(null);
-              setOverrideSession(null);
-              if (wasFromRoadmap) {
-                setActiveTab('roadmap');
-              }
-            }}
-            sessions={overrideSession ? [overrideSession] : sessionsForStudent}
-            onSessionUpdated={reloadSessions}
-            onDeleteSession={overrideSession ? undefined : async () => { await reloadSessions(); }}
-            isTabVisible={showSessionOverlay}
-            breadcrumbFromRoadmap={
-              overrideSession ? { shotTitle: overrideSession.title } : undefined
-            }
-            onBreadcrumbShotClick={(shotTitle) => {
-              setOpenShotTitle(shotTitle);
-              setActiveTrainingSessionId(null);
-              setOverrideSession(null);
-              setActiveTab('roadmap');
-            }}
-          />
-        </SessionDetailOverlay>
-      )}
-
       {!hideBottomNav && (
         <nav
           style={{

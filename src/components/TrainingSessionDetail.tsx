@@ -9,6 +9,7 @@ import {
   IconPlay,
   IconUser,
   IconX,
+  IconLink,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './GameAnalyticsPage';
 import { ROADMAP_SKILLS, TECHNIQUE_ICONS, ROOF_TECHNIQUE_LABEL } from './GameAnalyticsPage';
@@ -152,16 +153,26 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const isDbSession = sessionsProp != null && session != null && !isShotVideo;
   /** Show comment composer only in admin view. */
   const showCommentComposer = isAdminView;
+  const showShareLinkButton = isDbSession || isShotVideo;
 
-  // Debug logging
-  console.log('[TrainingSessionDetail] Rendered:', {
-    sessionId,
-    hasSessionsProp: sessionsProp != null,
-    sessionCount: sessionList.length,
-    foundSession: session != null,
-    isDbSession,
-    hasOnDeleteSession: onDeleteSession != null,
-  });
+  const [linkJustCopied, setLinkJustCopied] = useState(false);
+  const linkCopyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopySessionLink = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const url = `${window.location.origin}/session/${encodeURIComponent(sessionId)}`;
+    void navigator.clipboard.writeText(url).then(() => {
+      setLinkJustCopied(true);
+      if (linkCopyTimeoutRef.current) clearTimeout(linkCopyTimeoutRef.current);
+      linkCopyTimeoutRef.current = setTimeout(() => setLinkJustCopied(false), 2000);
+    });
+  }, [sessionId]);
+
+  useEffect(() => {
+    return () => {
+      if (linkCopyTimeoutRef.current) clearTimeout(linkCopyTimeoutRef.current);
+    };
+  }, []);
 
   const [showAddUrlForm, setShowAddUrlForm] = useState(false);
   const [, setAddUrlDraft] = useState('');
@@ -1918,14 +1929,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             rightSlot={
               <div
                 style={{
-                  width: 40,
                   minWidth: 40,
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'flex-end',
+                  gap: 4,
                 }}
               >
+                {showShareLinkButton && (
+                  <button
+                    type="button"
+                    onClick={() => void handleCopySessionLink()}
+                    aria-label="Copy link to this session"
+                    title={linkJustCopied ? 'Copied!' : 'Copy link'}
+                    style={{
+                      width: 36,
+                      minWidth: 36,
+                      height: 36,
+                      flexShrink: 0,
+                      borderRadius: '50%',
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: COLORS.textSecondary,
+                    }}
+                  >
+                    <IconLink size={18} />
+                  </button>
+                )}
                 {isAdminView && (isDbSession || isShotVideo) && (
                   <button
                     type="button"
@@ -1991,14 +2026,38 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             </h1>
             <div
               style={{
-                width: 40,
                 minWidth: 40,
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
+                gap: 4,
               }}
             >
+              {showShareLinkButton && (
+                <button
+                  type="button"
+                  onClick={() => void handleCopySessionLink()}
+                  aria-label="Copy link to this session"
+                  title={linkJustCopied ? 'Copied!' : 'Copy link'}
+                  style={{
+                    width: 36,
+                    minWidth: 36,
+                    height: 36,
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: COLORS.textSecondary,
+                  }}
+                >
+                  <IconLink size={18} />
+                </button>
+              )}
               {isAdminView && (isDbSession || isShotVideo) && (
                 <button
                   type="button"

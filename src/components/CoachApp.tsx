@@ -1,12 +1,12 @@
 'use client';
 
 import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { COLORS, TYPOGRAPHY, SHADOWS } from '../styles/theme';
 import { CoachSchedulePage } from './CoachSchedulePage';
 import { CoachStudentsPage } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage } from './GameAnalyticsPage';
-import { TrainingSessionDetail } from './TrainingSessionDetail';
 import type { StudentInfo } from './CoachStudentsPage';
 import type { TrainingSession } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
@@ -41,12 +41,11 @@ async function fetchAuthDatesForStudentIds(studentIds: string[]): Promise<{
 }
 
 export const CoachApp: React.FC = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<CoachTabId>('schedule');
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
   const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
-  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [students, setStudents] = useState<StudentInfo[]>([]);
@@ -163,40 +162,6 @@ export const CoachApp: React.FC = () => {
     void reloadSelectedStudentSessions();
   }, [selectedStudent, selectedStudent?.id, reloadSelectedStudentSessions]);
 
-  // When viewing a training session detail (or shot video), show full-screen overlay
-  if (activeTrainingSessionId != null) {
-    const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
-    const breadcrumbFromRoadmap =
-      overrideSession && selectedStudent
-        ? { studentName: selectedStudent.name, shotTitle: overrideSession.title }
-        : undefined;
-    return (
-      <div style={{ height: 'calc(100vh - 80px)', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
-        <TrainingSessionDetail
-          sessionId={activeTrainingSessionId}
-          onBack={() => {
-            const wasFromRoadmap = breadcrumbFromRoadmap != null;
-            setActiveTrainingSessionId(null);
-            setOverrideSession(null);
-            if (wasFromRoadmap) {
-              setStudentSegment('roadmap');
-            }
-          }}
-          sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
-          onSessionUpdated={reloadSelectedStudentSessions}
-          onDeleteSession={overrideSession ? undefined : async () => { await reloadSelectedStudentSessions(); }}
-          breadcrumbFromRoadmap={breadcrumbFromRoadmap}
-          onBreadcrumbShotClick={(shotTitle) => {
-            setOpenShotTitle(shotTitle);
-            setActiveTrainingSessionId(null);
-            setOverrideSession(null);
-            setStudentSegment('roadmap');
-          }}
-        />
-      </div>
-    );
-  }
-
   // When viewing a student's progress, show full-screen overlay (sessions from DB)
   if (selectedStudent) {
     return (
@@ -209,12 +174,10 @@ export const CoachApp: React.FC = () => {
           onSelectedSegmentChange={setStudentSegment}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId: string) => {
-            setOverrideSession(null);
-            setActiveTrainingSessionId(sessionId);
+            router.push(`/session/${sessionId}`);
           }}
           onOpenShotVideo={(session) => {
-            setOverrideSession(session);
-            setActiveTrainingSessionId(session.id);
+            router.push(`/session/${session.id}`);
           }}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onAddSession={async (youtubeUrl, context) => {
@@ -244,7 +207,7 @@ export const CoachApp: React.FC = () => {
           <CoachStudentsPage
             students={students}
             onSelectStudent={setSelectedStudent}
-            onOpenSession={(sessionId: string) => setActiveTrainingSessionId(sessionId)}
+            onOpenSession={(sessionId: string) => router.push(`/session/${sessionId}`)}
           />
         );
       case 'library':

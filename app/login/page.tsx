@@ -76,7 +76,10 @@ function LoginContent() {
           return;
         }
       }
-      router.push('/');
+      const rawNext = searchParams.get('next');
+      const nextPath =
+        rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+      router.push(nextPath);
       router.refresh();
     } finally {
       setLoading(false);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from './providers/AuthProvider';
 import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
 
@@ -16,13 +16,15 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      router.replace('/login');
+      const next = pathname ? `?next=${encodeURIComponent(pathname)}` : '';
+      router.replace(`/login${next}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
     return <PlayerProfileLoadingScreen />;

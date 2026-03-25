@@ -1,13 +1,13 @@
 'use client';
 
 import React, { type ReactNode, useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
 import { Card } from './BaseComponents';
 import { IconCircle, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, type TrainingSession } from './GameAnalyticsPage';
-import { TrainingSessionDetail } from './TrainingSessionDetail';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionCountsForStudentIds, fetchLastSessionDateForStudentIds } from '@/lib/studentSessions';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
@@ -124,31 +124,23 @@ const COACHES_STATS = (() => {
 function AdminStudentsPage({
   isDesktop,
   onBreadcrumbTailChange,
-  onShotSessionViewChange,
 }: {
   isDesktop: boolean;
   onBreadcrumbTailChange?: (segments: string[]) => void;
-  onShotSessionViewChange?: (isInShotSession: boolean) => void;
 }) {
+  const router = useRouter();
   const [students, setStudents] = useState<StudentInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<StudentInfo | null>(null);
   const [studentSegment, setStudentSegment] = useState<'videos' | 'roadmap'>('videos');
   const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
-  const [activeTrainingSessionId, setActiveTrainingSessionId] = useState<string | null>(null);
-  const [overrideSession, setOverrideSession] = useState<TrainingSession | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     onBreadcrumbTailChange?.(selectedStudent ? ['Students', selectedStudent.name] : []);
   }, [selectedStudent, onBreadcrumbTailChange]);
-
-  useEffect(() => {
-    onShotSessionViewChange?.(activeTrainingSessionId != null);
-    return () => onShotSessionViewChange?.(false);
-  }, [activeTrainingSessionId, onShotSessionViewChange]);
 
   const reloadStudents = React.useCallback(async () => {
     const supabase = createClient();
@@ -261,60 +253,6 @@ function AdminStudentsPage({
     void reloadSelectedStudentSessions();
   }, [selectedStudent, selectedStudent?.id, reloadSelectedStudentSessions]);
 
-  const handleSessionUpdated = React.useCallback(async () => {
-    await Promise.all([reloadStudents(), reloadSelectedStudentSessions()]);
-  }, [reloadStudents, reloadSelectedStudentSessions]);
-
-  const handleSaveVideoUrl = async (sid: string, youtubeUrl: string) => {
-    const supabase = createClient();
-    if (!supabase) throw new Error('Supabase not configured');
-    const { error } = await supabase
-      .from('sessions')
-      .update({ youtube_url: youtubeUrl })
-      .eq('id', sid);
-    if (error) throw new Error(error.message);
-    if (selectedStudent) {
-      const next = await fetchSessionsForStudent(supabase, selectedStudent.id);
-      setSessionsForStudent(next);
-    }
-  };
-
-  // When viewing a training session detail (from progress page or shot video), show full-screen overlay
-  if (activeTrainingSessionId != null) {
-    const sessionsToUse = overrideSession ? [overrideSession] : sessionsForStudent;
-    const breadcrumbFromRoadmap =
-      overrideSession && selectedStudent
-        ? { studentName: selectedStudent.name, shotTitle: overrideSession.title }
-        : undefined;
-    return (
-      <div style={{ height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', backgroundColor: COLORS.backgroundLibrary }}>
-        <TrainingSessionDetail
-          sessionId={activeTrainingSessionId}
-          onBack={() => {
-            const wasFromRoadmap = breadcrumbFromRoadmap != null;
-            setActiveTrainingSessionId(null);
-            setOverrideSession(null);
-            if (wasFromRoadmap) {
-              setStudentSegment('roadmap');
-            }
-          }}
-          sessions={sessionsToUse.length > 0 ? sessionsToUse : undefined}
-          onSaveVideoUrl={overrideSession ? undefined : handleSaveVideoUrl}
-          onSessionUpdated={handleSessionUpdated}
-          onDeleteSession={overrideSession ? undefined : handleSessionUpdated}
-          breadcrumbFromRoadmap={breadcrumbFromRoadmap}
-          onBreadcrumbShotClick={(shotTitle) => {
-            setOpenShotTitle(shotTitle);
-            setActiveTrainingSessionId(null);
-            setOverrideSession(null);
-            setStudentSegment('roadmap');
-          }}
-          isAdminView
-        />
-      </div>
-    );
-  }
-
   // When viewing a student's sessions, show the same sessions page with DB-backed sessions
   if (selectedStudent) {
     return (
@@ -327,12 +265,10 @@ function AdminStudentsPage({
           onSelectedSegmentChange={setStudentSegment}
           onBack={() => setSelectedStudent(null)}
           onOpenSession={(sessionId) => {
-            setOverrideSession(null);
-            setActiveTrainingSessionId(sessionId);
+            router.push(`/session/${sessionId}`);
           }}
           onOpenShotVideo={(session) => {
-            setOverrideSession(session);
-            setActiveTrainingSessionId(session.id);
+            router.push(`/session/${session.id}`);
           }}
           sessions={loadingSessions ? [] : sessionsForStudent}
           onAddSession={async (youtubeUrl, context) => {
@@ -573,7 +509,6 @@ const SHEET_TRANSITION_MS = 300;
 export const AdminApp: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTabId>('students');
   const [_breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
-  const [isInShotSessionView, setIsInShotSessionView] = useState(false);
   const isDesktop = useIsDesktop();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -727,7 +662,6 @@ export const AdminApp: React.FC = () => {
           <AdminStudentsPage
             isDesktop={isDesktop}
             onBreadcrumbTailChange={setBreadcrumbTail}
-            onShotSessionViewChange={setIsInShotSessionView}
           />
         );
       case 'coaches':
@@ -735,7 +669,7 @@ export const AdminApp: React.FC = () => {
       case 'library':
         return <LessonsPage isAdmin />;
       default:
-        return <AdminStudentsPage isDesktop={isDesktop} onBreadcrumbTailChange={setBreadcrumbTail} onShotSessionViewChange={setIsInShotSessionView} />;
+        return <AdminStudentsPage isDesktop={isDesktop} onBreadcrumbTailChange={setBreadcrumbTail} />;
     }
   };
 
@@ -850,7 +784,7 @@ export const AdminApp: React.FC = () => {
       style={{
         width: '100%',
         minHeight: '100vh',
-        paddingBottom: isDesktop ? SPACING.xl : isInShotSessionView ? 0 : 80,
+        paddingBottom: isDesktop ? SPACING.xl : 80,
         paddingLeft: isDesktop ? (sidebarOpen ? SIDEBAR_WIDTH : SIDEBAR_COLLAPSED_WIDTH) : 0,
         boxSizing: 'border-box',
         position: 'relative',
@@ -955,7 +889,7 @@ export const AdminApp: React.FC = () => {
         <div style={{ flex: 1, minHeight: 0 }}>{renderContent()}</div>
       </div>
 
-      {!isDesktop && !isInShotSessionView && (
+      {!isDesktop && (
         <nav
           aria-label="Admin navigation"
           style={{
