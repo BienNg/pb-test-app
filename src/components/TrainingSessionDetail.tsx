@@ -83,7 +83,12 @@ import {
   type ShotVideoCommentWithAuthor,
 } from '@/lib/shotVideoComments';
 import { useAuth } from './providers/AuthProvider';
-import { VideoPlayer, type VideoPlayerHandle, type VideoPlayerMarker } from './VideoPlayer';
+import {
+  VideoPlayer,
+  type VideoPlayerHandle,
+  type VideoPlayerLoopCommentOverlay,
+  type VideoPlayerMarker,
+} from './VideoPlayer';
 import { MOCK_COACHES } from '../data/mockCoaches';
 import {
   fetchShotTechniqueChecks,
@@ -2236,6 +2241,22 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         label: `${c.author}: ${
                           c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text
                         }`,
+                      }))
+                  }
+                  loopCommentOverlays={
+                    comments
+                      .filter(
+                        (c) =>
+                          c.timestampSeconds != null &&
+                          c.loopEndTimestampSeconds != null &&
+                          c.loopEndTimestampSeconds > c.timestampSeconds &&
+                          c.text.trim().length > 0
+                      )
+                      .map<VideoPlayerLoopCommentOverlay>((c) => ({
+                        id: c.id,
+                        start: c.timestampSeconds ?? 0,
+                        end: c.loopEndTimestampSeconds ?? 0,
+                        text: c.text,
                       }))
                   }
                   onMarkerClick={(marker) => {

@@ -97,6 +97,13 @@ export interface VideoPlayerMarker {
   label?: string;
 }
 
+export interface VideoPlayerLoopCommentOverlay {
+  start: number;
+  end: number;
+  text: string;
+  id?: string | number;
+}
+
 export interface VideoPlayerProps {
   /** Either a YouTube URL or direct video URL (e.g. mp4). */
   videoUrl: string | null | undefined;
@@ -159,6 +166,8 @@ export interface VideoPlayerProps {
    * playback reaches end. Used for looping through a comment's timestamp range.
    */
   loopRange?: { start: number; end: number } | null;
+  /** Optional loop-comment ranges that should show a text box while current time is within range. */
+  loopCommentOverlays?: VideoPlayerLoopCommentOverlay[];
 
   /** Called when the video player is ready (YouTube onReady or native canplay). */
   onPlayerReady?: () => void;
@@ -210,6 +219,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     onControlPressed,
     renderBelowTimeControls,
     loopRange = null,
+    loopCommentOverlays = [],
     onPlayerReady,
   },
   ref
@@ -913,6 +923,19 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     : isDraggingFrameTextBox
       ? 'grabbing'
       : 'grab';
+  const activeLoopCommentOverlayText = useMemo(() => {
+    if (!loopCommentOverlays.length) return null;
+    const active = loopCommentOverlays
+      .filter((item) => {
+        if (!Number.isFinite(item.start) || !Number.isFinite(item.end)) return false;
+        if (item.end <= item.start) return false;
+        return currentVideoTime >= item.start && currentVideoTime <= item.end;
+      })
+      .sort((a, b) => b.start - a.start)[0];
+    if (!active) return null;
+    const text = active.text.trim();
+    return text.length ? text : null;
+  }, [loopCommentOverlays, currentVideoTime]);
 
   if (!videoUrl) {
     if (canRequestAddUrl && onRequestAddUrl) {
@@ -1140,6 +1163,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 }}
               >
                 {skipIndicator.label}
+              </div>
+            )}
+            {activeLoopCommentOverlayText && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'clamp(10px, 2vw, 16px)',
+                  left: 'clamp(10px, 2vw, 16px)',
+                  zIndex: 3,
+                  maxWidth: 'min(46ch, 62%)',
+                  padding: '10px 14px',
+                  borderRadius: 18,
+                  background: '#ffffff',
+                  color: '#111111',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  lineHeight: 1.38,
+                  letterSpacing: '-0.01em',
+                  boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
+                  pointerEvents: 'none',
+                  whiteSpace: 'normal',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {activeLoopCommentOverlayText}
               </div>
             )}
             {isSessionDetail && videoDuration > 0 && (
@@ -1705,6 +1753,31 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 }}
               >
                 {skipIndicator.label}
+              </div>
+            )}
+            {activeLoopCommentOverlayText && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'clamp(10px, 2vw, 16px)',
+                  left: 'clamp(10px, 2vw, 16px)',
+                  zIndex: 3,
+                  maxWidth: 'min(46ch, 62%)',
+                  padding: '10px 14px',
+                  borderRadius: 18,
+                  background: '#ffffff',
+                  color: '#111111',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  lineHeight: 1.38,
+                  letterSpacing: '-0.01em',
+                  boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
+                  pointerEvents: 'none',
+                  whiteSpace: 'normal',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {activeLoopCommentOverlayText}
               </div>
             )}
             <video
