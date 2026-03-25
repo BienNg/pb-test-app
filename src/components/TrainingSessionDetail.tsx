@@ -93,6 +93,13 @@ import {
   fetchShotTechniqueSubVisibility,
   upsertShotTechniqueSubVisibility,
 } from '@/lib/shotTechniqueSubVisibility';
+import {
+  fetchShotTechniqueChecklistLayouts,
+  mergeChecklistItemOrder,
+  techniqueSubKey,
+  upsertShotTechniqueChecklistLayout,
+  type ChecklistLayoutStateMap,
+} from '@/lib/shotTechniqueChecklistLayout';
 import { updateShotVideo, deleteShotVideo } from '@/lib/shotVideos';
 
 /** When set, header shows breadcrumb "StudentName > Your Roadmap > ShotTitle" (e.g. when opened from shot video in roadmap). */
@@ -261,6 +268,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   /** Per shot video: which sub-category IDs are visible to the student (from DB). Empty = use default (first only). */
   const [techniqueVisibleSubIds, setTechniqueVisibleSubIds] = useState<string[]>([]);
   const [techniqueVisibilityLoaded, setTechniqueVisibilityLoaded] = useState(false);
+  /** Per sub key: saved checklist order + highlighted label (coach focus). */
+  const [checklistLayoutBySub, setChecklistLayoutBySub] = useState<ChecklistLayoutStateMap>({});
+  const [checklistLayoutLoaded, setChecklistLayoutLoaded] = useState(false);
+  const [techniqueChecklistDraggingLabel, setTechniqueChecklistDraggingLabel] = useState<string | null>(null);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -408,6 +419,27 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       if (!cancelled) {
         setTechniqueVisibleSubIds(ids);
         setTechniqueVisibilityLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isShotVideo, sessionId, supabase]);
+
+  // Load checklist order + highlight for shot technique tab
+  useEffect(() => {
+    if (!isShotVideo || !sessionId) {
+      setChecklistLayoutBySub({});
+      setChecklistLayoutLoaded(false);
+      return;
+    }
+    let cancelled = false;
+    setChecklistLayoutLoaded(false);
+    (async () => {
+      const map = await fetchShotTechniqueChecklistLayouts(supabase, sessionId);
+      if (!cancelled) {
+        setChecklistLayoutBySub(map);
+        setChecklistLayoutLoaded(true);
       }
     })();
     return () => {
@@ -3588,7 +3620,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     paddingBottom: SPACING.xxl + SPACING.lg,
                   }}
                 >
-                  {(!techniqueChecksLoaded || (hasSubs && !techniqueVisibilityLoaded)) && (
+                  {(!techniqueChecksLoaded ||
+                    !checklistLayoutLoaded ||
+                    (hasSubs && !techniqueVisibilityLoaded)) && (
                     <div
                       style={{
                         padding: SPACING.lg,
@@ -3612,7 +3646,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       Loading…
                     </div>
                   )}
-                  {hasSubs && (techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
+                  {hasSubs &&
+                    (techniqueChecksLoaded &&
+                      checklistLayoutLoaded &&
+                      (!hasSubs || techniqueVisibilityLoaded)) && (
                     <div
                       style={{
                         marginBottom: SPACING.sm,
@@ -3720,7 +3757,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       )}
                     </div>
                   )}
-                  {(techniqueChecksLoaded && (!hasSubs || techniqueVisibilityLoaded)) && (
+                  {(techniqueChecksLoaded &&
+                    checklistLayoutLoaded &&
+                    (!hasSubs || techniqueVisibilityLoaded)) && (
                     <div
                       style={{
                         display: 'flex',
@@ -3731,145 +3770,274 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         transition: 'opacity 0.2s ease',
                       }}
                     >
-                      {([...techniqueItems]
-                        .sort((a, b) => {
-                          const aChecked = techniqueChecked[getCheckedKey(a.label)] ?? a.completed;
-                          const bChecked = techniqueChecked[getCheckedKey(b.label)] ?? b.completed;
-                          if (aChecked === bChecked) return 0;
-                          return aChecked ? 1 : -1; // unchecked first
-                        })
-                        .map((item, idx) => {
-                        const key = getCheckedKey(item.label);
-                        const isChecked = techniqueChecked[key] ?? item.completed;
-                        const canEditChecks = isAdminView && isCategoryVisibleToStudent;
-                        const toggleChecked = () => {
-                          const nextChecked = !isChecked;
-                          setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
-                          if (isShotVideo && sessionId) {
-                            void upsertShotTechniqueCheck(supabase, {
-                              shotVideoId: sessionId,
-                              subCategoryId: effectiveSubId ?? null,
-                              itemLabel: item.label,
-                              checked: nextChecked,
+                      {(() => {
+                        const layoutSubKey = techniqueSubKey(effectiveSubId);
+                        const layoutEntry = checklistLayoutBySub[layoutSubKey];
+                        const savedOrder = layoutEntry?.orderedItemLabels;
+                        const savedHighlight = layoutEntry?.highlightedItemLabel ?? null;
+                        const hasSavedOrder = (savedOrder?.length ?? 0) > 0;
+                        const orderedItems = hasSavedOrder
+                          ? mergeChecklistItemOrder(techniqueItems, savedOrder)
+                          : [...techniqueItems].sort((a, b) => {
+                              const aChecked =
+                                techniqueChecked[getCheckedKey(a.label)] ?? a.completed;
+                              const bChecked =
+                                techniqueChecked[getCheckedKey(b.label)] ?? b.completed;
+                              if (aChecked === bChecked) return 0;
+                              return aChecked ? 1 : -1;
                             });
-                          }
+                        const orderLabels = orderedItems.map((i) => i.label);
+
+                        const persistChecklistLayout = (
+                          nextOrder: string[],
+                          nextHighlight: string | null
+                        ) => {
+                          if (!sessionId || !isShotVideo) return;
+                          setChecklistLayoutBySub((prev) => ({
+                            ...prev,
+                            [layoutSubKey]: {
+                              orderedItemLabels: nextOrder,
+                              highlightedItemLabel: nextHighlight,
+                            },
+                          }));
+                          void upsertShotTechniqueChecklistLayout(supabase, {
+                            shotVideoId: sessionId,
+                            subCategoryKey: layoutSubKey,
+                            orderedItemLabels: nextOrder,
+                            highlightedItemLabel: nextHighlight,
+                          });
                         };
-                        const checkboxStyle: React.CSSProperties = {
-                          width: 28,
-                          height: 28,
-                          flexShrink: 0,
-                          borderRadius: '50%',
-                          border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
-                          backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: 0,
-                          boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                          transition: 'border-color 0.15s ease, background-color 0.15s ease',
-                          ...(canEditChecks ? { cursor: 'pointer' } : { cursor: 'default', opacity: 0.9 }),
+
+                        const moveLabelInOrder = (fromLabel: string, toLabel: string) => {
+                          const next = [...orderLabels];
+                          const iFrom = next.indexOf(fromLabel);
+                          const iTo = next.indexOf(toLabel);
+                          if (iFrom < 0 || iTo < 0 || iFrom === iTo) return;
+                          next.splice(iFrom, 1);
+                          next.splice(iTo, 0, fromLabel);
+                          persistChecklistLayout(next, savedHighlight);
                         };
-                        return (
-                          <div
-                            key={item.label}
-                            role={canEditChecks ? 'button' : undefined}
-                            tabIndex={canEditChecks ? 0 : undefined}
-                            onClick={canEditChecks ? toggleChecked : undefined}
-                            onKeyDown={
-                              canEditChecks
-                                ? (e) => {
-                                    if (e.key === 'Enter' || e.key === ' ') {
-                                      e.preventDefault();
-                                      toggleChecked();
-                                    }
-                                  }
-                                : undefined
+
+                        return orderedItems.map((item, idx) => {
+                          const key = getCheckedKey(item.label);
+                          const isChecked = techniqueChecked[key] ?? item.completed;
+                          const canEditChecks = isAdminView && isCategoryVisibleToStudent;
+                          const isHighlighted =
+                            !isChecked &&
+                            savedHighlight != null &&
+                            savedHighlight === item.label;
+                          const roadmapIconIdx = techniqueItems.findIndex((i) => i.label === item.label);
+                          const iconIdx = roadmapIconIdx >= 0 ? roadmapIconIdx : idx;
+
+                          const toggleChecked = () => {
+                            const nextChecked = !isChecked;
+                            setTechniqueChecked((prev) => ({ ...prev, [key]: nextChecked }));
+                            if (isShotVideo && sessionId) {
+                              void upsertShotTechniqueCheck(supabase, {
+                                shotVideoId: sessionId,
+                                subCategoryId: effectiveSubId ?? null,
+                                itemLabel: item.label,
+                                checked: nextChecked,
+                              });
                             }
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: SPACING.md,
-                              padding: SPACING.lg,
-                              borderRadius: 16,
-                              backgroundColor: COLORS.cardBg,
-                              border: `1px solid rgba(143, 185, 168, 0.2)`,
-                              minWidth: 0,
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
-                              ...(canEditChecks && { cursor: 'pointer' }),
-                            }}
-                          >
+                            if (
+                              nextChecked &&
+                              savedHighlight === item.label &&
+                              sessionId &&
+                              isShotVideo
+                            ) {
+                              persistChecklistLayout(orderLabels, null);
+                            }
+                          };
+
+                          const checkboxStyle: React.CSSProperties = {
+                            width: 28,
+                            height: 28,
+                            flexShrink: 0,
+                            borderRadius: '50%',
+                            border: `2px solid ${isChecked ? REFERENCE_PRIMARY : '#94a3b8'}`,
+                            backgroundColor: isChecked ? REFERENCE_PRIMARY : COLORS.white,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: 0,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
+                            transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                            ...(canEditChecks ? { cursor: 'pointer' } : { cursor: 'default', opacity: 0.9 }),
+                          };
+
+                          const cardBorder = isHighlighted
+                            ? `2px solid ${REFERENCE_PRIMARY}`
+                            : `1px solid rgba(143, 185, 168, 0.2)`;
+                          const cardShadow = isHighlighted
+                            ? `0 0 0 3px rgba(143, 185, 168, 0.25), 0 4px 12px rgba(0,0,0,0.08)`
+                            : '0 1px 3px rgba(0,0,0,0.04)';
+                          const isDraggingRow = techniqueChecklistDraggingLabel === item.label;
+
+                          return (
                             <div
+                              key={item.label}
+                              role={canEditChecks && !isChecked ? 'button' : undefined}
+                              tabIndex={canEditChecks && !isChecked ? 0 : undefined}
+                              onClick={
+                                canEditChecks && !isChecked
+                                  ? () => {
+                                      const nextHl =
+                                        savedHighlight === item.label ? null : item.label;
+                                      persistChecklistLayout(orderLabels, nextHl);
+                                    }
+                                  : undefined
+                              }
+                              onKeyDown={
+                                canEditChecks && !isChecked
+                                  ? (e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        const nextHl =
+                                          savedHighlight === item.label ? null : item.label;
+                                        persistChecklistLayout(orderLabels, nextHl);
+                                      }
+                                    }
+                                  : undefined
+                              }
+                              onDragOver={
+                                canEditChecks
+                                  ? (e) => {
+                                      e.preventDefault();
+                                      e.dataTransfer.dropEffect = 'move';
+                                    }
+                                  : undefined
+                              }
+                              onDrop={
+                                canEditChecks
+                                  ? (e) => {
+                                      e.preventDefault();
+                                      const from = e.dataTransfer.getData('text/plain');
+                                      if (from && from !== item.label) {
+                                        moveLabelInOrder(from, item.label);
+                                      }
+                                    }
+                                  : undefined
+                              }
                               style={{
-                                width: 44,
-                                height: 44,
-                                flexShrink: 0,
-                                borderRadius: 14,
-                                background: `linear-gradient(145deg, rgba(143, 185, 168, 0.2) 0%, rgba(143, 185, 168, 0.08) 100%)`,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
-                                color: REFERENCE_PRIMARY,
-                                fontSize: 20,
+                                gap: SPACING.md,
+                                padding: SPACING.lg,
+                                borderRadius: 16,
+                                backgroundColor: isHighlighted
+                                  ? 'rgba(143, 185, 168, 0.12)'
+                                  : COLORS.cardBg,
+                                border: cardBorder,
+                                minWidth: 0,
+                                boxShadow: cardShadow,
+                                transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease, opacity 0.15s ease',
+                                opacity: isDraggingRow ? 0.55 : 1,
+                                ...(canEditChecks && !isChecked && { cursor: 'pointer' }),
                               }}
                             >
-                              {item.label === ROOF_TECHNIQUE_LABEL ? (
-                                <img
-                                  src="/icons/Pickleball%20Academy%20Icons%20Roof.ico"
-                                  alt=""
-                                  width={24}
-                                  height={24}
-                                  style={{ display: 'block' }}
-                                  aria-hidden
-                                />
-                              ) : (
-                                TECHNIQUE_ICONS[idx % TECHNIQUE_ICONS.length]
-                              )}
-                            </div>
-                            <span
-                              style={{
-                                flex: 1,
-                                fontSize: 14,
-                                fontWeight: 600,
-                                color: COLORS.textPrimary,
-                                lineHeight: 1.4,
-                                wordBreak: 'break-word',
-                              }}
-                            >
-                              {item.label}
-                            </span>
-                            {canEditChecks ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleChecked();
-                                }}
-                                aria-label={
-                                  isChecked
-                                    ? `Mark "${item.label}" as not done`
-                                    : `Mark "${item.label}" as done`
-                                }
-                                style={checkboxStyle}
-                              >
-                                {isChecked && (
-                                  <IconCheck size={16} style={{ color: '#fff' }} />
-                                )}
-                              </button>
-                            ) : (
+                              {canEditChecks ? (
+                                <div
+                                  draggable
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/plain', item.label);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    setTechniqueChecklistDraggingLabel(item.label);
+                                  }}
+                                  onDragEnd={() => setTechniqueChecklistDraggingLabel(null)}
+                                  onClick={(e) => e.stopPropagation()}
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`Drag to reorder: ${item.label}`}
+                                  style={{
+                                    flexShrink: 0,
+                                    width: 28,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'grab',
+                                    color: COLORS.textMuted,
+                                    fontSize: 16,
+                                    lineHeight: 1,
+                                    userSelect: 'none',
+                                  }}
+                                >
+                                  ⋮⋮
+                                </div>
+                              ) : null}
                               <div
-                                aria-hidden
-                                style={checkboxStyle}
-                                title="Completed by coach"
+                                style={{
+                                  width: 44,
+                                  height: 44,
+                                  flexShrink: 0,
+                                  borderRadius: 14,
+                                  background: `linear-gradient(145deg, rgba(143, 185, 168, 0.2) 0%, rgba(143, 185, 168, 0.08) 100%)`,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: REFERENCE_PRIMARY,
+                                  fontSize: 20,
+                                }}
                               >
-                                {isChecked && (
-                                  <IconCheck size={16} style={{ color: '#fff' }} />
+                                {item.label === ROOF_TECHNIQUE_LABEL ? (
+                                  <img
+                                    src="/icons/Pickleball%20Academy%20Icons%20Roof.ico"
+                                    alt=""
+                                    width={24}
+                                    height={24}
+                                    style={{ display: 'block' }}
+                                    aria-hidden
+                                  />
+                                ) : (
+                                  TECHNIQUE_ICONS[iconIdx % TECHNIQUE_ICONS.length]
                                 )}
                               </div>
-                            )}
-                          </div>
-                        );
-                      }))}
+                              <span
+                                style={{
+                                  flex: 1,
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  color: COLORS.textPrimary,
+                                  lineHeight: 1.4,
+                                  wordBreak: 'break-word',
+                                }}
+                              >
+                                {item.label}
+                              </span>
+                              {canEditChecks ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleChecked();
+                                  }}
+                                  aria-label={
+                                    isChecked
+                                      ? `Mark "${item.label}" as not done`
+                                      : `Mark "${item.label}" as done`
+                                  }
+                                  style={checkboxStyle}
+                                >
+                                  {isChecked && (
+                                    <IconCheck size={16} style={{ color: '#fff' }} />
+                                  )}
+                                </button>
+                              ) : (
+                                <div
+                                  aria-hidden
+                                  style={checkboxStyle}
+                                  title="Completed by coach"
+                                >
+                                  {isChecked && (
+                                    <IconCheck size={16} style={{ color: '#fff' }} />
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>
