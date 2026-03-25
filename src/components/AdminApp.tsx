@@ -2,8 +2,8 @@
 
 import React, { type ReactNode, useState, useEffect, useRef } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../styles/theme';
-import { Card, StatCard } from './BaseComponents';
-import { IconUsers, IconCircle, IconCalendar, IconCheck, IconChevronLeft, IconChevronRight } from './Icons';
+import { Card } from './BaseComponents';
+import { IconCircle, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, type TrainingSession } from './GameAnalyticsPage';
@@ -13,7 +13,7 @@ import { fetchSessionCountsForStudentIds, fetchFirstSessionDateForStudentIds } f
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
 import { insertShotVideo } from '@/lib/shotVideos';
 
-type AdminTabId = 'overview' | 'students' | 'coaches' | 'library';
+type AdminTabId = 'students' | 'coaches' | 'library';
 
 const DESKTOP_MIN = BREAKPOINTS.desktop; // 1024px
 const SIDEBAR_WIDTH = 220;
@@ -37,17 +37,6 @@ function useIsDesktop(): boolean {
 export type { CoachInfo } from '../data/mockCoaches';
 import { MOCK_COACHES } from '../data/mockCoaches';
 
-// Platform-wide mock data (admin sees all)
-const MOCK_ALL_STUDENTS: StudentInfo[] = [
-  { id: '1', name: 'Alex Chen', email: 'alex@example.com', lessonsCompleted: 12, lastActive: 'Feb 5, 2026' },
-  { id: '2', name: 'Jamie Lee', email: 'jamie@example.com', lessonsCompleted: 8, lastActive: 'Feb 4, 2026' },
-  { id: '3', name: 'Morgan Taylor', email: 'morgan@example.com', lessonsCompleted: 15, lastActive: 'Feb 6, 2026' },
-  { id: '4', name: 'Riley Smith', email: 'riley@example.com', lessonsCompleted: 5, lastActive: 'Feb 2, 2026' },
-  { id: '5', name: 'Jordan Kim', email: 'jordan@example.com', lessonsCompleted: 3, lastActive: 'Jan 28, 2026' },
-  { id: '6', name: 'Sam Davis', email: 'sam@example.com', lessonsCompleted: 7, lastActive: 'Feb 1, 2026' },
-  { id: '7', name: 'Casey Brown', email: 'casey@example.com', lessonsCompleted: 11, lastActive: 'Feb 3, 2026' },
-];
-
 export interface RequestedSession {
   id: string;
   dateKey: string;
@@ -69,22 +58,13 @@ const MOCK_REQUESTED_SESSIONS_INITIAL: RequestedSession[] = [
   { id: 'req-2', dateKey: '2026-02-07', dateLabel: 'Fri, Feb 7', time: '3:00 PM', studentName: 'Riley Smith', studentEmail: 'riley@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Private', durationMinutes: 45, requestedAt: 'Feb 3, 2026' },
   { id: 'req-3', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '10:00 AM', studentName: 'Jamie Lee', studentEmail: 'jamie@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Group', durationMinutes: 90, requestedAt: 'Feb 5, 2026' },
   { id: 'req-4', dateKey: '2026-02-10', dateLabel: 'Mon, Feb 10', time: '2:00 PM', studentName: 'Jordan Kim', studentEmail: 'jordan@example.com', coachId: 'c2', coachName: 'Mike Johnson', type: 'Private', durationMinutes: 60, requestedAt: 'Feb 5, 2026' },
-  // More sessions today (Feb 8) for the overview list
+  // More sessions on Feb 8 for richer mock data
   { id: 'req-5', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '12:00 PM', studentName: 'Alex Chen', studentEmail: 'alex@example.com', coachId: 'c2', coachName: 'Mike Johnson', type: 'Private', durationMinutes: 60, requestedAt: 'Feb 6, 2026' },
   { id: 'req-6', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '2:00 PM', studentName: 'Morgan Taylor', studentEmail: 'morgan@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Private', durationMinutes: 45, requestedAt: 'Feb 6, 2026' },
   { id: 'req-7', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '3:30 PM', studentName: 'Riley Smith', studentEmail: 'riley@example.com', coachId: 'c3', coachName: 'Emma Wilson', type: 'Group', durationMinutes: 90, requestedAt: 'Feb 5, 2026' },
   { id: 'req-8', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '5:00 PM', studentName: 'Casey Brown', studentEmail: 'casey@example.com', coachId: 'c2', coachName: 'Mike Johnson', type: 'Private', durationMinutes: 60, requestedAt: 'Feb 7, 2026' },
   { id: 'req-9', dateKey: '2026-02-08', dateLabel: 'Sat, Feb 8', time: '6:30 PM', studentName: 'Sam Davis', studentEmail: 'sam@example.com', coachId: 'c1', coachName: 'Sarah Martinez', type: 'Private', durationMinutes: 45, requestedAt: 'Feb 7, 2026' },
 ];
-
-// Aggregate stats for overview
-const OVERVIEW_STATS = {
-  totalStudents: MOCK_ALL_STUDENTS.length,
-  totalCoaches: MOCK_COACHES.length,
-  totalSessions: 35,
-  totalLessons: 8,
-  totalLessonCompletions: MOCK_ALL_STUDENTS.reduce((sum, s) => sum + (s.lessonsCompleted ?? 0), 0),
-};
 
 const COACHES_STATS = (() => {
   const totalCoaches = MOCK_COACHES.length;
@@ -115,219 +95,6 @@ const COACHES_STATS = (() => {
     totalHoursThisMonth,
   };
 })();
-
-function todayDateKey(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function parseTimeToMinutes(timeStr: string): number {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!match) return 0;
-  let h = parseInt(match[1], 10);
-  const m = parseInt(match[2], 10);
-  if (match[3].toUpperCase() === 'PM' && h !== 12) h += 12;
-  if (match[3].toUpperCase() === 'AM' && h === 12) h = 0;
-  return h * 60 + m;
-}
-
-function AdminOverviewPage({
-  isDesktop,
-  sessionsToday,
-}: {
-  isDesktop: boolean;
-  sessionsToday: RequestedSession[];
-}) {
-  const todayKey = todayDateKey();
-  const nextToday = sessionsToday
-    .filter((s) => s.dateKey === todayKey)
-    .sort((a, b) => parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time));
-
-  return (
-    <div
-      style={{
-        backgroundColor: COLORS.backgroundLibrary,
-        minHeight: '100vh',
-        padding: isDesktop ? SPACING.xl : SPACING.md,
-        width: '100%',
-        boxSizing: 'border-box',
-        overflowX: 'hidden',
-      }}
-    >
-      <div style={{ maxWidth: 1400, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ marginBottom: SPACING.xl }}>
-          <h1 style={{ ...TYPOGRAPHY.h1, color: COLORS.textPrimary, margin: 0, marginBottom: SPACING.sm }}>
-            Admin Overview
-          </h1>
-          <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0 }}>
-            Platform-wide stats and management.
-          </p>
-        </div>
-
-        <div
-          style={{
-            marginBottom: SPACING.xl,
-            background: `linear-gradient(145deg, ${COLORS.textPrimary} 0%, #2C2C2E 100%)`,
-            borderRadius: RADIUS.lg,
-            padding: SPACING.xl,
-            color: COLORS.white,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <p
-              style={{
-                ...TYPOGRAPHY.label,
-                color: COLORS.primary,
-                margin: 0,
-                marginBottom: SPACING.md,
-                fontWeight: 600,
-              }}
-            >
-              Platform stats
-            </p>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-                gap: SPACING.xl,
-              }}
-            >
-              <div>
-                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Students</span>
-                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{OVERVIEW_STATS.totalStudents}</div>
-              </div>
-              <div>
-                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Coaches</span>
-                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{OVERVIEW_STATS.totalCoaches}</div>
-              </div>
-              <div>
-                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Sessions</span>
-                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{OVERVIEW_STATS.totalSessions}</div>
-              </div>
-              <div>
-                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>VOD lessons</span>
-                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{OVERVIEW_STATS.totalLessons}</div>
-              </div>
-              <div>
-                <span style={{ ...TYPOGRAPHY.bodySmall, color: 'rgba(255,255,255,0.7)' }}>Completions</span>
-                <div style={{ ...TYPOGRAPHY.h2, color: COLORS.white, margin: 0 }}>{OVERVIEW_STATS.totalLessonCompletions}</div>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              bottom: -30,
-              right: -30,
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              background: 'rgba(49, 203, 0, 0.12)',
-              pointerEvents: 'none',
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: SPACING.lg,
-          }}
-        >
-          <StatCard
-            title="Students"
-            value={OVERVIEW_STATS.totalStudents}
-            unit="total"
-            icon={<IconUsers size={24} />}
-            accentColor={COLORS.lavender}
-          />
-          <StatCard
-            title="Coaches"
-            value={OVERVIEW_STATS.totalCoaches}
-            unit="active"
-            icon={<IconCircle size={24} />}
-            accentColor={COLORS.primary}
-          />
-          <StatCard
-            title="Sessions"
-            value={OVERVIEW_STATS.totalSessions}
-            unit="all time"
-            icon={<IconCalendar size={24} />}
-            accentColor={COLORS.blue}
-          />
-          <StatCard
-            title="Lesson completions"
-            value={OVERVIEW_STATS.totalLessonCompletions}
-            unit="VOD"
-            icon={<IconCheck size={24} />}
-            accentColor={COLORS.green}
-          />
-        </div>
-
-        <div style={{ marginTop: SPACING.xl }}>
-          <Card padding={SPACING.lg}>
-            <div style={{ marginBottom: SPACING.lg }}>
-              <h3 style={{ ...TYPOGRAPHY.h3, color: COLORS.textPrimary, margin: 0 }}>
-                Next sessions today
-              </h3>
-            </div>
-            {nextToday.length === 0 ? (
-              <p style={{ ...TYPOGRAPHY.body, color: COLORS.textSecondary, margin: 0, padding: SPACING.lg }}>
-                No sessions scheduled for today.
-              </p>
-            ) : (
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {nextToday.map((s, i) => (
-                  <li
-                    key={s.id}
-                    style={{
-                      padding: `${SPACING.lg} 0`,
-                      borderBottom: i < nextToday.length - 1 ? '1px solid rgba(0,0,0,0.08)' : 'none',
-                      display: 'flex',
-                      gap: SPACING.lg,
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <div
-                      style={{
-                        flexShrink: 0,
-                        width: 52,
-                        textAlign: 'center',
-                        padding: `${SPACING.xs} 0`,
-                        ...TYPOGRAPHY.label,
-                        color: COLORS.textSecondary,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {s.time}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...TYPOGRAPHY.body, fontWeight: 600, color: COLORS.textPrimary, marginBottom: 2 }}>
-                        {s.studentName}
-                      </div>
-                      <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, marginBottom: 2 }}>
-                        with {s.coachName}
-                      </div>
-                      <div style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted, fontSize: 13 }}>
-                        {s.type} · {s.durationMinutes} min
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function AdminStudentsPage({
   isDesktop,
@@ -752,10 +519,9 @@ function AdminCoachesPage({ isDesktop }: { isDesktop: boolean }) {
 const SHEET_TRANSITION_MS = 300;
 
 export const AdminApp: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<AdminTabId>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTabId>('students');
   const [_breadcrumbTail, setBreadcrumbTail] = useState<string[]>([]);
   const [isInShotSessionView, setIsInShotSessionView] = useState(false);
-  const requestedSessions = MOCK_REQUESTED_SESSIONS_INITIAL;
   const isDesktop = useIsDesktop();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -904,13 +670,6 @@ export const AdminApp: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'overview':
-        return (
-          <AdminOverviewPage
-            isDesktop={isDesktop}
-            sessionsToday={requestedSessions}
-          />
-        );
       case 'students':
         return (
           <AdminStudentsPage
@@ -924,27 +683,11 @@ export const AdminApp: React.FC = () => {
       case 'library':
         return <LessonsPage isAdmin />;
       default:
-        return (
-          <AdminOverviewPage
-            isDesktop={isDesktop}
-            sessionsToday={requestedSessions}
-          />
-        );
+        return <AdminStudentsPage isDesktop={isDesktop} onBreadcrumbTailChange={setBreadcrumbTail} onShotSessionViewChange={setIsInShotSessionView} />;
     }
   };
 
   const tabs: { id: AdminTabId; label: string; icon: ReactNode }[] = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-    },
     {
       id: 'students',
       label: 'Students',
