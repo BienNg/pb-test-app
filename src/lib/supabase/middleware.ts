@@ -1,10 +1,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isAllowedAdminEmail } from '@/lib/admin-access';
 
 const PROTECTED_PATHS = ['/', '/coach', '/admin'];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'));
+}
+
+function isAdminUiPath(pathname: string): boolean {
+  return pathname === '/admin' || pathname.startsWith('/admin/');
+}
+
+function isAdminApiPath(pathname: string): boolean {
+  return pathname.startsWith('/api/admin');
 }
 
 export async function updateSession(request: NextRequest) {
@@ -35,6 +44,20 @@ export async function updateSession(request: NextRequest) {
   if (isProtectedPath(request.nextUrl.pathname) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  const pathname = request.nextUrl.pathname;
+  if (
+    user &&
+    (isAdminUiPath(pathname) || isAdminApiPath(pathname)) &&
+    !isAllowedAdminEmail(user.email)
+  ) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
     return NextResponse.redirect(url);
   }
 

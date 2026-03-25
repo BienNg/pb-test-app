@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { isAllowedAdminEmail } from '@/lib/admin-access';
 
 export async function POST(request: Request) {
   try {
@@ -21,19 +22,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify caller is admin or coach (both can manage students)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    const role = profile?.role ?? 'student';
-    if (role !== 'admin' && role !== 'coach') {
-      return NextResponse.json(
-        { error: 'Forbidden: admin or coach role required. Update your profile role in Supabase.' },
-        { status: 403 }
-      );
+    if (!isAllowedAdminEmail(user.email)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const adminClient = createAdminClient();
