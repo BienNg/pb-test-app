@@ -2,6 +2,8 @@ import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
 import {
+  IconMaximize2,
+  IconMinimize2,
   IconPause,
   IconPlay,
   IconRepeat,
@@ -28,6 +30,44 @@ interface YTPlayer {
   isMuted: () => boolean;
   getVolume?: () => number;
   setVolume?: (volume: number) => void;
+  setPlaybackRate?: (rate: number) => void;
+}
+
+const PLAYBACK_SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+function formatPlaybackSpeedLabel(rate: number): string {
+  return `${Number.isInteger(rate) ? rate : rate}×`;
+}
+
+function getFullscreenElement(): Element | null {
+  const d = document as Document & {
+    webkitFullscreenElement?: Element | null;
+    msFullscreenElement?: Element | null;
+  };
+  return d.fullscreenElement ?? d.webkitFullscreenElement ?? d.msFullscreenElement ?? null;
+}
+
+async function requestElFullscreen(el: HTMLElement): Promise<void> {
+  const anyEl = el as HTMLElement & { webkitRequestFullscreen?: () => void };
+  if (typeof el.requestFullscreen === 'function') {
+    await el.requestFullscreen();
+  } else if (typeof anyEl.webkitRequestFullscreen === 'function') {
+    anyEl.webkitRequestFullscreen();
+  }
+}
+
+async function exitDocumentFullscreen(): Promise<void> {
+  const d = document as Document & {
+    webkitExitFullscreen?: () => void;
+    msExitFullscreen?: () => void;
+  };
+  if (typeof document.exitFullscreen === 'function') {
+    await document.exitFullscreen();
+  } else if (typeof d.webkitExitFullscreen === 'function') {
+    d.webkitExitFullscreen();
+  } else if (typeof d.msExitFullscreen === 'function') {
+    d.msExitFullscreen();
+  }
 }
 
 /** Load YouTube IFrame API. Resolves when ready. */
@@ -172,6 +212,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const videoRef = useRef<HTMLVideoElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const fullscreenRootRef = useRef<HTMLDivElement>(null);
   const frameDetailOverlayRef = useRef<HTMLDivElement>(null);
   const onPlayPropRef = useRef(onPlayProp);
   useEffect(() => { onPlayPropRef.current = onPlayProp; });
@@ -190,6 +231,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1); // 0–1, used when unmuted
   const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLoopActive, setIsLoopActive] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -232,6 +276,8 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     setIsVideoPlaying(false);
     setIsPlayerReady(false);
     setRetryCount(0);
+    setPlaybackRate(1);
+    setShowSpeedMenu(false);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [videoKey]);
 
@@ -505,6 +551,60 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     [isYoutube]
   );
 
+  useEffect(() => {
+    const sync = () => {
+      const el = getFullscreenElement();
+      const root = fullscreenRootRef.current;
+      setIsFullscreen(!!root && el === root);
+    };
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    return () => {
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isYoutube) {
+      const p = playerRef.current;
+      if (!p || typeof p.setPlaybackRate !== 'function') return;
+      try {
+        p.setPlaybackRate(playbackRate);
+      } catch {
+        // ignore unsupported rates
+      }
+      return;
+    }
+    const v = videoRef.current;
+    if (!v) return;
+    try {
+      v.playbackRate = playbackRate;
+    } catch {
+      // ignore
+    }
+  }, [isYoutube, playbackRate, isPlayerReady, videoKey]);
+
+  const toggleFullscreen = useCallback(async () => {
+    const root = fullscreenRootRef.current;
+    if (!root) return;
+    try {
+      if (getFullscreenElement() === root) {
+        await exitDocumentFullscreen();
+      } else {
+        await requestElFullscreen(root);
+      }
+    } catch {
+      // Fullscreen may be blocked or unsupported
+    }
+  }, []);
+
+  const selectPlaybackSpeed = useCallback((rate: number) => {
+    setPlaybackRate(rate);
+    setShowSpeedMenu(false);
+    onControlPressed?.();
+  }, [onControlPressed]);
+
   const skipBy = useCallback(
     (deltaSeconds: number) => {
       const getNow = () => {
@@ -760,6 +860,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   return (
     <div
+      ref={fullscreenRootRef}
       style={{
         position: 'relative',
         width: '100%',
@@ -1056,7 +1157,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     )}
                     <button
                       type="button"
-                      onClick={() => setShowVolumeSlider((s) => !s)}
+                      onClick={() => {
+                        setShowVolumeSlider((s) => !s);
+                        setShowSpeedMenu(false);
+                      }}
                       style={{
                         width: 28,
                         height: 28,
@@ -1073,6 +1177,104 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
                     >
                       {isMuted ? <IconVolumeX size={14} /> : <IconVolume2 size={14} />}
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    {showSpeedMenu && (
+                      <div
+                        role="menu"
+                        style={{
+                          position: 'absolute',
+                          bottom: '100%',
+                          marginBottom: 6,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          zIndex: 4,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 2,
+                          padding: 6,
+                          borderRadius: 8,
+                          background: 'rgba(0,0,0,0.92)',
+                          minWidth: 58,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        {PLAYBACK_SPEEDS.map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => selectPlaybackSpeed(r)}
+                            style={{
+                              border: 'none',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              background: r === playbackRate ? 'rgba(255,255,255,0.2)' : 'transparent',
+                              color: '#fff',
+                              fontSize: 12,
+                              fontWeight: r === playbackRate ? 700 : 500,
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                            }}
+                          >
+                            {formatPlaybackSpeedLabel(r)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSpeedMenu((s) => !s);
+                        setShowVolumeSlider(false);
+                      }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                      aria-label={showSpeedMenu ? 'Hide playback speed' : 'Playback speed'}
+                      aria-expanded={showSpeedMenu}
+                      title="Speed"
+                    >
+                      {formatPlaybackSpeedLabel(playbackRate)}
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void toggleFullscreen();
+                        onControlPressed?.();
+                      }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                      title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                    >
+                      {isFullscreen ? <IconMinimize2 size={14} /> : <IconMaximize2 size={14} />}
                     </button>
                   </div>
                 </div>
@@ -1481,7 +1683,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     )}
                     <button
                       type="button"
-                      onClick={() => setShowVolumeSlider((s) => !s)}
+                      onClick={() => {
+                        setShowVolumeSlider((s) => !s);
+                        setShowSpeedMenu(false);
+                      }}
                       style={{
                         width: 28,
                         height: 28,
@@ -1498,6 +1703,104 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
                     >
                       {isMuted ? <IconVolumeX size={14} /> : <IconVolume2 size={14} />}
+                    </button>
+                  </div>
+                  <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    {showSpeedMenu && (
+                      <div
+                        role="menu"
+                        style={{
+                          position: 'absolute',
+                          bottom: '100%',
+                          marginBottom: 6,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          zIndex: 4,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 2,
+                          padding: 6,
+                          borderRadius: 8,
+                          background: 'rgba(0,0,0,0.92)',
+                          minWidth: 58,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        {PLAYBACK_SPEEDS.map((r) => (
+                          <button
+                            key={r}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => selectPlaybackSpeed(r)}
+                            style={{
+                              border: 'none',
+                              borderRadius: 4,
+                              padding: '4px 8px',
+                              background: r === playbackRate ? 'rgba(255,255,255,0.2)' : 'transparent',
+                              color: '#fff',
+                              fontSize: 12,
+                              fontWeight: r === playbackRate ? 700 : 500,
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                            }}
+                          >
+                            {formatPlaybackSpeedLabel(r)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSpeedMenu((s) => !s);
+                        setShowVolumeSlider(false);
+                      }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                      aria-label={showSpeedMenu ? 'Hide playback speed' : 'Playback speed'}
+                      aria-expanded={showSpeedMenu}
+                      title="Speed"
+                    >
+                      {formatPlaybackSpeedLabel(playbackRate)}
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void toggleFullscreen();
+                        onControlPressed?.();
+                      }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: 'rgba(255,255,255,0.2)',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
+                      aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                      title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                    >
+                      {isFullscreen ? <IconMinimize2 size={14} /> : <IconMaximize2 size={14} />}
                     </button>
                   </div>
                 </div>
@@ -1721,7 +2024,10 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
               )}
               <button
                 type="button"
-                onClick={() => setShowVolumeSlider((s) => !s)}
+                onClick={() => {
+                  setShowVolumeSlider((s) => !s);
+                  setShowSpeedMenu(false);
+                }}
                 style={{
                   width: 32,
                   height: 32,
@@ -1739,6 +2045,106 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 aria-label={showVolumeSlider ? 'Hide volume' : 'Volume'}
               >
                 {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
+              </button>
+            </div>
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              {showSpeedMenu && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    bottom: '100%',
+                    marginBottom: 6,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    padding: 6,
+                    borderRadius: 8,
+                    background: 'rgba(0,0,0,0.92)',
+                    minWidth: 58,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+                  }}
+                >
+                  {PLAYBACK_SPEEDS.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => selectPlaybackSpeed(r)}
+                      style={{
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '4px 8px',
+                        background: r === playbackRate ? 'rgba(255,255,255,0.2)' : 'transparent',
+                        color: '#fff',
+                        fontSize: 12,
+                        fontWeight: r === playbackRate ? 700 : 500,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {formatPlaybackSpeedLabel(r)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSpeedMenu((s) => !s);
+                  setShowVolumeSlider(false);
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+                aria-label={showSpeedMenu ? 'Hide playback speed' : 'Playback speed'}
+                aria-expanded={showSpeedMenu}
+                title="Speed"
+              >
+                {formatPlaybackSpeedLabel(playbackRate)}
+              </button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  void toggleFullscreen();
+                  onControlPressed?.();
+                }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  padding: 0,
+                  flexShrink: 0,
+                }}
+                aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+                title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+              >
+                {isFullscreen ? <IconMinimize2 size={16} /> : <IconMaximize2 size={16} />}
               </button>
             </div>
           </div>
@@ -2056,6 +2462,77 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
           </button>
           <button type="button" onClick={() => { skipBy(1 / 30); onControlPressed?.(); }} style={sessionDetailCircleBtn(false)} aria-label="+1f" title="+1f">
             +1f
+          </button>
+          <div style={{ position: 'relative', flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+            {showSpeedMenu && (
+              <div
+                role="menu"
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginBottom: 6,
+                  zIndex: 10,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  padding: 6,
+                  borderRadius: 8,
+                  background: '#1C1C1E',
+                  minWidth: 56,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                }}
+              >
+                {PLAYBACK_SPEEDS.map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => selectPlaybackSpeed(r)}
+                    style={{
+                      border: 'none',
+                      borderRadius: 4,
+                      padding: '4px 8px',
+                      background: r === playbackRate ? 'rgba(255,255,255,0.15)' : 'transparent',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: r === playbackRate ? 700 : 500,
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {formatPlaybackSpeedLabel(r)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowSpeedMenu((s) => !s)}
+              style={sessionDetailCircleBtn(false)}
+              aria-label={showSpeedMenu ? 'Hide playback speed' : 'Playback speed'}
+              aria-expanded={showSpeedMenu}
+              title="Speed"
+            >
+              {formatPlaybackSpeedLabel(playbackRate)}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void toggleFullscreen();
+              onControlPressed?.();
+            }}
+            style={{
+              ...sessionDetailCircleBtn(false),
+              minWidth: 'clamp(28px, 8.5vw, 36px)',
+              padding: 0,
+            }}
+            aria-label={isFullscreen ? 'Exit full screen' : 'Full screen'}
+            title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+          >
+            {isFullscreen ? <IconMinimize2 size={18} /> : <IconMaximize2 size={18} />}
           </button>
         </div>
       )}

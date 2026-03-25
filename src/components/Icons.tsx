@@ -38,6 +38,8 @@ import {
   Settings,
   Repeat,
   Trash2,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -180,6 +182,18 @@ export const IconVolume2: React.FC<{ size?: number; style?: React.CSSProperties 
 export const IconVolumeX: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <VolumeX size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconMaximize2: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Maximize2 size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconMinimize2: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
+  <IconWrapper size={size} style={style}>
+    <Minimize2 size={size} strokeWidth={stroke} />
   </IconWrapper>
 );
 
