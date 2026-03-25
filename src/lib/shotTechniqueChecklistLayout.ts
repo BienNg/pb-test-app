@@ -4,18 +4,23 @@ export interface ShotTechniqueChecklistLayoutRow {
   shot_video_id: string;
   sub_category_key: string;
   ordered_item_labels: string[];
-  highlighted_item_label: string | null;
+  highlighted_item_labels: string[];
   updated_at: string;
 }
 
-/** Map sub_category_key -> { order, highlighted } */
+/** Map sub_category_key -> { order, highlighted labels } */
 export type ChecklistLayoutStateMap = Record<
   string,
-  { orderedItemLabels: string[]; highlightedItemLabel: string | null }
+  { orderedItemLabels: string[]; highlightedItemLabels: string[] }
 >;
 
 export function techniqueSubKey(subCategoryId: string | null | undefined): string {
   return subCategoryId && subCategoryId.length > 0 ? subCategoryId : '';
+}
+
+function dedupeLabels(labels: string[] | null | undefined): string[] {
+  if (!labels?.length) return [];
+  return [...new Set(labels)];
 }
 
 /**
@@ -52,19 +57,22 @@ export async function fetchShotTechniqueChecklistLayouts(
   if (!supabase || !shotVideoId) return {};
   const { data, error } = await supabase
     .from('shot_technique_checklist_layout')
-    .select('sub_category_key, ordered_item_labels, highlighted_item_label')
+    .select('sub_category_key, ordered_item_labels, highlighted_item_labels')
     .eq('shot_video_id', shotVideoId);
   if (error || !data) return {};
   const result: ChecklistLayoutStateMap = {};
   for (const row of data as Pick<
     ShotTechniqueChecklistLayoutRow,
-    'sub_category_key' | 'ordered_item_labels' | 'highlighted_item_label'
+    'sub_category_key' | 'ordered_item_labels' | 'highlighted_item_labels'
   >[]) {
     const key = row.sub_category_key ?? '';
     const order = Array.isArray(row.ordered_item_labels) ? row.ordered_item_labels : [];
+    const highlights = dedupeLabels(
+      Array.isArray(row.highlighted_item_labels) ? row.highlighted_item_labels : []
+    );
     result[key] = {
       orderedItemLabels: order,
-      highlightedItemLabel: row.highlighted_item_label ?? null,
+      highlightedItemLabels: highlights,
     };
   }
   return result;
@@ -74,7 +82,7 @@ export interface UpsertChecklistLayoutParams {
   shotVideoId: string;
   subCategoryKey: string;
   orderedItemLabels: string[];
-  highlightedItemLabel: string | null;
+  highlightedItemLabels: string[];
 }
 
 export async function upsertShotTechniqueChecklistLayout(
@@ -87,7 +95,7 @@ export async function upsertShotTechniqueChecklistLayout(
       shot_video_id: params.shotVideoId,
       sub_category_key: params.subCategoryKey,
       ordered_item_labels: params.orderedItemLabels,
-      highlighted_item_label: params.highlightedItemLabel,
+      highlighted_item_labels: dedupeLabels(params.highlightedItemLabels),
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'shot_video_id,sub_category_key' }

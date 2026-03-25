@@ -3774,7 +3774,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         const layoutSubKey = techniqueSubKey(effectiveSubId);
                         const layoutEntry = checklistLayoutBySub[layoutSubKey];
                         const savedOrder = layoutEntry?.orderedItemLabels;
-                        const savedHighlight = layoutEntry?.highlightedItemLabel ?? null;
+                        const savedHighlights = layoutEntry?.highlightedItemLabels ?? [];
                         const hasSavedOrder = (savedOrder?.length ?? 0) > 0;
                         const orderedItems = hasSavedOrder
                           ? mergeChecklistItemOrder(techniqueItems, savedOrder)
@@ -3790,21 +3790,21 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
 
                         const persistChecklistLayout = (
                           nextOrder: string[],
-                          nextHighlight: string | null
+                          nextHighlights: string[]
                         ) => {
                           if (!sessionId || !isShotVideo) return;
                           setChecklistLayoutBySub((prev) => ({
                             ...prev,
                             [layoutSubKey]: {
                               orderedItemLabels: nextOrder,
-                              highlightedItemLabel: nextHighlight,
+                              highlightedItemLabels: nextHighlights,
                             },
                           }));
                           void upsertShotTechniqueChecklistLayout(supabase, {
                             shotVideoId: sessionId,
                             subCategoryKey: layoutSubKey,
                             orderedItemLabels: nextOrder,
-                            highlightedItemLabel: nextHighlight,
+                            highlightedItemLabels: nextHighlights,
                           });
                         };
 
@@ -3815,7 +3815,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           if (iFrom < 0 || iTo < 0 || iFrom === iTo) return;
                           next.splice(iFrom, 1);
                           next.splice(iTo, 0, fromLabel);
-                          persistChecklistLayout(next, savedHighlight);
+                          persistChecklistLayout(next, savedHighlights);
                         };
 
                         return orderedItems.map((item, idx) => {
@@ -3823,9 +3823,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           const isChecked = techniqueChecked[key] ?? item.completed;
                           const canEditChecks = isAdminView && isCategoryVisibleToStudent;
                           const isHighlighted =
-                            !isChecked &&
-                            savedHighlight != null &&
-                            savedHighlight === item.label;
+                            !isChecked && savedHighlights.includes(item.label);
                           const roadmapIconIdx = techniqueItems.findIndex((i) => i.label === item.label);
                           const iconIdx = roadmapIconIdx >= 0 ? roadmapIconIdx : idx;
 
@@ -3840,13 +3838,11 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 checked: nextChecked,
                               });
                             }
-                            if (
-                              nextChecked &&
-                              savedHighlight === item.label &&
-                              sessionId &&
-                              isShotVideo
-                            ) {
-                              persistChecklistLayout(orderLabels, null);
+                            if (nextChecked && savedHighlights.includes(item.label) && sessionId && isShotVideo) {
+                              persistChecklistLayout(
+                                orderLabels,
+                                savedHighlights.filter((l) => l !== item.label)
+                              );
                             }
                           };
 
@@ -3882,8 +3878,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               onClick={
                                 canEditChecks && !isChecked
                                   ? () => {
-                                      const nextHl =
-                                        savedHighlight === item.label ? null : item.label;
+                                      const nextHl = savedHighlights.includes(item.label)
+                                        ? savedHighlights.filter((l) => l !== item.label)
+                                        : [...savedHighlights, item.label];
                                       persistChecklistLayout(orderLabels, nextHl);
                                     }
                                   : undefined
@@ -3893,8 +3890,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                   ? (e) => {
                                       if (e.key === 'Enter' || e.key === ' ') {
                                         e.preventDefault();
-                                        const nextHl =
-                                          savedHighlight === item.label ? null : item.label;
+                                        const nextHl = savedHighlights.includes(item.label)
+                                          ? savedHighlights.filter((l) => l !== item.label)
+                                          : [...savedHighlights, item.label];
                                         persistChecklistLayout(orderLabels, nextHl);
                                       }
                                     }
