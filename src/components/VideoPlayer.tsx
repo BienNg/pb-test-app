@@ -267,6 +267,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const playerContainerRef = useRef<HTMLDivElement>(null);
   const fullscreenRootRef = useRef<HTMLDivElement>(null);
   const frameDetailOverlayRef = useRef<HTMLDivElement>(null);
+  const frameDetailTextBoxRef = useRef<HTMLDivElement>(null);
   const onPlayPropRef = useRef(onPlayProp);
   const onTimeUpdateRef = useRef(onTimeUpdate);
   const onActiveMarkerChangeRef = useRef(onActiveMarkerChange);
@@ -349,9 +350,17 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
 
   // Responsive: on small screens, skip buttons fill full width (no maxWidth cap)
   const [skipButtonsFillWidth, setSkipButtonsFillWidth] = useState(false);
+  const [isTabletOrMobileView, setIsTabletOrMobileView] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
     const update = () => setSkipButtonsFillWidth(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1024px)');
+    const update = () => setIsTabletOrMobileView(mq.matches);
     update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
@@ -1116,6 +1125,78 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     : isDraggingFrameTextBox
       ? 'grabbing'
       : 'grab';
+  const frameDetailTextBoxSizing = useMemo(() => {
+    if (!hasFrameDetailOverlayText) {
+      return {
+        fontSize: isTabletOrMobileView ? 11 : 13,
+        lineHeight: 1.32,
+        padding: isTabletOrMobileView ? '6px 8px' : '10px 12px',
+      };
+    }
+
+    const boxWidthPx = (loopOverlaySizePx.width * frameDetailTextBoxWidth) / 100;
+    const boxHeightPx = (loopOverlaySizePx.height * frameDetailTextBoxHeight) / 100;
+    if (boxWidthPx <= 0 || boxHeightPx <= 0) {
+      return {
+        fontSize: isTabletOrMobileView ? 11 : 13,
+        lineHeight: 1.32,
+        padding: isTabletOrMobileView ? '6px 8px' : '10px 12px',
+      };
+    }
+
+    const minFont = 6;
+    const maxFont = isTabletOrMobileView ? 11.5 : 13;
+    let best = minFont;
+
+    const fits = (fontSize: number, hPad: number, vPad: number, lineHeight: number) => {
+      const contentWidth = Math.max(4, boxWidthPx - hPad * 2);
+      const contentHeight = Math.max(4, boxHeightPx - vPad * 2);
+      const approxCharWidth = Math.max(1, fontSize * 0.55);
+      const maxCharsPerLine = Math.max(1, Math.floor(contentWidth / approxCharWidth));
+      let lineCount = 0;
+      for (const rawLine of frameDetailOverlayTextTrimmed.split('\n')) {
+        const line = rawLine.trim();
+        if (!line.length) {
+          lineCount += 1;
+          continue;
+        }
+        const charsBasedLines = Math.ceil(line.length / maxCharsPerLine);
+        let longestToken = 0;
+        for (const token of line.split(/\s+/)) {
+          longestToken = Math.max(longestToken, token.length);
+        }
+        const tokenBasedLines = Math.ceil(longestToken / maxCharsPerLine);
+        lineCount += Math.max(charsBasedLines, tokenBasedLines);
+      }
+      return lineCount * fontSize * lineHeight <= contentHeight;
+    };
+
+    for (let fs = minFont; fs <= maxFont; fs += 0.5) {
+      const scale = (fs - minFont) / (maxFont - minFont || 1);
+      const hPad = (isTabletOrMobileView ? 4 : 5) + scale * (isTabletOrMobileView ? 5 : 7);
+      const vPad = (isTabletOrMobileView ? 2 : 3) + scale * (isTabletOrMobileView ? 4 : 6);
+      const lineHeight = 1.14 + scale * 0.2;
+      if (fits(fs, hPad, vPad, lineHeight)) best = fs;
+      else break;
+    }
+
+    const scale = (best - minFont) / (maxFont - minFont || 1);
+    const hPad = (isTabletOrMobileView ? 4 : 5) + scale * (isTabletOrMobileView ? 5 : 7);
+    const vPad = (isTabletOrMobileView ? 2 : 3) + scale * (isTabletOrMobileView ? 4 : 6);
+    return {
+      fontSize: Number(best.toFixed(1)),
+      lineHeight: Number((1.14 + scale * 0.2).toFixed(2)),
+      padding: `${Math.round(vPad)}px ${Math.round(hPad)}px`,
+    };
+  }, [
+    hasFrameDetailOverlayText,
+    isTabletOrMobileView,
+    loopOverlaySizePx.width,
+    loopOverlaySizePx.height,
+    frameDetailTextBoxWidth,
+    frameDetailTextBoxHeight,
+    frameDetailOverlayTextTrimmed,
+  ]);
   const activeLoopCommentOverlay = useMemo(() => {
     if (!loopCommentOverlays.length) return null;
     if (editableLoopCommentId != null) {
@@ -1361,6 +1442,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       padding: `${Math.round(vPad)}px ${Math.round(hPad)}px`,
     };
   }, [visibleLoopCommentLayout, visibleLoopCommentText, loopOverlaySizePx.width, loopOverlaySizePx.height]);
+  const loopCommentBubbleRadius = isTabletOrMobileView ? 4 : 18;
 
   useLayoutEffect(() => {
     const el = loopCommentBubbleRef.current;
@@ -1406,6 +1488,53 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     loopCommentBubbleSizing.fontSize,
     loopCommentBubbleSizing.lineHeight,
     loopCommentBubbleSizing.padding,
+    loopOverlaySizePx.width,
+    loopOverlaySizePx.height,
+  ]);
+
+  useLayoutEffect(() => {
+    const el = frameDetailTextBoxRef.current;
+    if (!el || !hasFrameDetailOverlayText) return;
+
+    const minFont = 6;
+    const maxFont = isTabletOrMobileView ? 11.5 : 13;
+    const parsePadding = (value: string) => {
+      const [v, h] = value.split(' ');
+      return {
+        vertical: Number.parseFloat(v || '6') || 6,
+        horizontal: Number.parseFloat(h || v || '8') || 8,
+      };
+    };
+    const applySize = (fontSize: number) => {
+      const scale = (fontSize - minFont) / (maxFont - minFont || 1);
+      const vertical = (isTabletOrMobileView ? 2 : 3) + scale * (isTabletOrMobileView ? 4 : 6);
+      const horizontal = (isTabletOrMobileView ? 4 : 5) + scale * (isTabletOrMobileView ? 5 : 7);
+      const lineHeight = 1.14 + scale * 0.2;
+      el.style.fontSize = `${fontSize}px`;
+      el.style.lineHeight = String(Number(lineHeight.toFixed(2)));
+      el.style.padding = `${Math.round(vertical)}px ${Math.round(horizontal)}px`;
+    };
+
+    let font = Math.max(minFont, Math.min(maxFont, frameDetailTextBoxSizing.fontSize));
+    const parsedBasePad = parsePadding(frameDetailTextBoxSizing.padding);
+    el.style.fontSize = `${font}px`;
+    el.style.lineHeight = String(frameDetailTextBoxSizing.lineHeight);
+    el.style.padding = `${Math.round(parsedBasePad.vertical)}px ${Math.round(parsedBasePad.horizontal)}px`;
+
+    while ((el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) && font > minFont) {
+      font = Math.max(minFont, font - 0.5);
+      applySize(font);
+      if (font <= minFont) break;
+    }
+  }, [
+    hasFrameDetailOverlayText,
+    isTabletOrMobileView,
+    frameDetailTextBoxSizing.fontSize,
+    frameDetailTextBoxSizing.lineHeight,
+    frameDetailTextBoxSizing.padding,
+    frameDetailOverlayTextTrimmed,
+    frameDetailTextBoxWidth,
+    frameDetailTextBoxHeight,
     loopOverlaySizePx.width,
     loopOverlaySizePx.height,
   ]);
@@ -1659,7 +1788,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       }),
                   zIndex: 3,
                   padding: loopCommentBubbleSizing.padding,
-                  borderRadius: 18,
+                  borderRadius: loopCommentBubbleRadius,
                   background: '#ffffff',
                   color: '#111111',
                   fontSize: loopCommentBubbleSizing.fontSize,
@@ -2087,6 +2216,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 )}
                 {hasFrameDetailOverlayText && (
                   <div
+                    ref={frameDetailTextBoxRef}
                     role="presentation"
                     style={{
                       position: 'absolute',
@@ -2096,7 +2226,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       width: `${frameDetailTextBoxWidth}%`,
                       height: `${frameDetailTextBoxHeight}%`,
                       minHeight: 32,
-                      borderRadius: 18,
+                      borderRadius: loopCommentBubbleRadius,
                       background: '#ffffff',
                       backdropFilter: 'none',
                       WebkitBackdropFilter: 'none',
@@ -2105,11 +2235,11 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         ? '0 10px 26px rgba(0,0,0,0.22)'
                         : '0 6px 18px rgba(0,0,0,0.16)',
                       color: '#111111',
-                      fontSize: 13,
+                      fontSize: frameDetailTextBoxSizing.fontSize,
                       fontWeight: 500,
-                      lineHeight: 1.4,
+                      lineHeight: frameDetailTextBoxSizing.lineHeight,
                       letterSpacing: '-0.01em',
-                      padding: '10px 12px',
+                      padding: frameDetailTextBoxSizing.padding,
                       overflow: 'hidden',
                       cursor: frameTextBoxCursor,
                       pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
@@ -2328,7 +2458,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       }),
                   zIndex: 3,
                   padding: loopCommentBubbleSizing.padding,
-                  borderRadius: 18,
+                  borderRadius: loopCommentBubbleRadius,
                   background: '#ffffff',
                   color: '#111111',
                   fontSize: loopCommentBubbleSizing.fontSize,
@@ -2806,6 +2936,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                 )}
                 {hasFrameDetailOverlayText && (
                   <div
+                    ref={frameDetailTextBoxRef}
                     role="presentation"
                     style={{
                       position: 'absolute',
@@ -2815,7 +2946,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       width: `${frameDetailTextBoxWidth}%`,
                       height: `${frameDetailTextBoxHeight}%`,
                       minHeight: 32,
-                      borderRadius: 18,
+                      borderRadius: loopCommentBubbleRadius,
                       background: '#ffffff',
                       backdropFilter: 'none',
                       WebkitBackdropFilter: 'none',
@@ -2824,11 +2955,11 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                         ? '0 10px 26px rgba(0,0,0,0.22)'
                         : '0 6px 18px rgba(0,0,0,0.16)',
                       color: '#111111',
-                      fontSize: 13,
+                      fontSize: frameDetailTextBoxSizing.fontSize,
                       fontWeight: 500,
-                      lineHeight: 1.4,
+                      lineHeight: frameDetailTextBoxSizing.lineHeight,
                       letterSpacing: '-0.01em',
-                      padding: '10px 12px',
+                      padding: frameDetailTextBoxSizing.padding,
                       overflow: 'hidden',
                       cursor: frameTextBoxCursor,
                       pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
