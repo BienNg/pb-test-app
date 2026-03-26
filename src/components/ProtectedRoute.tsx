@@ -24,7 +24,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const next = pathname ? `?next=${encodeURIComponent(pathname)}` : '';
       router.replace(`/login${next}`);
     }
-  }, [user, loading, router, pathname]);
+  }, [user?.id, loading, router, pathname]);
 
   if (loading) {
     return <PlayerProfileLoadingScreen />;

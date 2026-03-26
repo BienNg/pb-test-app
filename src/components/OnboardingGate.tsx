@@ -72,7 +72,7 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, supabase, pathname, router]);
+  }, [authLoading, user?.id, supabase, pathname, router]);
 
   if (authLoading || checking) {
     return <PlayerProfileLoadingScreen />;
