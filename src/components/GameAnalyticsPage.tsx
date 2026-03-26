@@ -1743,9 +1743,11 @@ function ProfileMenuButton({
   size?: number;
   variant?: 'profile' | 'settings';
 }) {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
+  const supabase = createClient();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [onboardingIncomplete, setOnboardingIncomplete] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{
     top: number;
     right: number;
@@ -1785,6 +1787,31 @@ function ProfileMenuButton({
     return () => cancelAnimationFrame(raf);
   }, [open]);
 
+  useEffect(() => {
+    if (!user?.id || !supabase) {
+      setOnboardingIncomplete(false);
+      return;
+    }
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('onboarding_completed_at')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setOnboardingIncomplete(false);
+        return;
+      }
+      setOnboardingIncomplete(!data?.onboarding_completed_at);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, user?.id, supabase]);
+
   const isSettings = variant === 'settings';
 
   const menuContent =
@@ -1807,6 +1834,36 @@ function ProfileMenuButton({
             zIndex: 9999,
           }}
         >
+          {onboardingIncomplete ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                router.push('/onboarding');
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: 'none',
+                borderRadius: 6,
+                background: 'transparent',
+                color: SAGE_PRIMARY,
+                ...TYPOGRAPHY.body,
+                fontWeight: 600,
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = COLORS.backgroundLight;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Complete onboarding
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"
