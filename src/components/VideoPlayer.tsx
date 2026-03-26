@@ -1541,7 +1541,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             autoAlpha: 1,
             duration: 0.16,
             ease: 'power2.out',
-            onStart: () => gsap.set(dotEl, { pointerEvents: 'auto' }),
+            onStart: () => {
+              gsap.set(dotEl, { pointerEvents: 'auto' });
+            },
           },
           '-=0.06'
         );
@@ -1595,7 +1597,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
             autoAlpha: 1,
             duration: 0.16,
             ease: 'power2.out',
-            onStart: () => gsap.set(dotEl, { pointerEvents: 'auto' }),
+            onStart: () => {
+              gsap.set(dotEl, { pointerEvents: 'auto' });
+            },
           },
           '-=0.06'
         );
