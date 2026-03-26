@@ -4,11 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/styles/theme';
+import { COLORS, RADIUS, SPACING, SHADOWS } from '@/styles/theme';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, ChevronLeft } from 'lucide-react';
 import {
   createEmptyDraft,
+  draftAfterNavigatingBack,
+  getOrderedPathToCurrent,
   getStep,
   normalizeDraft,
   ONBOARDING_MAX_STEPS_HINT,
@@ -26,9 +28,15 @@ function defaultHomeForRole(role: string | null | undefined): string {
 }
 
 const slideVariants = {
-  enter: { x: '100%', opacity: 0 },
+  enter: (dir: number) => ({
+    x: dir > 0 ? '100%' : '-100%',
+    opacity: 0,
+  }),
   center: { x: 0, opacity: 1 },
-  exit: { x: '-100%', opacity: 0 },
+  exit: (dir: number) => ({
+    x: dir > 0 ? '-100%' : '100%',
+    opacity: 0,
+  }),
 };
 
 const transition = {
@@ -49,6 +57,7 @@ export function OnboardingWizard() {
   const [draft, setDraft] = useState<OnboardingDraft | null>(null);
   const [textInput, setTextInput] = useState('');
   const [selectedSingle, setSelectedSingle] = useState<string | null>(null);
+  const [navDirection, setNavDirection] = useState(1);
 
   const loadProfile = useCallback(async () => {
     if (!supabase || !user?.id) {
@@ -187,11 +196,29 @@ export function OnboardingWizard() {
     }
 
     const nextDraft: OnboardingDraft = { ...draft, answers, currentStepId: nextId };
+    setNavDirection(1);
     setDraft(nextDraft);
     setError(null);
     void (async () => {
       if (!supabase || !user?.id) return;
       // Don't set saving to true here to avoid UI flicker during optimistic update
+      const { error: uErr } = await supabase
+        .from('profiles')
+        .update({ onboarding_draft: nextDraft })
+        .eq('id', user.id);
+      if (uErr) setError(uErr.message);
+    })();
+  };
+
+  const handleBack = () => {
+    if (!draft) return;
+    const nextDraft = draftAfterNavigatingBack(draft);
+    if (!nextDraft) return;
+    setNavDirection(-1);
+    setDraft(nextDraft);
+    setError(null);
+    void (async () => {
+      if (!supabase || !user?.id) return;
       const { error: uErr } = await supabase
         .from('profiles')
         .update({ onboarding_draft: nextDraft })
@@ -231,6 +258,8 @@ export function OnboardingWizard() {
 
   const showNext = step.kind !== 'message';
   const showFinish = step.kind === 'message';
+  const canGoBack =
+    draft && getOrderedPathToCurrent(draft).length >= 2;
 
   return (
     <div
@@ -244,8 +273,42 @@ export function OnboardingWizard() {
         position: 'relative',
       }}
     >
-      {/* Sleek Progress Bar */}
-      <div style={{ padding: `${SPACING.xl}px ${SPACING.xxl}px`, paddingTop: 'max(env(safe-area-inset-top), 24px)' }}>
+      {/* Top bar: back + progress */}
+      <div
+        style={{
+          padding: `${SPACING.md}px ${SPACING.xxl}px ${SPACING.lg}px`,
+          paddingTop: 'max(env(safe-area-inset-top), 16px)',
+        }}
+      >
+        {canGoBack ? (
+          <div style={{ marginBottom: SPACING.md }}>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleBack}
+              aria-label="Back"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 2,
+                margin: 0,
+                marginLeft: -8,
+                padding: '8px 10px',
+                border: 'none',
+                background: 'transparent',
+                fontFamily: fontDisplay,
+                fontSize: 17,
+                fontWeight: 400,
+                color: COLORS.libraryPrimary,
+                cursor: saving ? 'wait' : 'pointer',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <ChevronLeft size={22} strokeWidth={2} aria-hidden />
+              Back
+            </button>
+          </div>
+        ) : null}
         <div
           style={{
             height: 4,
@@ -269,9 +332,10 @@ export function OnboardingWizard() {
 
       {/* Main Content Area */}
       <div style={{ flex: 1, position: 'relative' }}>
-        <AnimatePresence initial={false} mode="wait">
+        <AnimatePresence initial={false} mode="wait" custom={navDirection}>
           <motion.div
             key={step.id}
+            custom={navDirection}
             variants={slideVariants}
             initial="enter"
             animate="center"

@@ -85,6 +85,56 @@ export function resolveNextStepId(
   return step.resolveNext(answers);
 }
 
+/**
+ * Ordered step IDs from the initial step through `draft.currentStepId`, following
+ * branching with saved answers. Empty if the draft does not match a valid path.
+ */
+export function getOrderedPathToCurrent(draft: {
+  currentStepId: string;
+  answers: Record<string, unknown>;
+}): string[] {
+  const path: string[] = [];
+  let id: string | null = getInitialStepId();
+  const seen = new Set<string>();
+  while (id && getStep(id)) {
+    if (seen.has(id)) return [];
+    seen.add(id);
+    path.push(id);
+    if (id === draft.currentStepId) return path;
+    id = resolveNextStepId(id, draft.answers);
+  }
+  return [];
+}
+
+export function getPreviousOnboardingStepId(draft: {
+  currentStepId: string;
+  answers: Record<string, unknown>;
+}): string | null {
+  const path = getOrderedPathToCurrent(draft);
+  if (path.length < 2) return null;
+  return path[path.length - 2] ?? null;
+}
+
+/** Draft after going back one step: previous screen, answers pruned for later steps. */
+export function draftAfterNavigatingBack(draft: OnboardingDraft): OnboardingDraft | null {
+  const path = getOrderedPathToCurrent(draft);
+  if (path.length < 2 || path[path.length - 1] !== draft.currentStepId) return null;
+  const prevId = path[path.length - 2];
+  if (!prevId) return null;
+  const keepIds = new Set(path.slice(0, -1));
+  const nextAnswers: Record<string, unknown> = {};
+  for (const k of Object.keys(draft.answers)) {
+    if (keepIds.has(k)) {
+      nextAnswers[k] = draft.answers[k];
+    }
+  }
+  return {
+    ...draft,
+    currentStepId: prevId,
+    answers: nextAnswers,
+  };
+}
+
 export function validateStepAnswer(
   step: OnboardingStep,
   value: unknown
