@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { COLORS, RADIUS, SPACING, TYPOGRAPHY } from '@/styles/theme';
+import { COLORS, RADIUS, SPACING, TYPOGRAPHY, SHADOWS } from '@/styles/theme';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 import {
   createEmptyDraft,
   getStep,
@@ -22,6 +24,18 @@ function defaultHomeForRole(role: string | null | undefined): string {
   if (role === 'coach') return '/coach';
   return '/';
 }
+
+const slideVariants = {
+  enter: { x: '100%', opacity: 0 },
+  center: { x: 0, opacity: 1 },
+  exit: { x: '-100%', opacity: 0 },
+};
+
+const transition = {
+  type: 'spring',
+  stiffness: 300,
+  damping: 30,
+};
 
 export function OnboardingWizard() {
   const { user } = useAuth();
@@ -177,16 +191,12 @@ export function OnboardingWizard() {
     setError(null);
     void (async () => {
       if (!supabase || !user?.id) return;
-      setSaving(true);
-      try {
-        const { error: uErr } = await supabase
-          .from('profiles')
-          .update({ onboarding_draft: nextDraft })
-          .eq('id', user.id);
-        if (uErr) setError(uErr.message);
-      } finally {
-        setSaving(false);
-      }
+      // Don't set saving to true here to avoid UI flicker during optimistic update
+      const { error: uErr } = await supabase
+        .from('profiles')
+        .update({ onboarding_draft: nextDraft })
+        .eq('id', user.id);
+      if (uErr) setError(uErr.message);
     })();
   };
 
@@ -206,11 +216,15 @@ export function OnboardingWizard() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: COLORS.backgroundLibrary,
+          background: COLORS.background,
           fontFamily: fontDisplay,
         }}
       >
-        <p style={{ color: COLORS.textSecondary, ...TYPOGRAPHY.body }}>Loading…</p>
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          style={{ width: 40, height: 40, borderRadius: '50%', background: COLORS.textMuted }}
+        />
       </div>
     );
   }
@@ -222,195 +236,277 @@ export function OnboardingWizard() {
     <div
       style={{
         minHeight: '100dvh',
-        background: COLORS.backgroundLibrary,
+        background: COLORS.background,
         fontFamily: fontDisplay,
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <div style={{ padding: SPACING.xxl, paddingBottom: SPACING.md }}>
+      {/* Sleek Progress Bar */}
+      <div style={{ padding: `${SPACING.xl}px ${SPACING.xxl}px`, paddingTop: 'max(env(safe-area-inset-top), 24px)' }}>
         <div
           style={{
-            height: 6,
+            height: 4,
             borderRadius: RADIUS.full,
             background: COLORS.backgroundLight,
             overflow: 'hidden',
           }}
         >
-          <div
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progressApprox}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
             style={{
               height: '100%',
-              width: `${progressApprox}%`,
-              background: COLORS.libraryPrimary,
-              transition: 'width 0.25s ease',
+              background: COLORS.textPrimary,
+              borderRadius: RADIUS.full,
             }}
           />
         </div>
-        <p
-          style={{
-            margin: `${SPACING.md}px 0 0`,
-            fontSize: 12,
-            color: COLORS.textSecondary,
-          }}
-        >
-          Onboarding
-        </p>
       </div>
 
-      <div style={{ flex: 1, padding: `0 ${SPACING.xxl}px ${SPACING.xxl}px` }}>
-        <h1
-          style={{
-            margin: `0 0 ${SPACING.md}px`,
-            fontSize: 24,
-            fontWeight: 700,
-            color: COLORS.textPrimary,
-            lineHeight: 1.25,
-          }}
-        >
-          {step.title}
-        </h1>
-        {step.description ? (
-          <p
+      {/* Main Content Area */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        <AnimatePresence initial={false} mode="wait">
+          <motion.div
+            key={step.id}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={transition}
             style={{
-              margin: `0 0 ${SPACING.xl}px`,
-              fontSize: 15,
-              color: COLORS.textSecondary,
-              lineHeight: 1.5,
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              padding: `0 ${SPACING.xxl}px`,
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            {step.description}
-          </p>
-        ) : null}
-
-        {step.kind === 'single' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
-            {step.options.map((opt) => {
-              const selected = selectedSingle === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    setSelectedSingle(opt.value);
-                    setError(null);
-                  }}
+            <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 120 }}>
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                style={{
+                  margin: `0 0 ${SPACING.sm}px`,
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: COLORS.textPrimary,
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                {step.title}
+              </motion.h1>
+              
+              {step.description ? (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
                   style={{
-                    textAlign: 'left',
-                    padding: SPACING.lg,
-                    borderRadius: RADIUS.md,
-                    border: `2px solid ${selected ? COLORS.libraryPrimary : COLORS.backgroundLight}`,
-                    background: selected ? COLORS.libraryPrimaryLight : COLORS.white,
-                    fontFamily: fontDisplay,
-                    fontSize: 15,
-                    fontWeight: 500,
-                    color: COLORS.textPrimary,
-                    cursor: 'pointer',
+                    margin: `0 0 ${SPACING.xxl}px`,
+                    fontSize: 17,
+                    color: COLORS.textSecondary,
+                    lineHeight: 1.4,
                   }}
                 >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+                  {step.description}
+                </motion.p>
+              ) : (
+                <div style={{ height: SPACING.xl }} />
+              )}
 
-        {step.kind === 'text' ? (
-          <textarea
-            value={textInput}
-            onChange={(e) => {
-              setTextInput(e.target.value);
-              setError(null);
-            }}
-            placeholder={step.placeholder}
-            rows={4}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: SPACING.lg,
-              borderRadius: RADIUS.md,
-              border: `1px solid ${COLORS.backgroundLight}`,
-              fontFamily: fontDisplay,
-              fontSize: 15,
-              resize: 'vertical',
-            }}
-          />
-        ) : null}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+              >
+                {step.kind === 'single' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+                    {step.options.map((opt) => {
+                      const selected = selectedSingle === opt.value;
+                      return (
+                        <motion.button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            setSelectedSingle(opt.value);
+                            setError(null);
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            textAlign: 'left',
+                            padding: '18px 20px',
+                            borderRadius: RADIUS.lg,
+                            border: `1.5px solid ${selected ? COLORS.textPrimary : COLORS.backgroundLight}`,
+                            background: COLORS.white,
+                            fontFamily: fontDisplay,
+                            fontSize: 16,
+                            fontWeight: 500,
+                            color: COLORS.textPrimary,
+                            cursor: 'pointer',
+                            boxShadow: selected ? SHADOWS.light : 'none',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          <span>{opt.label}</span>
+                          {selected && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                            >
+                              <Check size={20} color={COLORS.textPrimary} strokeWidth={2.5} />
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                ) : null}
 
-        {error ? (
-          <p style={{ marginTop: SPACING.lg, fontSize: 14, color: COLORS.red }} role="alert">
-            {error}
-          </p>
-        ) : null}
+                {step.kind === 'text' ? (
+                  <textarea
+                    value={textInput}
+                    onChange={(e) => {
+                      setTextInput(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder={step.placeholder}
+                    rows={4}
+                    style={{
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      padding: SPACING.lg,
+                      borderRadius: RADIUS.lg,
+                      border: `1.5px solid ${COLORS.backgroundLight}`,
+                      background: COLORS.backgroundLight,
+                      fontFamily: fontDisplay,
+                      fontSize: 16,
+                      color: COLORS.textPrimary,
+                      resize: 'none',
+                      outline: 'none',
+                      transition: 'border-color 0.2s ease, background-color 0.2s ease',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = COLORS.textPrimary;
+                      e.target.style.backgroundColor = COLORS.white;
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = COLORS.backgroundLight;
+                      e.target.style.backgroundColor = COLORS.backgroundLight;
+                    }}
+                  />
+                ) : null}
 
-        <div
-          style={{
-            marginTop: SPACING.xxl,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: SPACING.md,
-          }}
-        >
-          {showNext ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => handleNext()}
-              style={{
-                padding: '14px 20px',
-                borderRadius: RADIUS.md,
-                border: 'none',
-                background: COLORS.libraryPrimary,
-                color: COLORS.white,
-                fontFamily: fontDisplay,
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: saving ? 'wait' : 'pointer',
-                opacity: saving ? 0.7 : 1,
-              }}
-            >
-              Next
-            </button>
-          ) : null}
-          {showFinish ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleFinish}
-              style={{
-                padding: '14px 20px',
-                borderRadius: RADIUS.md,
-                border: 'none',
-                background: COLORS.primary,
-                color: COLORS.white,
-                fontFamily: fontDisplay,
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: saving ? 'wait' : 'pointer',
-                opacity: saving ? 0.7 : 1,
-              }}
-            >
-              Finish
-            </button>
-          ) : null}
-          <button
-            type="button"
+                {error ? (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    style={{ marginTop: SPACING.md, fontSize: 14, color: COLORS.red, fontWeight: 500 }} 
+                    role="alert"
+                  >
+                    {error}
+                  </motion.p>
+                ) : null}
+              </motion.div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Sticky Bottom Actions */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: `0 ${SPACING.xxl}px calc(env(safe-area-inset-bottom) + 24px)`,
+          background: 'linear-gradient(to top, rgba(255,255,255,1) 60%, rgba(255,255,255,0))',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: SPACING.md,
+          zIndex: 10,
+        }}
+      >
+        {showNext ? (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             disabled={saving}
-            onClick={handleContinueLater}
+            onClick={() => handleNext()}
             style={{
-              padding: '12px 20px',
-              borderRadius: RADIUS.md,
+              padding: '18px 24px',
+              borderRadius: RADIUS.full,
               border: 'none',
-              background: 'transparent',
-              color: COLORS.textSecondary,
+              background: COLORS.textPrimary,
+              color: COLORS.white,
               fontFamily: fontDisplay,
-              fontSize: 15,
-              fontWeight: 500,
+              fontSize: 17,
+              fontWeight: 600,
               cursor: saving ? 'wait' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+              width: '100%',
+              boxShadow: SHADOWS.md,
             }}
           >
-            Continue later
-          </button>
-        </div>
+            Continue
+          </motion.button>
+        ) : null}
+        
+        {showFinish ? (
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            disabled={saving}
+            onClick={handleFinish}
+            style={{
+              padding: '18px 24px',
+              borderRadius: RADIUS.full,
+              border: 'none',
+              background: COLORS.textPrimary,
+              color: COLORS.white,
+              fontFamily: fontDisplay,
+              fontSize: 17,
+              fontWeight: 600,
+              cursor: saving ? 'wait' : 'pointer',
+              opacity: saving ? 0.7 : 1,
+              width: '100%',
+              boxShadow: SHADOWS.md,
+            }}
+          >
+            Get Started
+          </motion.button>
+        ) : null}
+        
+        <button
+          type="button"
+          disabled={saving}
+          onClick={handleContinueLater}
+          style={{
+            padding: '12px 20px',
+            borderRadius: RADIUS.full,
+            border: 'none',
+            background: 'transparent',
+            color: COLORS.textSecondary,
+            fontFamily: fontDisplay,
+            fontSize: 15,
+            fontWeight: 500,
+            cursor: saving ? 'wait' : 'pointer',
+            opacity: saving ? 0.5 : 1,
+          }}
+        >
+          Set up later
+        </button>
       </div>
     </div>
   );
