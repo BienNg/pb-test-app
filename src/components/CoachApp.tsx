@@ -12,6 +12,7 @@ import type { TrainingSession } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent, fetchSessionCountsForStudentIds, fetchLastSessionDateForStudentIds } from '@/lib/studentSessions';
 import { insertShotVideo } from '@/lib/shotVideos';
+import { deriveOnboardingSurveyFields } from '@/lib/onboarding/display';
 
 type CoachTabId = 'schedule' | 'students' | 'library';
 
@@ -74,7 +75,9 @@ export const CoachApp: React.FC = () => {
         setStudents([]);
         return;
       }
-      const { data, error } = await supabase.from('profiles').select('id, email, full_name, role');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, onboarding_completed_at, onboarding_draft, onboarding_answers');
       if (error) {
         console.error('Error loading students:', error);
         setStudents([]);
@@ -85,6 +88,9 @@ export const CoachApp: React.FC = () => {
         email: string | null;
         full_name: string | null;
         role: string | null;
+        onboarding_completed_at?: string | null;
+        onboarding_draft?: unknown;
+        onboarding_answers?: unknown;
       }[];
       const filtered = rows.filter((r) => r.role === 'student' || !r.role);
       const studentIds = filtered.map((r) => r.id);
@@ -128,6 +134,7 @@ export const CoachApp: React.FC = () => {
               });
             }
           }
+          const ob = deriveOnboardingSurveyFields(r);
           return {
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
@@ -137,6 +144,8 @@ export const CoachApp: React.FC = () => {
             joinedDate: joinedDate,
             signupDate: signupDateLabel,
             lastLoginDate: lastLoginDateLabel,
+            onboardingSurveyStatus: ob.onboardingSurveyStatus,
+            onboardingAnswers: ob.onboardingAnswers,
           };
         })
       );

@@ -1,8 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { COLORS, SPACING, RADIUS, TYPOGRAPHY } from '../styles/theme';
-import { IconUser, IconChevronRight, IconSearch, IconPencil, IconTrash } from './Icons';
+import {
+  IconUser,
+  IconChevronRight,
+  IconSearch,
+  IconPencil,
+  IconTrash,
+  IconClipboardList,
+} from './Icons';
 import { LessonCard } from './Cards';
 import type { TrainingSession } from './GameAnalyticsPage';
+import type { OnboardingSurveyStatus } from '@/lib/onboarding/display';
+import { formatOnboardingAnswersForAdmin } from '@/lib/onboarding/display';
 
 export type StudentLevel = 'newbie' | 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
@@ -18,6 +27,9 @@ export interface StudentInfo {
   signupDate?: string;
   lastLoginDate?: string;
   progress?: number;
+  onboardingSurveyStatus?: OnboardingSurveyStatus;
+  /** Raw answer map for onboarding survey modal (completed snapshot and/or in-progress draft). */
+  onboardingAnswers?: Record<string, unknown>;
 }
 
 const LEVEL_ORDER: StudentLevel[] = ['newbie', 'beginner', 'intermediate', 'advanced', 'expert'];
@@ -28,6 +40,15 @@ const LEVEL_LABELS: Record<StudentLevel, string> = {
   intermediate: 'Intermediate',
   advanced: 'Advanced',
   expert: 'Expert',
+};
+
+const ONBOARDING_STATUS_STYLES: Record<
+  OnboardingSurveyStatus,
+  { label: string; bg: string; text: string }
+> = {
+  complete: { label: 'Complete', bg: 'rgba(49, 203, 0, 0.15)', text: '#1d7a0a' },
+  in_progress: { label: 'In progress', bg: 'rgba(245, 158, 11, 0.18)', text: '#b45309' },
+  not_started: { label: 'Not started', bg: 'rgba(148, 163, 184, 0.2)', text: '#64748b' },
 };
 
 const LEVEL_COLORS: Record<StudentLevel, { bg: string; text: string; badgeBg?: string }> = {
@@ -297,6 +318,7 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
   const [filterLevel, setFilterLevel] = useState<StudentLevel | 'all'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isMobile, setIsMobile] = useState(false);
+  const [surveyViewerStudent, setSurveyViewerStudent] = useState<StudentInfo | null>(null);
   const showStudentsOnly = !showGameAnalyticsTab;
 
   React.useEffect(() => {
@@ -748,13 +770,14 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SIGN UP DATE</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>LAST LOGIN DATE</th>
                       <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SESSIONS</th>
+                      <th style={{ padding: '16px 24px', textAlign: 'left', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SURVEY STATUS</th>
                       <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '12px', fontWeight: 700, color: '#9BC1B9', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody style={{ background: 'white' }}>
                     {filteredAndSortedStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textMuted }}>
+                        <td colSpan={8} style={{ padding: SPACING.xl, textAlign: 'center', color: COLORS.textMuted }}>
                           No students match your search or filter.
                         </td>
                       </tr>
@@ -762,6 +785,11 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                       filteredAndSortedStudents.map((student, idx) => {
                         const level = student.level ?? 'beginner';
                         const levelStyle = LEVEL_COLORS[level];
+                        const surveyStatus = student.onboardingSurveyStatus ?? 'not_started';
+                        const surveyStyle = ONBOARDING_STATUS_STYLES[surveyStatus];
+                        const surveyRows = formatOnboardingAnswersForAdmin(student.onboardingAnswers ?? {});
+                        const canOpenSurveyModal =
+                          surveyStatus !== 'not_started' || surveyRows.length > 0;
                         return (
                           <tr 
                             key={student.id}
@@ -815,8 +843,41 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                             <td style={{ padding: '16px 24px', fontSize: '14px', fontWeight: 600, color: COLORS.textPrimary }}>
                               {student.lessonsCompleted} <span style={{ color: '#9BC1B9', fontWeight: 400 }}>lessons</span>
                             </td>
+                            <td style={{ padding: '16px 24px' }}>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '4px 10px',
+                                  borderRadius: '9999px',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  background: surveyStyle.bg,
+                                  color: surveyStyle.text,
+                                }}
+                              >
+                                {surveyStyle.label}
+                              </span>
+                            </td>
                             <td style={{ padding: '16px 24px', textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
                               <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                <button
+                                  type="button"
+                                  disabled={!canOpenSurveyModal}
+                                  onClick={() => setSurveyViewerStudent(student)}
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    padding: '8px',
+                                    cursor: canOpenSurveyModal ? 'pointer' : 'not-allowed',
+                                    color: canOpenSurveyModal ? '#0ea5e9' : COLORS.textMuted,
+                                    opacity: canOpenSurveyModal ? 1 : 0.45,
+                                  }}
+                                  title="View survey responses"
+                                  aria-label="View survey responses"
+                                >
+                                  <IconClipboardList size={20} />
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => onSelectStudent(student)}
@@ -1017,6 +1078,114 @@ export const CoachStudentsPage: React.FC<CoachStudentsPageProps> = ({
                 }}
               >
                 {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {surveyViewerStudent && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="survey-viewer-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: SPACING.lg,
+          }}
+          onClick={() => setSurveyViewerStudent(null)}
+        >
+          <div
+            style={{
+              background: COLORS.white,
+              borderRadius: RADIUS.lg,
+              padding: SPACING.xl,
+              maxWidth: 520,
+              width: '100%',
+              maxHeight: 'min(85vh, 640px)',
+              overflow: 'auto',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              id="survey-viewer-title"
+              style={{ ...TYPOGRAPHY.h3, margin: 0, marginBottom: SPACING.sm }}
+            >
+              Onboarding survey
+            </h3>
+            <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: '0 0 16px' }}>
+              {surveyViewerStudent.name}
+            </p>
+            {(surveyViewerStudent.onboardingSurveyStatus ?? 'not_started') === 'in_progress' ? (
+              <p
+                style={{
+                  ...TYPOGRAPHY.label,
+                  fontSize: '13px',
+                  color: '#b45309',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  padding: '10px 12px',
+                  borderRadius: RADIUS.md,
+                  margin: '0 0 16px',
+                }}
+              >
+                Survey not finished — responses below reflect progress so far.
+              </p>
+            ) : null}
+            {(() => {
+              const rows = formatOnboardingAnswersForAdmin(surveyViewerStudent.onboardingAnswers ?? {});
+              if (rows.length === 0) {
+                return (
+                  <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textMuted, margin: 0 }}>
+                    {(surveyViewerStudent.onboardingSurveyStatus ?? 'not_started') === 'complete'
+                      ? 'No response details on file. This can happen for accounts that completed onboarding before responses were stored.'
+                      : 'No responses recorded yet.'}
+                  </p>
+                );
+              }
+              return (
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: SPACING.md }}>
+                  {rows.map((row, rowIdx) => (
+                    <li
+                      key={`${row.question}-${rowIdx}`}
+                      style={{
+                        paddingBottom: SPACING.md,
+                        borderBottom: '1px solid rgba(143, 185, 168, 0.15)',
+                      }}
+                    >
+                      <p style={{ ...TYPOGRAPHY.label, fontSize: '11px', color: '#9BC1B9', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {row.question}
+                      </p>
+                      <p style={{ ...TYPOGRAPHY.bodySmall, margin: 0, color: COLORS.textPrimary, fontWeight: 500 }}>
+                        {row.answer}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              );
+            })()}
+            <div style={{ marginTop: SPACING.xl, display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setSurveyViewerStudent(null)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: RADIUS.md,
+                  border: 'none',
+                  background: COLORS.libraryPrimary,
+                  color: COLORS.white,
+                  ...TYPOGRAPHY.bodySmall,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
               </button>
             </div>
           </div>

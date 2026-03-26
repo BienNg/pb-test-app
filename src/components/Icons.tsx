@@ -41,6 +41,7 @@ import {
   Maximize2,
   Minimize2,
   Link2,
+  ClipboardList,
 } from 'lucide-react';
 
 const iconSize = 20;
@@ -285,6 +286,15 @@ export const IconRepeat: React.FC<{ size?: number; style?: React.CSSProperties }
 export const IconTrash: React.FC<{ size?: number; style?: React.CSSProperties }> = ({ size = iconSize, style }) => (
   <IconWrapper size={size} style={style}>
     <Trash2 size={size} strokeWidth={stroke} />
+  </IconWrapper>
+);
+
+export const IconClipboardList: React.FC<{ size?: number; style?: React.CSSProperties }> = ({
+  size = iconSize,
+  style,
+}) => (
+  <IconWrapper size={size} style={style}>
+    <ClipboardList size={size} strokeWidth={stroke} />
   </IconWrapper>
 );
 

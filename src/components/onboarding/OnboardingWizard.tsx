@@ -118,14 +118,16 @@ export function OnboardingWizard() {
   );
 
   const persistComplete = useCallback(async () => {
-    if (!supabase || !user?.id) return;
+    if (!supabase || !user?.id || !draft) return;
     setSaving(true);
     setError(null);
     try {
+      const answersSnapshot = { ...draft.answers };
       const { error: uErr } = await supabase
         .from('profiles')
         .update({
           onboarding_completed_at: new Date().toISOString(),
+          onboarding_answers: answersSnapshot,
           onboarding_draft: null,
           onboarding_deferred_at: null,
         })
@@ -139,7 +141,7 @@ export function OnboardingWizard() {
     } finally {
       setSaving(false);
     }
-  }, [supabase, user?.id, router, role]);
+  }, [supabase, user?.id, router, role, draft]);
 
   const handleContinueLater = async () => {
     if (!draft) return;

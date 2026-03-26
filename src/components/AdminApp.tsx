@@ -6,6 +6,7 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, RADIUS, BREAKPOINTS } from '../st
 import { Card } from './BaseComponents';
 import { IconCircle, IconChevronLeft, IconChevronRight } from './Icons';
 import { CoachStudentsPage, type StudentInfo } from './CoachStudentsPage';
+import { deriveOnboardingSurveyFields } from '@/lib/onboarding/display';
 import { LessonsPage } from './LessonsPage';
 import { GameAnalyticsPage, type TrainingSession } from './GameAnalyticsPage';
 import { createClient } from '@/lib/supabase/client';
@@ -152,7 +153,9 @@ function AdminStudentsPage({
     setLoading(true);
     setError(null);
     try {
-      const { data, error } = await supabase.from('profiles').select('id, email, full_name, role');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role, onboarding_completed_at, onboarding_draft, onboarding_answers');
       if (error) {
         setError(error.message);
         setStudents([]);
@@ -163,6 +166,9 @@ function AdminStudentsPage({
         email: string | null;
         full_name: string | null;
         role: string | null;
+        onboarding_completed_at?: string | null;
+        onboarding_draft?: unknown;
+        onboarding_answers?: unknown;
       }[];
       const filtered = rows.filter((r) => r.role === 'student' || !r.role);
       const studentIds = filtered.map((r) => r.id);
@@ -206,6 +212,7 @@ function AdminStudentsPage({
               });
             }
           }
+          const ob = deriveOnboardingSurveyFields(r);
           return {
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
@@ -215,6 +222,8 @@ function AdminStudentsPage({
             joinedDate: joinedDate,
             signupDate: signupDateLabel,
             lastLoginDate: lastLoginDateLabel,
+            onboardingSurveyStatus: ob.onboardingSurveyStatus,
+            onboardingAnswers: ob.onboardingAnswers,
           };
         })
       );
