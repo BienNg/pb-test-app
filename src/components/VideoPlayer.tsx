@@ -39,6 +39,16 @@ function formatPlaybackSpeedLabel(rate: number): string {
   return `${Number.isInteger(rate) ? rate : rate}×`;
 }
 
+type OrientationWithLock = ScreenOrientation & {
+  lock?: (orientation: OrientationLockType) => Promise<void>;
+  unlock?: () => void;
+};
+
+function getScreenOrientation(): OrientationWithLock | null {
+  if (typeof window === 'undefined' || typeof screen === 'undefined') return null;
+  return (screen.orientation as OrientationWithLock | undefined) ?? null;
+}
+
 function getFullscreenElement(): Element | null {
   const d = document as Document & {
     webkitFullscreenElement?: Element | null;
@@ -826,6 +836,24 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
       document.removeEventListener('webkitfullscreenchange', sync);
     };
   }, []);
+
+  useEffect(() => {
+    const orientation = getScreenOrientation();
+    if (!orientation) return;
+    if (isFullscreen) {
+      if (typeof orientation.lock !== 'function') return;
+      void orientation.lock('landscape').catch(() => {
+        // Browsers may block orientation lock despite fullscreen.
+      });
+      return;
+    }
+    if (typeof orientation.unlock !== 'function') return;
+    try {
+      orientation.unlock();
+    } catch {
+      // Ignore unsupported unlock behavior.
+    }
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (isYoutube) {
