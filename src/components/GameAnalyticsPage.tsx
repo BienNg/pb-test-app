@@ -1789,7 +1789,7 @@ function ProfileMenuButton({
 
   useEffect(() => {
     if (!user?.id || !supabase) {
-      setOnboardingIncomplete(false);
+      queueMicrotask(() => setOnboardingIncomplete(false));
       return;
     }
     if (!open) return;

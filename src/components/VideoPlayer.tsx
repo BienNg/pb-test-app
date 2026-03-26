@@ -40,9 +40,19 @@ function formatPlaybackSpeedLabel(rate: number): string {
 }
 
 type OrientationWithLock = ScreenOrientation & {
-  lock?: (orientation: OrientationLockType) => Promise<void>;
+  lock?: (orientation: ScreenOrientationLockType) => Promise<void>;
   unlock?: () => void;
 };
+
+type ScreenOrientationLockType =
+  | 'any'
+  | 'natural'
+  | 'landscape'
+  | 'portrait'
+  | 'portrait-primary'
+  | 'portrait-secondary'
+  | 'landscape-primary'
+  | 'landscape-secondary';
 
 function getScreenOrientation(): OrientationWithLock | null {
   if (typeof window === 'undefined' || typeof screen === 'undefined') return null;
