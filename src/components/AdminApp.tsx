@@ -170,7 +170,7 @@ function AdminStudentsPage({
         onboarding_draft?: unknown;
         onboarding_answers?: unknown;
       }[];
-      const filtered = rows.filter((r) => r.role === 'student' || !r.role);
+      const filtered = rows.filter((r) => r.role === 'student' || r.role === 'admin' || !r.role);
       const studentIds = filtered.map((r) => r.id);
       const sessionCounts = await fetchSessionCountsForStudentIds(supabase, studentIds);
       const lastSessionDates = await fetchLastSessionDateForStudentIds(supabase, studentIds);
