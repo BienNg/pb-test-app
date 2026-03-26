@@ -1,6 +1,7 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { COLORS, SPACING, TYPOGRAPHY, RADIUS } from '../styles/theme';
 import { getYoutubeVideoId } from '@/lib/youtube';
+import { gsap } from 'gsap';
 import {
   IconMaximize2,
   IconMinimize2,
@@ -321,7 +322,13 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
   const [visibleLoopCommentLayout, setVisibleLoopCommentLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [loopOverlaySizePx, setLoopOverlaySizePx] = useState({ width: 0, height: 0 });
   const [isLoopCommentBubbleVisible, setIsLoopCommentBubbleVisible] = useState(false);
+  const [isLoopCommentCollapsed, setIsLoopCommentCollapsed] = useState(false);
+  const [isFrameDetailTextCollapsed, setIsFrameDetailTextCollapsed] = useState(false);
   const loopCommentBubbleRef = useRef<HTMLDivElement | null>(null);
+  const loopCommentDotRef = useRef<HTMLButtonElement | null>(null);
+  const loopCommentTextInnerRef = useRef<HTMLSpanElement | null>(null);
+  const frameDetailDotRef = useRef<HTMLButtonElement | null>(null);
+  const frameDetailTextInnerRef = useRef<HTMLSpanElement | null>(null);
   const loopCommentHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emittedLoopLayoutRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const lastNotifiedActiveMarkerKeyRef = useRef<string>('__init__');
@@ -1278,6 +1285,18 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     }, 220);
   }, [activeLoopCommentOverlayText, loopCommentDisplayLayout]);
 
+  useEffect(() => {
+    if (!activeLoopCommentOverlayText) {
+      requestAnimationFrame(() => setIsLoopCommentCollapsed(false));
+    }
+  }, [activeLoopCommentOverlayText]);
+
+  useEffect(() => {
+    if (!showFrameDetailReplyOverlay || !hasFrameDetailOverlayText) {
+      requestAnimationFrame(() => setIsFrameDetailTextCollapsed(false));
+    }
+  }, [showFrameDetailReplyOverlay, hasFrameDetailOverlayText]);
+
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (editableLoopCommentId == null) {
@@ -1491,6 +1510,108 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
     loopOverlaySizePx.width,
     loopOverlaySizePx.height,
   ]);
+
+  useLayoutEffect(() => {
+    const bubbleEl = loopCommentBubbleRef.current;
+    const dotEl = loopCommentDotRef.current;
+    const textEl = loopCommentTextInnerRef.current;
+    if (!bubbleEl || !dotEl || !textEl || !visibleLoopCommentText?.trim()) return;
+
+    gsap.killTweensOf([bubbleEl, dotEl, textEl]);
+    if (isLoopCommentCollapsed) {
+      const tl = gsap.timeline();
+      gsap.set(dotEl, { pointerEvents: 'none' });
+      tl.to(textEl, { opacity: 0, duration: 0.1, ease: 'power1.out' })
+        .to(
+          bubbleEl,
+          {
+            scale: 0.12,
+            autoAlpha: 0,
+            borderRadius: 999,
+            duration: 0.26,
+            ease: 'power2.inOut',
+          },
+          '<'
+        )
+        .fromTo(
+          dotEl,
+          { scale: 0.72, autoAlpha: 0 },
+          {
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.16,
+            ease: 'power2.out',
+            onStart: () => gsap.set(dotEl, { pointerEvents: 'auto' }),
+          },
+          '-=0.06'
+        );
+      return;
+    }
+
+    gsap.set(dotEl, { pointerEvents: 'none' });
+    const tl = gsap.timeline();
+    tl.to(dotEl, { scale: 0.72, autoAlpha: 0, duration: 0.12, ease: 'power2.inOut' }).fromTo(
+      bubbleEl,
+      { scale: 0.12, autoAlpha: 0, borderRadius: 999 },
+      {
+        scale: 1,
+        autoAlpha: isLoopCommentBubbleVisible ? 1 : 0,
+        borderRadius: loopCommentBubbleRadius,
+        duration: 0.28,
+        ease: 'power2.out',
+      },
+      '<'
+    );
+    tl.to(textEl, { opacity: 1, duration: 0.18, ease: 'power1.out' }, '-=0.16');
+  }, [isLoopCommentCollapsed, visibleLoopCommentText, isLoopCommentBubbleVisible, loopCommentBubbleRadius]);
+
+  useLayoutEffect(() => {
+    const boxEl = frameDetailTextBoxRef.current;
+    const dotEl = frameDetailDotRef.current;
+    const textEl = frameDetailTextInnerRef.current;
+    if (!boxEl || !dotEl || !textEl || !hasFrameDetailOverlayText) return;
+
+    gsap.killTweensOf([boxEl, dotEl, textEl]);
+    if (isFrameDetailTextCollapsed) {
+      const tl = gsap.timeline();
+      gsap.set(dotEl, { pointerEvents: 'none' });
+      tl.to(textEl, { opacity: 0, duration: 0.1, ease: 'power1.out' })
+        .to(
+          boxEl,
+          {
+            scale: 0.12,
+            autoAlpha: 0,
+            borderRadius: 999,
+            duration: 0.26,
+            ease: 'power2.inOut',
+          },
+          '<'
+        )
+        .fromTo(
+          dotEl,
+          { scale: 0.72, autoAlpha: 0 },
+          {
+            scale: 1,
+            autoAlpha: 1,
+            duration: 0.16,
+            ease: 'power2.out',
+            onStart: () => gsap.set(dotEl, { pointerEvents: 'auto' }),
+          },
+          '-=0.06'
+        );
+      return;
+    }
+
+    gsap.set(dotEl, { pointerEvents: 'none' });
+    const tl = gsap.timeline();
+    tl.to(dotEl, { scale: 0.72, autoAlpha: 0, duration: 0.12, ease: 'power2.inOut' }).fromTo(
+      boxEl,
+      { scale: 0.12, autoAlpha: 0, borderRadius: 999 },
+      { scale: 1, autoAlpha: 1, borderRadius: loopCommentBubbleRadius, duration: 0.28, ease: 'power2.out' },
+      '<'
+    );
+    tl.to(textEl, { opacity: 1, duration: 0.18, ease: 'power1.out' }, '-=0.16');
+  }, [isFrameDetailTextCollapsed, hasFrameDetailOverlayText, loopCommentBubbleRadius]);
 
   useLayoutEffect(() => {
     const el = frameDetailTextBoxRef.current;
@@ -1796,7 +1917,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   lineHeight: loopCommentBubbleSizing.lineHeight,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
-                  pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
+                  pointerEvents: isLoopCommentCollapsed ? 'none' : 'auto',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   overflowWrap: 'anywhere',
@@ -1813,13 +1934,55 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   cursor: isDraggingLoopTextBox ? 'grabbing' : isEditingLoopCommentOverlay ? 'grab' : 'default',
                   userSelect: isEditingLoopCommentOverlay ? 'none' : undefined,
                 }}
+                onClick={() => {
+                  if (isEditingLoopCommentOverlay || isDraggingLoopTextBox || isResizingLoopTextBoxWidth || isResizingLoopTextBoxHeight) return;
+                  setIsLoopCommentCollapsed(true);
+                }}
                 onPointerDown={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerDown : undefined}
                 onPointerMove={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerMove : undefined}
                 onPointerUp={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
                 onPointerLeave={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
               >
-                {visibleLoopCommentText}
+                <span ref={loopCommentTextInnerRef}>{visibleLoopCommentText}</span>
               </div>
+            )}
+            {visibleLoopCommentText && visibleLoopCommentLayout && (
+              <button
+                ref={loopCommentDotRef}
+                type="button"
+                aria-label="Show comment"
+                onClick={() => setIsLoopCommentCollapsed(false)}
+                style={{
+                  position: 'absolute',
+                  left: `${visibleLoopCommentLayout.x}%`,
+                  top: `${visibleLoopCommentLayout.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: 14,
+                  height: 14,
+                  aspectRatio: '1 / 1',
+                  borderRadius: '50%',
+                  border: '2px solid #ffffff',
+                  background: 'transparent',
+                  boxShadow: '0 0 0 2px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.22)',
+                  zIndex: 3,
+                  cursor: 'pointer',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                  }}
+                />
+              </button>
             )}
             {visibleLoopCommentText && isEditingLoopCommentOverlay && (
               <>
@@ -2242,7 +2405,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       padding: frameDetailTextBoxSizing.padding,
                       overflow: 'hidden',
                       cursor: frameTextBoxCursor,
-                      pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                      pointerEvents: isFrameDetailTextCollapsed ? 'none' : 'auto',
                       transition: 'box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease',
                       userSelect: 'none',
                     }}
@@ -2250,9 +2413,51 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     onPointerMove={handleFrameTextBoxPointerMove}
                     onPointerUp={handleFrameTextBoxPointerUp}
                     onPointerLeave={handleFrameTextBoxPointerUp}
+                    onClick={() => {
+                      if (!frameDetailMarkerReadOnly) return;
+                      setIsFrameDetailTextCollapsed(true);
+                    }}
                   >
-                    {frameDetailOverlayTextTrimmed}
+                    <span ref={frameDetailTextInnerRef}>{frameDetailOverlayTextTrimmed}</span>
                   </div>
+                )}
+                {hasFrameDetailOverlayText && (
+                  <button
+                    ref={frameDetailDotRef}
+                    type="button"
+                    aria-label="Show frame detail"
+                    onClick={() => setIsFrameDetailTextCollapsed(false)}
+                    style={{
+                      position: 'absolute',
+                      left: `${frameDetailTextBoxPosition.x}%`,
+                      top: `${frameDetailTextBoxPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: 14,
+                      height: 14,
+                      aspectRatio: '1 / 1',
+                      borderRadius: '50%',
+                      border: '2px solid #ffffff',
+                      background: 'transparent',
+                      boxShadow: '0 0 0 2px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.22)',
+                      zIndex: 3,
+                      cursor: 'pointer',
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                      }}
+                    />
+                  </button>
                 )}
                 {!frameDetailMarkerReadOnly && hasFrameDetailOverlayText && (
                   <>
@@ -2466,7 +2671,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   lineHeight: loopCommentBubbleSizing.lineHeight,
                   letterSpacing: '-0.01em',
                   boxShadow: '0 6px 18px rgba(0,0,0,0.16)',
-                  pointerEvents: isEditingLoopCommentOverlay ? 'auto' : 'none',
+                  pointerEvents: isLoopCommentCollapsed ? 'none' : 'auto',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   overflowWrap: 'anywhere',
@@ -2483,13 +2688,55 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                   cursor: isDraggingLoopTextBox ? 'grabbing' : isEditingLoopCommentOverlay ? 'grab' : 'default',
                   userSelect: isEditingLoopCommentOverlay ? 'none' : undefined,
                 }}
+                onClick={() => {
+                  if (isEditingLoopCommentOverlay || isDraggingLoopTextBox || isResizingLoopTextBoxWidth || isResizingLoopTextBoxHeight) return;
+                  setIsLoopCommentCollapsed(true);
+                }}
                 onPointerDown={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerDown : undefined}
                 onPointerMove={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerMove : undefined}
                 onPointerUp={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
                 onPointerLeave={isEditingLoopCommentOverlay ? handleLoopTextBoxPointerUp : undefined}
               >
-                {visibleLoopCommentText}
+                <span ref={loopCommentTextInnerRef}>{visibleLoopCommentText}</span>
               </div>
+            )}
+            {visibleLoopCommentText && visibleLoopCommentLayout && (
+              <button
+                ref={loopCommentDotRef}
+                type="button"
+                aria-label="Show comment"
+                onClick={() => setIsLoopCommentCollapsed(false)}
+                style={{
+                  position: 'absolute',
+                  left: `${visibleLoopCommentLayout.x}%`,
+                  top: `${visibleLoopCommentLayout.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: 14,
+                  height: 14,
+                  aspectRatio: '1 / 1',
+                  borderRadius: '50%',
+                  border: '2px solid #ffffff',
+                  background: 'transparent',
+                  boxShadow: '0 0 0 2px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.22)',
+                  zIndex: 3,
+                  cursor: 'pointer',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: '#ffffff',
+                  }}
+                />
+              </button>
             )}
             {visibleLoopCommentText && isEditingLoopCommentOverlay && (
               <>
@@ -2962,7 +3209,7 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                       padding: frameDetailTextBoxSizing.padding,
                       overflow: 'hidden',
                       cursor: frameTextBoxCursor,
-                      pointerEvents: frameDetailMarkerReadOnly ? 'none' : 'auto',
+                      pointerEvents: isFrameDetailTextCollapsed ? 'none' : 'auto',
                       transition: 'box-shadow 160ms ease, border-color 160ms ease, transform 120ms ease',
                       userSelect: 'none',
                     }}
@@ -2970,9 +3217,51 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, VideoPlayerProps>(funct
                     onPointerMove={handleFrameTextBoxPointerMove}
                     onPointerUp={handleFrameTextBoxPointerUp}
                     onPointerLeave={handleFrameTextBoxPointerUp}
+                    onClick={() => {
+                      if (!frameDetailMarkerReadOnly) return;
+                      setIsFrameDetailTextCollapsed(true);
+                    }}
                   >
-                    {frameDetailOverlayTextTrimmed}
+                    <span ref={frameDetailTextInnerRef}>{frameDetailOverlayTextTrimmed}</span>
                   </div>
+                )}
+                {hasFrameDetailOverlayText && (
+                  <button
+                    ref={frameDetailDotRef}
+                    type="button"
+                    aria-label="Show frame detail"
+                    onClick={() => setIsFrameDetailTextCollapsed(false)}
+                    style={{
+                      position: 'absolute',
+                      left: `${frameDetailTextBoxPosition.x}%`,
+                      top: `${frameDetailTextBoxPosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      width: 14,
+                      height: 14,
+                      aspectRatio: '1 / 1',
+                      borderRadius: '50%',
+                      border: '2px solid #ffffff',
+                      background: 'transparent',
+                      boxShadow: '0 0 0 2px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.22)',
+                      zIndex: 3,
+                      cursor: 'pointer',
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      padding: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                      }}
+                    />
+                  </button>
                 )}
                 {!frameDetailMarkerReadOnly && hasFrameDetailOverlayText && (
                   <>
