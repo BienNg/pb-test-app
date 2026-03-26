@@ -1,4 +1,5 @@
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { OnboardingGate } from '@/components/OnboardingGate';
 import { TrainingSessionRoutePage } from '@/components/TrainingSessionRoutePage';
 
 export default async function TrainingSessionPage({
@@ -9,7 +10,9 @@ export default async function TrainingSessionPage({
   const { sessionId } = await params;
   return (
     <ProtectedRoute>
-      <TrainingSessionRoutePage sessionId={sessionId} />
+      <OnboardingGate>
+        <TrainingSessionRoutePage sessionId={sessionId} />
+      </OnboardingGate>
     </ProtectedRoute>
   );
 }

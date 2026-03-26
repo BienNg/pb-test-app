@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { isAllowedAdminEmail } from '@/lib/admin-access';
 
-const PROTECTED_PATHS = ['/', '/coach', '/admin'];
+const PROTECTED_PATHS = ['/', '/coach', '/admin', '/onboarding'];
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'));

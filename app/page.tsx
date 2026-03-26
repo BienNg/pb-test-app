@@ -1,10 +1,13 @@
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { OnboardingGate } from '@/components/OnboardingGate';
 import { StudentShell } from '@/components/StudentShell';
 
 export default function HomePage() {
   return (
     <ProtectedRoute>
-      <StudentShell />
+      <OnboardingGate>
+        <StudentShell />
+      </OnboardingGate>
     </ProtectedRoute>
   );
 }
