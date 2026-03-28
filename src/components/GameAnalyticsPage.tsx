@@ -513,18 +513,18 @@ function ShotDetailView({
           ) : shotVideos.length > 0 ? (
             <div
               style={{
-                padding: '16px 20px 80px',
+                padding: '16px 20px 80px 0',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 0,
                 position: 'relative',
               }}
             >
-              {/* Vertical line connecting nodes */}
+              {/* Vertical line connecting nodes (aligned with node centers; no extra outer left pad) */}
               <div
                 style={{
                   position: 'absolute',
-                  left: 20 + 24, // padding + center of line
+                  left: 24,
                   top: 40,
                   bottom: 0, // goes all the way down
                   width: 2,
@@ -598,26 +598,39 @@ function ShotDetailView({
                     }
                   }
                   const isLastNode = index === arr.length - 1;
+                  const timelineColWidth = 48;
                   return (
-                    <div key={sv.id} style={{ position: 'relative', paddingLeft: 64, paddingBottom: isLastNode ? 0 : 48, zIndex: 1 }}>
-                      {/* Node marker */}
-                      <div
-                        style={{
-                          position: 'absolute',
-                          left: 24 - 7, // Center is at 24, half of 14 width is 7
-                          top: 4, // Align with text
-                          width: 16,
-                          height: 16,
-                          borderRadius: '50%',
-                          backgroundColor: COLORS.white,
-                          border: `4px solid ${SAGE_PRIMARY}`,
-                          zIndex: 2,
-                          boxShadow: '0 0 0 4px #f8fafc',
-                        }}
-                      />
+                    <div
+                      key={sv.id}
+                      style={{
+                        position: 'relative',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        alignItems: 'flex-start',
+                        paddingBottom: isLastNode ? 0 : 48,
+                        zIndex: 1,
+                      }}
+                    >
+                      {/* Narrow column for timeline node (line is on parent at left: 24) */}
+                      <div style={{ width: timelineColWidth, flexShrink: 0, position: 'relative' }}>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 24 - 8,
+                            top: 4,
+                            width: 16,
+                            height: 16,
+                            borderRadius: '50%',
+                            backgroundColor: COLORS.white,
+                            border: `4px solid ${SAGE_PRIMARY}`,
+                            zIndex: 2,
+                            boxShadow: '0 0 0 4px #f8fafc',
+                          }}
+                        />
+                      </div>
 
                       {/* Session Content */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
                         {/* Title & Date */}
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: SAGE_PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
@@ -675,12 +688,12 @@ function ShotDetailView({
                             boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                             position: 'relative',
                           }}>
-                            {/* Visual connector to the main node line */}
+                            {/* Visual connector to the main node line (card starts after 48px timeline col; line at 24px) */}
                             <div style={{
                               position: 'absolute',
-                              left: -40,
+                              left: -(timelineColWidth - 24),
                               top: 40,
-                              width: 40,
+                              width: timelineColWidth - 24,
                               height: 2,
                               backgroundColor: '#e5e7eb',
                               zIndex: 0,
@@ -742,7 +755,7 @@ function ShotDetailView({
                   );
                 })}
                 {isAdmin && (
-                  <div style={{ paddingLeft: 64, marginTop: 16, display: 'flex' }}>
+                  <div style={{ paddingLeft: 48, marginTop: 16, display: 'flex' }}>
                     <button
                       type="button"
                       onClick={() => setAddSessionModalOpen(true)}
