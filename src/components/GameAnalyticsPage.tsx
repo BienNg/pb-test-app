@@ -19,9 +19,12 @@ import {
   IconSearch,
   IconPlay,
   IconSettings,
-  IconChevronRight,
 } from './Icons';
 import { TechniqueSubCategory, ROADMAP_SKILLS, ROOF_TECHNIQUE_LABEL, TECHNIQUE_ICONS } from '../data/roadmapSkills';
+import { PlayerProfileHeader } from './GameAnalytics/PlayerProfileHeader';
+import { QuickStatsSection } from './GameAnalytics/QuickStatsSection';
+import { SegmentSwitcher } from './GameAnalytics/SegmentSwitcher';
+import { SessionsEmptyState } from './GameAnalytics/SessionsEmptyState';
 import { useAuth } from './providers/AuthProvider';
 import { useInView } from '@/hooks/useInView';
 
@@ -1698,6 +1701,9 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
         : typeof user?.email === 'string' && user.email.includes('@')
           ? user.email.split('@')[0]
           : 'there');
+  const avatarUrl = (user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture)
+    ? String(user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture)
+    : undefined;
 
   // Shot video counts per shot for roadmap (badge + sort)
   useEffect(() => {
@@ -1766,232 +1772,19 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           boxSizing: 'border-box',
         }}
       >
-        {/* Header */}
         {hideSegmentSwitcher ? (
           <>
-            <header
-              data-purpose="game-analytics-header"
-              style={{
-                backgroundColor: COLORS.brandLight,
-                margin: '-24px -24px 0',
-                paddingTop: 48,
-                paddingBottom: 32,
-                paddingLeft: 24,
-                paddingRight: 24,
-                borderBottomLeftRadius: 40,
-                borderBottomRightRadius: 40,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
-                  marginBottom: 24,
-                }}
-              >
-                <h2
-                  style={{
-                    fontSize: 18,
-                    fontWeight: 700,
-                    color: '#1f2937',
-                    lineHeight: 1.2,
-                    textAlign: 'center',
-                  }}
-                >
-                  Player Profile
-                </h2>
-                <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)' }}>
-                  <ProfileMenuButton size={46} variant="settings" />
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <div style={{ position: 'relative', marginBottom: 16 }}>
-                  <div
-                    style={{
-                      width: 96,
-                      height: 96,
-                      borderRadius: '50%',
-                      border: '4px solid white',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                      overflow: 'hidden',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: COLORS.white,
-                    }}
-                  >
-                    {(user?.user_metadata?.avatar_url ?? user?.user_metadata?.picture) ? (
-                      <img
-                        alt="Profile"
-                        src={String(user.user_metadata.avatar_url ?? user.user_metadata.picture)}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <IconUser size={40} style={{ color: COLORS.brandDark }} />
-                    )}
-                  </div>
-                </div>
-                <p
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 500,
-                    color: COLORS.brandDark,
-                    opacity: 0.8,
-                    margin: 0,
-                  }}
-                >
-                  {welcomeName}
-                </p>
-              </div>
-            </header>
-            {/* Metric cards */}
-            <section
-              data-purpose="quick-stats"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: 12,
-                padding: '0 12px',
-                marginTop: -24,
-                marginBottom: 24,
-              }}
-            >
-              <div
-                style={{
-                  minHeight: 90,
-                  minWidth: 0,
-                  backgroundColor: COLORS.white,
-                  border: '1px solid #E8F1EE',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                  borderRadius: 16,
-                  padding: 12,
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
-                  Games Analyzed
-                </span>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: COLORS.brandDark }}>
-                  {sessions.length}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => onOpenRoadmap?.()}
-                style={{
-                  position: 'relative',
-                  minHeight: 90,
-                  minWidth: 0,
-                  backgroundColor: COLORS.white,
-                  border: '1px solid #E8F1EE',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                  borderRadius: 16,
-                  padding: 12,
-                  textAlign: 'center',
-                  cursor: onOpenRoadmap ? 'pointer' : 'default',
-                  width: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  boxSizing: 'border-box',
-                }}
-              >
-                <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
-                  Shots Analyzed
-                </span>
-                <span style={{ display: 'block', fontSize: 18, fontWeight: 700, color: COLORS.brandDark }}>
-                  {Object.values(shotVideoCountByShotId).reduce((a, b) => a + b, 0)}
-                </span>
-                {onOpenRoadmap && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      bottom: 12,
-                      right: 12,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <IconChevronRight size={14} style={{ color: COLORS.brandDark }} />
-                  </span>
-                )}
-              </button>
-              {(() => {
-                const mostTrained = Object.entries(shotVideoCountByShotId)
-                  .sort((a, b) => b[1] - a[1])[0];
-                const mostTrainedSkill = mostTrained
-                  ? ROADMAP_SKILLS.find((s) => s.id === mostTrained[0])
-                  : null;
-                const mostTrainedTitle = mostTrainedSkill?.title ?? '—';
-                const canOpen = Boolean(onOpenShotDetail && mostTrainedSkill);
-                return (
-                  <button
-                    type="button"
-                    onClick={() => canOpen && onOpenShotDetail?.(mostTrainedTitle)}
-                    style={{
-                      position: 'relative',
-                      minHeight: 90,
-                      minWidth: 0,
-                      backgroundColor: COLORS.white,
-                      border: '1px solid #E8F1EE',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                      borderRadius: 16,
-                      padding: 12,
-                      textAlign: 'center',
-                      cursor: canOpen ? 'pointer' : 'default',
-                      width: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <span style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#9ca3af', marginBottom: 4 }}>
-                      Most trained shot
-                    </span>
-                    <span
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        minWidth: 0,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: COLORS.brandDark,
-                        lineHeight: 1.2,
-                        wordBreak: 'break-word',
-                        textAlign: 'center',
-                      }}
-                    >
-                      {mostTrainedTitle}
-                    </span>
-                    {canOpen && (
-                      <span
-                        style={{
-                          position: 'absolute',
-                          bottom: 12,
-                          right: 12,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <IconChevronRight size={14} style={{ color: COLORS.brandDark }} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })()}
-            </section>
+            <PlayerProfileHeader
+              welcomeName={welcomeName}
+              avatarUrl={avatarUrl}
+              settingsSlot={<ProfileMenuButton size={46} variant="settings" />}
+            />
+            <QuickStatsSection
+              sessionCount={sessions.length}
+              shotVideoCountByShotId={shotVideoCountByShotId}
+              onOpenRoadmap={onOpenRoadmap}
+              onOpenShotDetail={onOpenShotDetail}
+            />
           </>
         ) : (
           <Breadcrumb
@@ -2003,56 +1796,10 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           />
         )}
 
-          {/* Segmented Control (hidden when roadmap is in navbar, e.g. student view) */}
-          {!hideSegmentSwitcher && (
-            <div
-              style={{
-                display: 'flex',
-                gap: '32px',
-                borderBottom: '1px solid #e1e9e7',
-                marginBottom: '24px',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setSelectedSegment('videos')}
-                style={{
-                  paddingBottom: '12px',
-                  border: 'none',
-                  borderBottom: `3px solid ${selectedSegment === 'videos' ? '#6a9a95' : 'transparent'}`,
-                  borderRadius: 0,
-                  backgroundColor: 'transparent',
-                  color: selectedSegment === 'videos' ? '#333333' : '#6a9a95',
-                  fontSize: 14,
-                  fontWeight: selectedSegment === 'videos' ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Your Game Analytics
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedSegment('roadmap')}
-                style={{
-                  paddingBottom: '12px',
-                  border: 'none',
-                  borderBottom: `3px solid ${selectedSegment === 'roadmap' ? '#6a9a95' : 'transparent'}`,
-                  borderRadius: 0,
-                  backgroundColor: 'transparent',
-                  color: selectedSegment === 'roadmap' ? '#333333' : '#6a9a95',
-                  fontSize: 14,
-                  fontWeight: selectedSegment === 'roadmap' ? 600 : 400,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                Your Roadmap
-              </button>
-            </div>
-          )}
+        {!hideSegmentSwitcher && (
+          <SegmentSwitcher selectedSegment={selectedSegment} onSelect={setSelectedSegment} />
+        )}
 
-        {/* Content based on selected segment */}
         {selectedSegment === 'videos' && (
           <>
             <h1
@@ -2068,174 +1815,38 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
               {title ?? 'Game Analytics'}
             </h1>
             {sessions.length === 0 ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: 32,
-              textAlign: 'center',
-              minHeight: 320,
-            }}
-          >
-            {/* Illustration: court card with ball and paddle line */}
-            <div style={{ position: 'relative', marginBottom: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div
-                style={{
-                  position: 'absolute',
-                  width: 192,
-                  height: 192,
-                  borderRadius: '50%',
-                  backgroundColor: `${SAGE_PRIMARY}1A`,
-                }}
-              />
-              <div
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-                  width: 160,
-                  height: 160,
-                  backgroundColor: COLORS.white,
-                  borderRadius: 16,
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  border: `1px solid ${COLORS.textMuted}40`,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 24,
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0.1,
-                  }}
-                >
-                  <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, backgroundColor: SAGE_PRIMARY }} />
-                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 1, backgroundColor: SAGE_PRIMARY }} />
-                </div>
-                <div
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: '50%',
-                    backgroundColor: `${SAGE_PRIMARY}33`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 8,
-                  }}
-                >
-                  {/* Tennis ball / sport icon */}
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={SAGE_PRIMARY}
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{ flexShrink: 0 }}
-                  >
-                    <circle cx="12" cy="12" r="8" />
-                    <path d="M12 4a8 8 0 0 1 0 16 8 8 0 0 1 0-16" />
-                  </svg>
-                </div>
-                <div style={{ width: 48, height: 8, backgroundColor: `${SAGE_PRIMARY}4D`, borderRadius: 4 }} />
-              </div>
-            </div>
-            <div style={{ maxWidth: 320, marginBottom: 40 }}>
-              <h2
-                style={{
-                  fontSize: 24,
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: COLORS.textPrimary,
-                  margin: '0 0 12px',
-                }}
-              >
-                No sessions yet
-              </h2>
-              <p
-                style={{
-                  ...TYPOGRAPHY.bodySmall,
-                  color: COLORS.textSecondary,
-                  margin: 0,
-                  lineHeight: 1.5,
-                }}
-              >
-                Book your first session and wait for the Academy to upload your recording. In the meantime watch our Video Lessons to improve your skills.
-              </p>
-            </div>
-            {!isAdminView && (
-              <button
-                type="button"
-                onClick={() => onOpenLibrary?.()}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  width: '100%',
-                  maxWidth: 240,
-                  height: 56,
-                  padding: '0 24px',
-                  backgroundColor: SAGE_PRIMARY,
-                  color: COLORS.white,
-                  border: 'none',
-                  borderRadius: 12,
-                  fontSize: 16,
-                  fontWeight: 700,
-                  boxShadow: `0 10px 15px -3px ${SAGE_PRIMARY}33`,
-                  cursor: onOpenLibrary ? 'pointer' : 'default',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseDown={(e) => onOpenLibrary && (e.currentTarget.style.transform = 'scale(0.98)')}
-                onMouseUp={(e) => (e.currentTarget.style.transform = '')}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = '')}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-                <span>Watch Video Lessons</span>
-              </button>
-            )}
-          </div>
+              <SessionsEmptyState isAdminView={isAdminView} onOpenLibrary={onOpenLibrary} />
             ) : (
-          <div style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '24px',
-              }}
-            >
-              {sessions.map((session, index) => (
-                <ScrollAnimatedCard key={session.id} staggerIndex={index}>
-                  <div id={`session-${session.id}`}>
-                    <LessonCard
-                      title={session.title || session.focus || 'Training Session'}
-                      dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
-                      category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
-                      thumbnail={session.thumbnail}
-                      videoUrl={session.videoUrl}
-                      shots={shotsBySession[session.id]}
-                      isVOD
-                      onClick={() =>
-                        onOpenSession ? onOpenSession(session.id) : console.log(`Open video for training session ${session.id}`)
-                      }
-                    />
-                  </div>
-                </ScrollAnimatedCard>
-              ))}
-            </div>
-          </div>
+              <div style={{ marginBottom: 24 }}>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '24px',
+                  }}
+                >
+                  {sessions.map((session, index) => (
+                    <ScrollAnimatedCard key={session.id} staggerIndex={index}>
+                      <div id={`session-${session.id}`}>
+                        <LessonCard
+                          title={session.title || session.focus || 'Training Session'}
+                          dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
+                          category={session.session_type ? session.session_type.replace('_', ' ') : 'Training Session'}
+                          thumbnail={session.thumbnail}
+                          videoUrl={session.videoUrl}
+                          shots={shotsBySession[session.id]}
+                          isVOD
+                          onClick={() =>
+                            onOpenSession
+                              ? onOpenSession(session.id)
+                              : console.log(`Open video for training session ${session.id}`)
+                          }
+                        />
+                      </div>
+                    </ScrollAnimatedCard>
+                  ))}
+                </div>
+              </div>
             )}
           </>
         )}
