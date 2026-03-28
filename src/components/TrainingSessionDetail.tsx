@@ -12,7 +12,7 @@ import {
   IconLink,
 } from './Icons';
 import type { SessionComment, TrainingSession } from './GameAnalyticsPage';
-import { ROADMAP_SKILLS, TECHNIQUE_ICONS, ROOF_TECHNIQUE_LABEL } from './GameAnalyticsPage';
+import { ROADMAP_SKILLS, TECHNIQUE_ICONS, ROOF_TECHNIQUE_LABEL } from '../data/roadmapSkills';
 import { createClient } from '@/lib/supabase/client';
 import { parseCommentTextWithShots, type CommentSegment } from './commentText';
 import {
