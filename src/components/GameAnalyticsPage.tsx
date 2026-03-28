@@ -10,6 +10,12 @@ import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, ty
 import { fetchFocusedSkillIds, upsertFocusedSkillIds } from '@/lib/studentFocusedSkills';
 import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/lib/shotTechniqueChecks';
 import { fetchShotTechniqueSubVisibilityBatch } from '@/lib/shotTechniqueSubVisibility';
+import {
+  fetchShotTechniqueChecklistLayouts,
+  mergeChecklistItemOrder,
+  techniqueSubKey,
+  type ChecklistLayoutStateMap,
+} from '@/lib/shotTechniqueChecklistLayout';
 import { parseCommentTextWithShots } from './commentText';
 import { Breadcrumb } from './Breadcrumb';
 import {
@@ -153,6 +159,50 @@ type ShotDetailTab = 'analytics' | 'sessions' | 'technique';
 const TAB_TRANSITION_MS = 220;
 const TAB_PANEL_ANIMATION_MS = 280;
 
+type TechniqueCheckPick = Pick<ShotTechniqueCheckRow, 'item_label' | 'sub_category_id' | 'checked'>;
+
+/**
+ * Same ordering as TrainingSessionDetail shot technique tab: saved checklist order when present,
+ * otherwise unchecked items before checked (roadmap order within each group). Then keep only
+ * items that count as "to improve" (no DB row or checked === false).
+ */
+function toImproveLabelsOrderedLikeSessionDetail(
+  items: { label: string; completed: boolean }[],
+  subCategoryId: string | null,
+  videoChecks: TechniqueCheckPick[],
+  layoutForVideo: ChecklistLayoutStateMap | undefined
+): string[] {
+  const layoutKey = techniqueSubKey(subCategoryId);
+  const savedOrder = layoutForVideo?.[layoutKey]?.orderedItemLabels;
+  const hasSavedOrder = (savedOrder?.length ?? 0) > 0;
+
+  const sortKeyChecked = (label: string) => {
+    const check = videoChecks.find(
+      (c) => c.item_label === label && c.sub_category_id === subCategoryId
+    );
+    const item = items.find((i) => i.label === label);
+    return check ? check.checked : Boolean(item?.completed);
+  };
+
+  const orderedItems = hasSavedOrder
+    ? mergeChecklistItemOrder(items, savedOrder)
+    : [...items].sort((a, b) => {
+        const aChecked = sortKeyChecked(a.label);
+        const bChecked = sortKeyChecked(b.label);
+        if (aChecked === bChecked) return 0;
+        return aChecked ? 1 : -1;
+      });
+
+  return orderedItems
+    .filter((item) => {
+      const check = videoChecks.find(
+        (c) => c.item_label === item.label && c.sub_category_id === subCategoryId
+      );
+      return !(check ? check.checked : false);
+    })
+    .map((item) => item.label);
+}
+
 /** Wraps tab content and animates it in on mount (fade + slide up). */
 function AnimatedTabPanel({ children }: { children: React.ReactNode }) {
   const [entered, setEntered] = useState(false);
@@ -229,6 +279,9 @@ function ShotDetailView({
   const [loadingShotVideos, setLoadingShotVideos] = useState(false);
   const [allChecks, setAllChecks] = useState<Pick<ShotTechniqueCheckRow, 'shot_video_id' | 'sub_category_id' | 'item_label' | 'checked'>[]>([]);
   const [visibilityByShotVideo, setVisibilityByShotVideo] = useState<Record<string, string[]>>({});
+  const [checklistLayoutByShotVideo, setChecklistLayoutByShotVideo] = useState<
+    Record<string, ChecklistLayoutStateMap>
+  >({});
   const { user } = useAuth();
   const isAdmin = Boolean(studentName);
   const effectiveStudentId = studentId ?? user?.id ?? null;
@@ -238,6 +291,7 @@ function ShotDetailView({
       setShotVideos([]);
       setAllChecks([]);
       setVisibilityByShotVideo({});
+      setChecklistLayoutByShotVideo({});
       return;
     }
     setLoadingShotVideos(true);
@@ -246,15 +300,23 @@ function ShotDetailView({
       const list = await fetchShotVideos(supabase, effectiveStudentId, skill.id);
       setShotVideos(list);
       if (list.length > 0) {
-        const [checks, visibility] = await Promise.all([
-          fetchMultipleShotTechniqueChecks(supabase, list.map(v => v.id)),
-          fetchShotTechniqueSubVisibilityBatch(supabase, list.map(v => v.id)),
+        const videoIds = list.map((v) => v.id);
+        const [checks, visibility, ...layoutMaps] = await Promise.all([
+          fetchMultipleShotTechniqueChecks(supabase, videoIds),
+          fetchShotTechniqueSubVisibilityBatch(supabase, videoIds),
+          ...videoIds.map((id) => fetchShotTechniqueChecklistLayouts(supabase, id)),
         ]);
         setAllChecks(checks);
         setVisibilityByShotVideo(visibility);
+        const layoutByVideo: Record<string, ChecklistLayoutStateMap> = {};
+        videoIds.forEach((id, i) => {
+          layoutByVideo[id] = layoutMaps[i] ?? {};
+        });
+        setChecklistLayoutByShotVideo(layoutByVideo);
       } else {
         setAllChecks([]);
         setVisibilityByShotVideo({});
+        setChecklistLayoutByShotVideo({});
       }
     } finally {
       setLoadingShotVideos(false);
@@ -562,18 +624,17 @@ function ShotDetailView({
                         ? [skill.subCategories[0].id]
                         : [];
                   const videoChecks = allChecks.filter((c) => c.shot_video_id === sv.id);
+                  const layoutForVideo = checklistLayoutByShotVideo[sv.id];
                   const techniquePointsToImproveBySubcategory: { subcategoryLabel: string; items: string[] }[] = [];
                   if (skill.subCategories && effectiveSubIds.length > 0) {
                     for (const sub of skill.subCategories) {
                       if (!effectiveSubIds.includes(sub.id)) continue;
-                      const unchecked = sub.items
-                        .filter((item) => {
-                          const check = videoChecks.find(
-                            (c) => c.item_label === item.label && c.sub_category_id === sub.id
-                          );
-                          return !(check ? check.checked : false);
-                        })
-                        .map((item) => item.label);
+                      const unchecked = toImproveLabelsOrderedLikeSessionDetail(
+                        sub.items,
+                        sub.id,
+                        videoChecks,
+                        layoutForVideo
+                      );
                       if (unchecked.length > 0) {
                         techniquePointsToImproveBySubcategory.push({
                           subcategoryLabel: sub.label,
@@ -582,14 +643,12 @@ function ShotDetailView({
                       }
                     }
                   } else {
-                    const unchecked = skill.items
-                      .filter((item) => {
-                        const check = videoChecks.find(
-                          (c) => c.item_label === item.label && c.sub_category_id === null
-                        );
-                        return !(check ? check.checked : false);
-                      })
-                      .map((item) => item.label);
+                    const unchecked = toImproveLabelsOrderedLikeSessionDetail(
+                      skill.items,
+                      null,
+                      videoChecks,
+                      layoutForVideo
+                    );
                     if (unchecked.length > 0) {
                       techniquePointsToImproveBySubcategory.push({
                         subcategoryLabel: skill.title,
