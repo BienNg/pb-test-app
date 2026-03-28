@@ -2161,39 +2161,6 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
                     )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {skill.items.map((item) => (
-                    <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                      <div
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          backgroundColor: item.completed ? SAGE_PRIMARY : 'transparent',
-                          border: item.completed ? 'none' : `2px solid ${SAGE_PRIMARY}33`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: COLORS.white,
-                          flexShrink: 0,
-                          marginTop: 2,
-                        }}
-                      >
-                        {item.completed && <IconCheck size={12} style={{ color: COLORS.white }} />}
-                      </div>
-                      <span
-                        style={{
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: item.completed ? COLORS.textPrimary : COLORS.textSecondary,
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </button>
 
               {/* Settings button */}
