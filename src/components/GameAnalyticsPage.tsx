@@ -1958,6 +1958,24 @@ export interface RoadmapSkillsChecklistProps {
 export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed, hideShotAnalyticsTab }: RoadmapSkillsChecklistProps = {}) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
+  const [focusedSkillIds, setFocusedSkillIds] = useState<Set<string>>(new Set());
+  const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
+
+  const toggleFocus = (skillId: string) => {
+    setFocusedSkillIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(skillId)) next.delete(skillId);
+      else next.add(skillId);
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (!openSettingsId) return;
+    const handleClick = () => setOpenSettingsId(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [openSettingsId]);
 
   useEffect(() => {
     if (openShotTitle?.trim()) {
@@ -1972,8 +1990,13 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
       : ROADMAP_SKILLS.filter((skill) =>
           skill.title.toLowerCase().includes(searchQuery.trim().toLowerCase())
         );
-    return list.sort((a, b) => (sessionCountByShotId[b.id] ?? 0) - (sessionCountByShotId[a.id] ?? 0));
-  }, [searchQuery, sessionCountByShotId]);
+    return list.sort((a, b) => {
+      const aFocused = focusedSkillIds.has(a.id) ? 1 : 0;
+      const bFocused = focusedSkillIds.has(b.id) ? 1 : 0;
+      if (bFocused !== aFocused) return bFocused - aFocused;
+      return (sessionCountByShotId[b.id] ?? 0) - (sessionCountByShotId[a.id] ?? 0);
+    });
+  }, [searchQuery, sessionCountByShotId, focusedSkillIds]);
 
   // When a skill is selected, show shot detail as the full view (replaces list, no overlay)
   if (selectedSkill) {
@@ -2041,98 +2064,214 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
           gap: 24,
         }}
       >
-        {filteredSkills.map((skill, index) => (
+        {filteredSkills.map((skill, index) => {
+          const isFocused = focusedSkillIds.has(skill.id);
+          return (
           <ScrollAnimatedCard key={skill.id} staggerIndex={index}>
-            <button
-              type="button"
-              onClick={() => setSelectedSkill(skill)}
-              style={{
-                width: '100%',
-                textAlign: 'left',
-                cursor: 'pointer',
-                backgroundColor: COLORS.white,
-                borderRadius: 12,
-                padding: 24,
-                border: `1px solid ${SAGE_PRIMARY}1A`,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-              }}
-            >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-              <div
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedSkill(skill)}
                 style={{
-                  width: 48,
-                  height: 48,
+                  width: '100%',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  backgroundColor: isFocused ? `${SAGE_PRIMARY}0D` : COLORS.white,
                   borderRadius: 12,
-                  backgroundColor: `${SAGE_PRIMARY}1A`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: SAGE_PRIMARY,
-                  flexShrink: 0,
+                  padding: 24,
+                  border: isFocused ? `2px solid ${SAGE_PRIMARY}` : `1px solid ${SAGE_PRIMARY}1A`,
+                  boxShadow: isFocused
+                    ? `0 0 0 4px ${SAGE_PRIMARY}22, 0 2px 8px rgba(0,0,0,0.08)`
+                    : '0 1px 3px rgba(0,0,0,0.06)',
+                  transition: 'border 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
                 }}
               >
-                {skill.icon}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
-                  {skill.title}
-                </h3>
-                {(sessionCountByShotId[skill.id] ?? 0) > 0 && (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      marginTop: 4,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: SAGE_PRIMARY,
-                      backgroundColor: `${SAGE_PRIMARY}1A`,
-                      padding: '2px 8px',
-                      borderRadius: 6,
-                    }}
-                  >
-                    {sessionCountByShotId[skill.id] === 1
-                      ? '1 session'
-                      : `${sessionCountByShotId[skill.id]} sessions`}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {skill.items.map((item) => (
-                <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, paddingRight: 28 }}>
                   <div
                     style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      backgroundColor: item.completed ? SAGE_PRIMARY : 'transparent',
-                      border: item.completed ? 'none' : `2px solid ${SAGE_PRIMARY}33`,
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      backgroundColor: isFocused ? `${SAGE_PRIMARY}2A` : `${SAGE_PRIMARY}1A`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: COLORS.white,
+                      color: SAGE_PRIMARY,
                       flexShrink: 0,
-                      marginTop: 2,
                     }}
                   >
-                    {item.completed && <IconCheck size={12} style={{ color: COLORS.white }} />}
+                    {skill.icon}
                   </div>
-                  <span
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
+                        {skill.title}
+                      </h3>
+                      {isFocused && (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: COLORS.white,
+                            backgroundColor: SAGE_PRIMARY,
+                            padding: '2px 7px',
+                            borderRadius: 20,
+                            letterSpacing: 0.3,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          <IconTarget size={10} style={{ color: COLORS.white }} />
+                          Focus
+                        </span>
+                      )}
+                    </div>
+                    {(sessionCountByShotId[skill.id] ?? 0) > 0 && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          marginTop: 4,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          color: SAGE_PRIMARY,
+                          backgroundColor: `${SAGE_PRIMARY}1A`,
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                        }}
+                      >
+                        {sessionCountByShotId[skill.id] === 1
+                          ? '1 session'
+                          : `${sessionCountByShotId[skill.id]} sessions`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {skill.items.map((item) => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          backgroundColor: item.completed ? SAGE_PRIMARY : 'transparent',
+                          border: item.completed ? 'none' : `2px solid ${SAGE_PRIMARY}33`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: COLORS.white,
+                          flexShrink: 0,
+                          marginTop: 2,
+                        }}
+                      >
+                        {item.completed && <IconCheck size={12} style={{ color: COLORS.white }} />}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: item.completed ? COLORS.textPrimary : COLORS.textSecondary,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </button>
+
+              {/* Settings button */}
+              <button
+                type="button"
+                aria-label={`Settings for ${skill.title}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenSettingsId(openSettingsId === skill.id ? null : skill.id);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 14,
+                  right: 14,
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: openSettingsId === skill.id ? `${SAGE_PRIMARY}22` : 'transparent',
+                  color: openSettingsId === skill.id ? SAGE_PRIMARY : COLORS.textSecondary,
+                  transition: 'background-color 0.12s ease, color 0.12s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (openSettingsId !== skill.id) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${SAGE_PRIMARY}14`;
+                    (e.currentTarget as HTMLButtonElement).style.color = SAGE_PRIMARY;
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (openSettingsId !== skill.id) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                    (e.currentTarget as HTMLButtonElement).style.color = COLORS.textSecondary;
+                  }
+                }}
+              >
+                <IconSettings size={15} />
+              </button>
+
+              {/* Settings dropdown */}
+              {openSettingsId === skill.id && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    position: 'absolute',
+                    top: 46,
+                    right: 14,
+                    background: COLORS.white,
+                    borderRadius: 10,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.13)',
+                    border: '1px solid rgba(0,0,0,0.07)',
+                    padding: 4,
+                    zIndex: 200,
+                    minWidth: 168,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFocus(skill.id);
+                      setOpenSettingsId(null);
+                    }}
                     style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 9,
+                      padding: '9px 12px',
+                      border: 'none',
+                      background: isFocused ? `${SAGE_PRIMARY}14` : 'transparent',
+                      borderRadius: 7,
+                      cursor: 'pointer',
                       fontSize: 13,
-                      fontWeight: 500,
-                      color: item.completed ? COLORS.textPrimary : COLORS.textSecondary,
-                      lineHeight: 1.4,
+                      fontWeight: 600,
+                      color: isFocused ? SAGE_PRIMARY : COLORS.textPrimary,
+                      textAlign: 'left',
                     }}
                   >
-                    {item.label}
-                  </span>
+                    <IconTarget size={15} style={{ color: isFocused ? SAGE_PRIMARY : COLORS.textSecondary, flexShrink: 0 }} />
+                    {isFocused ? 'Remove focus' : 'Focus card'}
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-            </button>
           </ScrollAnimatedCard>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
