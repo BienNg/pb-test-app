@@ -513,21 +513,33 @@ function ShotDetailView({
           ) : shotVideos.length > 0 ? (
             <div
               style={{
-                padding: '16px 0 80px',
+                padding: '16px 20px 80px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 24,
+                gap: 0,
+                position: 'relative',
               }}
             >
+              {/* Vertical line connecting nodes */}
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
-                  gap: 16,
-                  alignContent: 'start',
+                  position: 'absolute',
+                  left: 20 + 24, // padding + center of line
+                  top: 40,
+                  bottom: 0, // goes all the way down
+                  width: 2,
+                  backgroundColor: '#e5e7eb',
+                  zIndex: 0,
+                }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0,
                 }}
               >
-                {shotVideos.map((sv) => {
+                {[...shotVideos].reverse().map((sv, index, arr) => {
                   const dateLabel =
                     sv.created_at &&
                     (() => {
@@ -585,27 +597,152 @@ function ShotDetailView({
                       });
                     }
                   }
+                  const isLastNode = index === arr.length - 1;
                   return (
-                    <LessonCard
-                      key={sv.id}
-                      title={sv.shot_title}
-                      category="Shot video"
-                      videoUrl={sv.video_url}
-                      dateLabel={dateLabel}
-                      isVOD
-                      techniquePointsToImproveBySubcategory={
-                        techniquePointsToImproveBySubcategory.length > 0
-                          ? techniquePointsToImproveBySubcategory
-                          : undefined
-                      }
-                      onClick={() =>
-                        onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)
-                      }
-                    />
+                    <div key={sv.id} style={{ position: 'relative', paddingLeft: 64, paddingBottom: isLastNode ? 0 : 48, zIndex: 1 }}>
+                      {/* Node marker */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 24 - 7, // Center is at 24, half of 14 width is 7
+                          top: 4, // Align with text
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50%',
+                          backgroundColor: COLORS.white,
+                          border: `4px solid ${SAGE_PRIMARY}`,
+                          zIndex: 2,
+                          boxShadow: '0 0 0 4px #f8fafc',
+                        }}
+                      />
+
+                      {/* Session Content */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                        {/* Title & Date */}
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: SAGE_PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>
+                            Session {index + 1}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+                            <h3 style={{ fontSize: 20, fontWeight: 700, color: COLORS.textPrimary, margin: 0 }}>
+                              {sv.shot_title}
+                            </h3>
+                            {dateLabel && (
+                              <span style={{ fontSize: 13, color: COLORS.textSecondary, fontWeight: 500 }}>
+                                {dateLabel}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Video Card (Sleek) */}
+                        <div
+                          onClick={() => onOpenShotVideo?.(shotVideoToSessionLike(sv, getYoutubeVideoId) as TrainingSession)}
+                          style={{
+                            cursor: 'pointer',
+                            borderRadius: 16,
+                            overflow: 'hidden',
+                            border: `1px solid ${COLORS.textMuted}40`,
+                            position: 'relative',
+                            maxWidth: 360,
+                            aspectRatio: '16/9',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                          }}
+                        >
+                          <img
+                            src={getYoutubeVideoId(sv.video_url || '') ? `https://img.youtube.com/vi/${getYoutubeVideoId(sv.video_url || '')}/hqdefault.jpg` : ''}
+                            alt={sv.shot_title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                          />
+                          <div style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(0,0,0,0.6)', color: 'white', padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 700, letterSpacing: '0.05em' }}>
+                            SHOT VIDEO
+                          </div>
+                          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.2s' }}>
+                            <div style={{ width: 56, height: 56, borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: SAGE_PRIMARY, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                              <IconPlay size={28} />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Focus for Next Session / To Improve */}
+                        {techniquePointsToImproveBySubcategory.length > 0 ? (
+                          <div style={{
+                            background: '#f8fafc',
+                            borderRadius: 20,
+                            padding: 24,
+                            border: '1px solid #e5e7eb',
+                            maxWidth: 360,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                            position: 'relative',
+                          }}>
+                            {/* Visual connector to the main node line */}
+                            <div style={{
+                              position: 'absolute',
+                              left: -40,
+                              top: 40,
+                              width: 40,
+                              height: 2,
+                              backgroundColor: '#e5e7eb',
+                              zIndex: 0,
+                            }} />
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                              <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.textPrimary, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <div style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: `${SAGE_PRIMARY}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: SAGE_PRIMARY }}>
+                                  <IconTarget size={14} />
+                                </div>
+                                Focus for Next Session
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                {techniquePointsToImproveBySubcategory.map(group => (
+                                  <div key={group.subcategoryLabel}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 600, color: '#18181b' }}>
+                                        {group.subcategoryLabel}
+                                      </div>
+                                      <div style={{ fontSize: 10, fontWeight: 700, color: SAGE_PRIMARY, backgroundColor: `${SAGE_PRIMARY}15`, padding: '4px 10px', borderRadius: 12 }}>
+                                        TO IMPROVE
+                                      </div>
+                                    </div>
+                                    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                      {group.items.map(item => (
+                                        <li key={item} style={{ fontSize: 14, color: '#52525b', display: 'flex', alignItems: 'flex-start', gap: 10, lineHeight: 1.4 }}>
+                                          <span style={{ color: '#ef4444', fontSize: 16, fontWeight: 'bold', marginTop: -2 }}>×</span>
+                                          <span>{item}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{
+                            background: '#f0fdf4',
+                            borderRadius: 16,
+                            padding: 16,
+                            border: '1px solid #bbf7d0',
+                            maxWidth: 360,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                          }}>
+                            <div style={{ width: 32, height: 32, borderRadius: '50%', backgroundColor: '#22c55e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <IconCheck size={20} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: '#166534' }}>Great Session!</div>
+                              <div style={{ fontSize: 14, color: '#15803d' }}>All technique checks passed.</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
                 {isAdmin && (
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ paddingLeft: 64, marginTop: 16, display: 'flex' }}>
                     <button
                       type="button"
                       onClick={() => setAddSessionModalOpen(true)}
