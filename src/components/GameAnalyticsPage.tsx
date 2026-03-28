@@ -20,7 +20,7 @@ import {
   IconPlay,
   IconSettings,
 } from './Icons';
-import { TechniqueSubCategory, ROADMAP_SKILLS, ROOF_TECHNIQUE_LABEL, TECHNIQUE_ICONS } from '../data/roadmapSkills';
+import { ROADMAP_SKILLS, ROOF_TECHNIQUE_LABEL, TECHNIQUE_ICONS } from '../data/roadmapSkills';
 import { PlayerProfileHeader } from './GameAnalytics/PlayerProfileHeader';
 import { QuickStatsSection } from './GameAnalytics/QuickStatsSection';
 import { SegmentSwitcher } from './GameAnalytics/SegmentSwitcher';
