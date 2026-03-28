@@ -7,6 +7,7 @@ import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
 import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
+import { fetchFocusedSkillIds, upsertFocusedSkillIds } from '@/lib/studentFocusedSkills';
 import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/lib/shotTechniqueChecks';
 import { fetchShotTechniqueSubVisibilityBatch } from '@/lib/shotTechniqueSubVisibility';
 import { parseCommentTextWithShots } from './commentText';
@@ -1960,14 +1961,26 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const [focusedSkillIds, setFocusedSkillIds] = useState<Set<string>>(new Set());
   const [openSettingsId, setOpenSettingsId] = useState<string | null>(null);
+  const { user } = useAuth();
+  const supabase = React.useMemo(() => createClient(), []);
+  const effectiveStudentId = studentId ?? user?.id;
+
+  // Load persisted focused skills on mount (or when the viewed student changes)
+  useEffect(() => {
+    if (!effectiveStudentId) return;
+    fetchFocusedSkillIds(supabase, effectiveStudentId).then((ids) => {
+      if (ids.length > 0) setFocusedSkillIds(new Set(ids));
+    });
+  }, [effectiveStudentId, supabase]);
 
   const toggleFocus = (skillId: string) => {
-    setFocusedSkillIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(skillId)) next.delete(skillId);
-      else next.add(skillId);
-      return next;
-    });
+    const next = new Set(focusedSkillIds);
+    if (next.has(skillId)) next.delete(skillId);
+    else next.add(skillId);
+    setFocusedSkillIds(next);
+    if (effectiveStudentId) {
+      upsertFocusedSkillIds(supabase, effectiveStudentId, [...next]);
+    }
   };
 
   useEffect(() => {
