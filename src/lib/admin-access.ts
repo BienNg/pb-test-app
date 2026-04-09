@@ -1,8 +1,12 @@
-const ALLOWED_ADMIN_EMAIL = 'bien-nguyen@outlook.com';
+const ALLOWED_ADMIN_EMAILS = new Set(
+  ['bien-nguyen@outlook.com', 'hang.chris.lam@gmail.com'].map((e) =>
+    e.toLowerCase()
+  )
+);
 
 export function isAllowedAdminEmail(
   email: string | undefined | null
 ): boolean {
   if (!email) return false;
-  return email.trim().toLowerCase() === ALLOWED_ADMIN_EMAIL.toLowerCase();
+  return ALLOWED_ADMIN_EMAILS.has(email.trim().toLowerCase());
 }
