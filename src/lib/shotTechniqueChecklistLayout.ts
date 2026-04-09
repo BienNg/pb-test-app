@@ -50,6 +50,25 @@ export function mergeChecklistItemOrder<T extends { label: string }>(
   return ordered;
 }
 
+/**
+ * Unchecked items first, then checked. Within each group, order follows merged `savedOrder`
+ * (coach drag-and-drop) with canonical roadmap items, then any new labels appended.
+ */
+export function orderShotTechniqueChecklistByCheckedState<T extends { label: string }>(
+  canonicalItems: T[],
+  savedOrder: string[] | undefined,
+  isItemChecked: (item: T) => boolean
+): T[] {
+  const base = mergeChecklistItemOrder(canonicalItems, savedOrder);
+  const unchecked: T[] = [];
+  const checked: T[] = [];
+  for (const item of base) {
+    if (isItemChecked(item)) checked.push(item);
+    else unchecked.push(item);
+  }
+  return [...unchecked, ...checked];
+}
+
 export async function fetchShotTechniqueChecklistLayouts(
   supabase: SupabaseClient | null,
   shotVideoId: string

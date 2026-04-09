@@ -12,7 +12,7 @@ import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/
 import { fetchShotTechniqueSubVisibilityBatch } from '@/lib/shotTechniqueSubVisibility';
 import {
   fetchShotTechniqueChecklistLayouts,
-  mergeChecklistItemOrder,
+  orderShotTechniqueChecklistByCheckedState,
   techniqueSubKey,
   type ChecklistLayoutStateMap,
 } from '@/lib/shotTechniqueChecklistLayout';
@@ -162,9 +162,9 @@ const TAB_PANEL_ANIMATION_MS = 280;
 type TechniqueCheckPick = Pick<ShotTechniqueCheckRow, 'item_label' | 'sub_category_id' | 'checked'>;
 
 /**
- * Same ordering as TrainingSessionDetail shot technique tab: saved checklist order when present,
- * otherwise unchecked items before checked (roadmap order within each group). Then keep only
- * items that count as "to improve" (no DB row or checked === false).
+ * Same ordering as TrainingSessionDetail shot technique tab: unchecked before checked, and
+ * within each group the saved coach checklist order (when present) merged with roadmap items.
+ * Then keep only items that count as "to improve" (no DB row or checked === false).
  */
 function toImproveLabelsOrderedLikeSessionDetail(
   items: { label: string; completed: boolean }[],
@@ -174,7 +174,6 @@ function toImproveLabelsOrderedLikeSessionDetail(
 ): string[] {
   const layoutKey = techniqueSubKey(subCategoryId);
   const savedOrder = layoutForVideo?.[layoutKey]?.orderedItemLabels;
-  const hasSavedOrder = (savedOrder?.length ?? 0) > 0;
 
   const sortKeyChecked = (label: string) => {
     const check = videoChecks.find(
@@ -184,14 +183,11 @@ function toImproveLabelsOrderedLikeSessionDetail(
     return check ? check.checked : Boolean(item?.completed);
   };
 
-  const orderedItems = hasSavedOrder
-    ? mergeChecklistItemOrder(items, savedOrder)
-    : [...items].sort((a, b) => {
-        const aChecked = sortKeyChecked(a.label);
-        const bChecked = sortKeyChecked(b.label);
-        if (aChecked === bChecked) return 0;
-        return aChecked ? 1 : -1;
-      });
+  const orderedItems = orderShotTechniqueChecklistByCheckedState(
+    items,
+    savedOrder,
+    (item) => sortKeyChecked(item.label)
+  );
 
   return orderedItems
     .filter((item) => {

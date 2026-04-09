@@ -101,7 +101,7 @@ import {
 } from '@/lib/shotTechniqueSubVisibility';
 import {
   fetchShotTechniqueChecklistLayouts,
-  mergeChecklistItemOrder,
+  orderShotTechniqueChecklistByCheckedState,
   techniqueSubKey,
   upsertShotTechniqueChecklistLayout,
   type ChecklistLayoutStateMap,
@@ -3970,17 +3970,12 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         const layoutEntry = checklistLayoutBySub[layoutSubKey];
                         const savedOrder = layoutEntry?.orderedItemLabels;
                         const savedHighlights = layoutEntry?.highlightedItemLabels ?? [];
-                        const hasSavedOrder = (savedOrder?.length ?? 0) > 0;
-                        const orderedItems = hasSavedOrder
-                          ? mergeChecklistItemOrder(techniqueItems, savedOrder)
-                          : [...techniqueItems].sort((a, b) => {
-                              const aChecked =
-                                techniqueChecked[getCheckedKey(a.label)] ?? a.completed;
-                              const bChecked =
-                                techniqueChecked[getCheckedKey(b.label)] ?? b.completed;
-                              if (aChecked === bChecked) return 0;
-                              return aChecked ? 1 : -1;
-                            });
+                        const orderedItems = orderShotTechniqueChecklistByCheckedState(
+                          techniqueItems,
+                          savedOrder,
+                          (item) =>
+                            techniqueChecked[getCheckedKey(item.label)] ?? item.completed
+                        );
                         const orderLabels = orderedItems.map((i) => i.label);
 
                         const persistChecklistLayout = (
