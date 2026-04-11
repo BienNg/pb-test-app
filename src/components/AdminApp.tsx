@@ -626,7 +626,7 @@ export const AdminApp: React.FC = () => {
     }
   };
 
-  // Fetch students from Supabase profiles when add-session sheet opens
+  // Fetch all signed-up profiles when add-session sheet opens (any role can be attached as session student)
   useEffect(() => {
     if (!showAddSessionSheet) return;
     const supabase = createClient();
@@ -648,9 +648,8 @@ export const AdminApp: React.FC = () => {
           return;
         }
         const rows = (data ?? []) as { id: string; email: string | null; full_name: string | null; role: string | null }[];
-        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
         setSupabaseStudents(
-          filtered.map((r) => ({
+          rows.map((r) => ({
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
             email: r.email ?? '',

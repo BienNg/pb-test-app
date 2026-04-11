@@ -1,5 +1,9 @@
 const ALLOWED_ADMIN_EMAILS = new Set(
-  ['bien-nguyen@outlook.com', 'hang.chris.lam@gmail.com'].map((e) =>
+  [
+    'bien-nguyen@outlook.com',
+    'hang.chris.lam@gmail.com',
+    'kristopherroesler@gmail.com',
+  ].map((e) =>
     e.toLowerCase()
   )
 );

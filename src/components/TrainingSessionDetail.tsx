@@ -907,9 +907,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           full_name: string | null;
           role: string | null;
         }[];
-        const filtered = rows.filter((r) => r.role === 'student' || !r.role);
         setAvailableStudents(
-          filtered.map((r) => ({
+          rows.map((r) => ({
             id: r.id,
             name: r.full_name?.trim() || r.email || r.id,
             email: r.email ?? '',
