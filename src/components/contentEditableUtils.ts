@@ -22,11 +22,15 @@ export function serializeContentEditable(
       const dataShot = el.getAttribute?.('data-shot');
       const mentionId = el.getAttribute?.('data-mention-id');
       const mentionName = el.getAttribute?.('data-mention-name');
-      if (dataShot != null || mentionId != null) {
+      const errorKey = el.getAttribute?.('data-error-key');
+      const errorLabel = el.getAttribute?.('data-error-label');
+      if (dataShot != null || mentionId != null || errorKey != null) {
         const marker =
           dataShot != null
             ? `[[shot:${dataShot}]]`
-            : `[[mention:${mentionId}|${mentionName ?? ''}]]`;
+            : mentionId != null
+              ? `[[mention:${mentionId}|${mentionName ?? ''}]]`
+              : `[[error:${errorKey}|${errorLabel ?? ''}]]`;
         if (node === selection.anchorNode) {
           cursorOffset = currentOffset + (selection.anchorOffset > 0 ? marker.length : 0);
         }
@@ -66,6 +70,9 @@ export function syncContentEditableFromDraft(container: HTMLElement, draft: stri
       } else if (seg.type === 'mention') {
         span.setAttribute('data-mention-id', seg.id);
         span.setAttribute('data-mention-name', seg.name);
+      } else if (seg.type === 'error') {
+        span.setAttribute('data-error-key', seg.key);
+        span.setAttribute('data-error-label', seg.label);
       }
       span.contentEditable = 'false';
       const s = span.style;
@@ -78,15 +85,19 @@ export function syncContentEditableFromDraft(container: HTMLElement, draft: stri
         s.border = '1px solid rgba(212, 168, 75, 0.6)';
         s.backgroundColor = 'rgba(212, 168, 75, 0.14)';
         s.color = '#8B6914';
-      } else {
+      } else if (seg.type === 'mention') {
         s.border = '1px solid rgba(80, 140, 255, 0.6)';
         s.backgroundColor = 'rgba(80, 140, 255, 0.12)';
         s.color = '#1D4ED8';
+      } else {
+        s.border = '1px solid rgba(239, 68, 68, 0.45)';
+        s.backgroundColor = 'rgba(239, 68, 68, 0.12)';
+        s.color = '#B91C1C';
       }
       s.fontSize = TYPOGRAPHY.label.fontSize;
       s.fontWeight = String(TYPOGRAPHY.label.fontWeight ?? 500);
       s.lineHeight = TYPOGRAPHY.label.lineHeight;
-      span.textContent = seg.type === 'shot' ? seg.name : seg.name;
+      span.textContent = seg.type === 'shot' ? seg.name : seg.type === 'mention' ? seg.name : seg.label;
       fragment.appendChild(span);
     }
   }
@@ -118,11 +129,15 @@ export function setContentEditableCursor(container: Node, offset: number): void 
       const dataShot = el.getAttribute?.('data-shot');
       const mentionId = el.getAttribute?.('data-mention-id');
       const mentionName = el.getAttribute?.('data-mention-name');
-      if (dataShot != null || mentionId != null) {
+      const errorKey = el.getAttribute?.('data-error-key');
+      const errorLabel = el.getAttribute?.('data-error-label');
+      if (dataShot != null || mentionId != null || errorKey != null) {
         const marker =
           dataShot != null
             ? `[[shot:${dataShot}]]`
-            : `[[mention:${mentionId}|${mentionName ?? ''}]]`;
+            : mentionId != null
+              ? `[[mention:${mentionId}|${mentionName ?? ''}]]`
+              : `[[error:${errorKey}|${errorLabel ?? ''}]]`;
         const markerLen = marker.length;
         if (current + markerLen >= offset) {
           const range = document.createRange();

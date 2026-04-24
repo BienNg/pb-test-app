@@ -25,6 +25,8 @@ import {
   SHOT_PILL_STYLE,
   REFERENCE_PRIMARY,
   MENTION_PILL_STYLE,
+  ERROR_LABEL_OPTIONS,
+  ERROR_PILL_STYLE,
 } from './TrainingSessionDetail/constants';
 import {
   getCaretTopOffset,
@@ -224,6 +226,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [shotMenu, setShotMenu] = useState<{ query: string; slashStart: number; highlightIndex: number } | null>(null);
   /** "@" command menu for mentions: when set, show dropdown of taggableProfiles. */
   const [mentionMenu, setMentionMenu] = useState<{ query: string; atStart: number; highlightIndex: number } | null>(null);
+  /** "#" command menu for error labels (Forced/Unforced Error). */
+  const [errorMenu, setErrorMenu] = useState<{ query: string; hashStart: number; highlightIndex: number } | null>(null);
   /** Vertical position (px from top of comment input) where inline dropdowns should appear. */
   const [inlineMenuTop, setInlineMenuTop] = useState<number | null>(null);
   const [shotFilter, setShotFilter] = useState<string[]>([]);
@@ -1059,6 +1063,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       .map((seg) => {
         if (seg.type === 'text') return seg.value;
         if (seg.type === 'shot') return seg.name;
+        if (seg.type === 'error') return seg.label;
         return `@${seg.name}`;
       })
       .join('');
@@ -1520,6 +1525,16 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     return base.filter((p) => p.name.toLowerCase().includes(q));
   }, [mentionMenu, taggableProfiles]);
 
+  const filteredErrors = useMemo(() => {
+    if (!errorMenu) return [];
+    const q = errorMenu.query.trim().toLowerCase();
+    if (!q) return [...ERROR_LABEL_OPTIONS];
+    return ERROR_LABEL_OPTIONS.filter(
+      (option) =>
+        option.label.toLowerCase().includes(q) || option.key.toLowerCase().includes(q)
+    );
+  }, [errorMenu]);
+
   const handleCommentInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
     const container = e.currentTarget;
     const sel = window.getSelection();
@@ -1540,12 +1555,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     const beforeCursor = text.slice(0, cursorOffset);
     const lastSlash = beforeCursor.lastIndexOf('/');
     const lastAt = beforeCursor.lastIndexOf('@');
+    const lastHash = beforeCursor.lastIndexOf('#');
+
+    const isTokenOpen = (start: number) => start !== -1 && !beforeCursor.slice(start).includes('\n');
+    const slashStart = isTokenOpen(lastSlash) ? lastSlash : -1;
+    const atStart = isTokenOpen(lastAt) ? lastAt : -1;
+    const hashStart = isTokenOpen(lastHash) ? lastHash : -1;
+    const activeTokenStart = Math.max(slashStart, atStart, hashStart);
 
     let anyMenu = false;
-    if (lastSlash !== -1 && !beforeCursor.slice(lastSlash).includes('\n')) {
+    if (activeTokenStart === slashStart && slashStart !== -1) {
       setShotMenu({
-        query: text.slice(lastSlash + 1, cursorOffset),
-        slashStart: lastSlash,
+        query: text.slice(slashStart + 1, cursorOffset),
+        slashStart,
         highlightIndex: 0,
       });
       anyMenu = true;
@@ -1553,16 +1575,28 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setShotMenu(null);
     }
 
-    if (lastAt !== -1 && !beforeCursor.slice(lastAt).includes('\n')) {
-      const query = text.slice(lastAt + 1, cursorOffset);
+    if (activeTokenStart === atStart && atStart !== -1) {
+      const query = text.slice(atStart + 1, cursorOffset);
       setMentionMenu({
         query,
-        atStart: lastAt,
+        atStart,
         highlightIndex: 0,
       });
       anyMenu = true;
-    } else if (lastAt === -1) {
+    } else {
       setMentionMenu(null);
+    }
+
+    if (activeTokenStart === hashStart && hashStart !== -1) {
+      const query = text.slice(hashStart + 1, cursorOffset);
+      setErrorMenu({
+        query,
+        hashStart,
+        highlightIndex: 0,
+      });
+      anyMenu = true;
+    } else {
+      setErrorMenu(null);
     }
 
     if (anyMenu) {
@@ -1630,7 +1664,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const pendingRef = isEdit ? pendingEditCursorRef : isReply ? pendingReplyCursorRef : pendingCursorRef;
       const focusContainer = () => (container as HTMLDivElement).focus();
 
-      if (e.key === '/' || e.key === '@') {
+      if (e.key === '/' || e.key === '@' || e.key === '#') {
         e.preventDefault();
         const sel = window.getSelection();
         if (!container || !sel || !container.contains(sel.anchorNode)) return;
@@ -1645,12 +1679,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             slashStart: cursorOffset,
             highlightIndex: 0,
           });
+          setMentionMenu(null);
+          setErrorMenu(null);
         } else if (char === '@') {
           setMentionMenu({
             query: '',
             atStart: cursorOffset,
             highlightIndex: 0,
           });
+          setShotMenu(null);
+          setErrorMenu(null);
+        } else if (char === '#') {
+          setErrorMenu({
+            query: '',
+            hashStart: cursorOffset,
+            highlightIndex: 0,
+          });
+          setShotMenu(null);
+          setMentionMenu(null);
         }
         setInlineMenuTop(getCaretTopOffset(container) + 20);
         focusContainer();
@@ -1658,7 +1704,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
 
       // Handle open menus
-      if (shotMenu || mentionMenu) {
+      if (shotMenu || mentionMenu || errorMenu) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
           if (shotMenu) {
@@ -1676,6 +1722,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   }
                 : null
             );
+          } else if (errorMenu) {
+            setErrorMenu((m) =>
+              m
+                ? {
+                    ...m,
+                    highlightIndex: Math.min(m.highlightIndex + 1, filteredErrors.length - 1),
+                  }
+                : null
+            );
           }
           return;
         }
@@ -1685,6 +1740,10 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             setShotMenu((m) => (m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null));
           } else if (mentionMenu) {
             setMentionMenu((m) =>
+              m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null
+            );
+          } else if (errorMenu) {
+            setErrorMenu((m) =>
               m ? { ...m, highlightIndex: Math.max(0, m.highlightIndex - 1) } : null
             );
           }
@@ -1720,6 +1779,17 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                 prev.includes(mention.id) ? prev : [...prev, mention.id]
               );
             }
+          } else if (errorMenu && filteredErrors.length > 0) {
+            const selectedError = filteredErrors[errorMenu.highlightIndex];
+            if (selectedError) {
+              const start = errorMenu.hashStart;
+              const marker = `[[error:${selectedError.key}|${selectedError.label}]] `;
+              const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+              setDraft(nextDraft);
+              setErrorMenu(null);
+              pendingRef.current = start + marker.length;
+              focusContainer();
+            }
           }
           return;
         }
@@ -1727,6 +1797,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
           e.preventDefault();
           setShotMenu(null);
           setMentionMenu(null);
+          setErrorMenu(null);
           setInlineMenuTop(null);
           return;
         }
@@ -1746,7 +1817,19 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         }
       }
     },
-    [shotMenu, mentionMenu, filteredShots, filteredMentions, postingComment, postingReply, replyingToCommentId, handleAddComment, handleAddReply]
+    [
+      shotMenu,
+      mentionMenu,
+      errorMenu,
+      filteredShots,
+      filteredMentions,
+      filteredErrors,
+      postingComment,
+      postingReply,
+      replyingToCommentId,
+      handleAddComment,
+      handleAddReply,
+    ]
   );
 
   const selectShotFromMenu = useCallback(
@@ -1778,9 +1861,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
       setShotMenu(null);
       (container as HTMLDivElement).focus();
-      if (!mentionMenu) setInlineMenuTop(null);
+      if (!mentionMenu && !errorMenu) setInlineMenuTop(null);
     },
-    [shotMenu, mentionMenu]
+    [shotMenu, mentionMenu, errorMenu]
   );
 
   const selectMentionFromMenu = useCallback(
@@ -1817,8 +1900,45 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       setSelectedMentionIds((prev) =>
         prev.includes(mention.id) ? prev : [...prev, mention.id]
       );
+      if (!shotMenu && !errorMenu) setInlineMenuTop(null);
     },
-    [mentionMenu, taggableProfiles]
+    [mentionMenu, taggableProfiles, shotMenu, errorMenu]
+  );
+
+  const selectErrorFromMenu = useCallback(
+    (errorKey: string) => {
+      if (!errorMenu) return;
+      const selectedError = ERROR_LABEL_OPTIONS.find((option) => option.key === errorKey);
+      if (!selectedError) return;
+      const container =
+        editInputRef.current?.contains(document.activeElement)
+          ? editInputRef.current
+          : replyInputRef.current?.contains(document.activeElement)
+            ? replyInputRef.current
+            : commentInputRef.current;
+      const sel = window.getSelection();
+      if (!container || !sel || !container.contains(sel.anchorNode)) return;
+      const { text, cursorOffset } = serializeContentEditable(container, sel);
+      const start = errorMenu.hashStart;
+      const marker = `[[error:${selectedError.key}|${selectedError.label}]] `;
+      const nextDraft = text.slice(0, start) + marker + text.slice(cursorOffset);
+      const isEdit = container === editInputRef.current;
+      const isReply = container === replyInputRef.current;
+      if (isEdit) {
+        setEditDraft(nextDraft);
+        pendingEditCursorRef.current = start + marker.length;
+      } else if (isReply) {
+        setReplyDraft(nextDraft);
+        pendingReplyCursorRef.current = start + marker.length;
+      } else {
+        setCommentDraft(nextDraft);
+        pendingCursorRef.current = start + marker.length;
+      }
+      setErrorMenu(null);
+      (container as HTMLDivElement).focus();
+      if (!shotMenu && !mentionMenu) setInlineMenuTop(null);
+    },
+    [errorMenu, shotMenu, mentionMenu]
   );
 
   interface MentionSuggestionsDropdownProps {
@@ -1829,6 +1949,14 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     emptyLabel: string;
     showAtPrefix: boolean;
     onSelectMention: (id: string) => void;
+  }
+
+  interface ErrorSuggestionsDropdownProps {
+    errorMenu: { query: string; hashStart: number; highlightIndex: number };
+    filteredErrors: ReadonlyArray<{ key: string; label: string }>;
+    inlineMenuTop: number | null;
+    hasAnotherMenu: boolean;
+    onSelectError: (key: string) => void;
   }
 
   const MentionSuggestionsDropdown: React.FC<MentionSuggestionsDropdownProps> = ({
@@ -1893,6 +2021,72 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             }}
           >
             {showAtPrefix ? `@${p.name}` : p.name}
+          </button>
+        ))
+      )}
+    </div>
+  );
+
+  const ErrorSuggestionsDropdown: React.FC<ErrorSuggestionsDropdownProps> = ({
+    errorMenu,
+    filteredErrors,
+    inlineMenuTop,
+    hasAnotherMenu,
+    onSelectError,
+  }) => (
+    <div
+      role="listbox"
+      aria-label="Error label"
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: inlineMenuTop != null ? inlineMenuTop : '100%',
+        marginTop: inlineMenuTop != null ? 0 : hasAnotherMenu ? 8 : 4,
+        maxHeight: 220,
+        overflowY: 'auto',
+        backgroundColor: COLORS.cardBg,
+        border: `1px solid ${COLORS.backgroundLight}`,
+        borderRadius: RADIUS.sm,
+        boxShadow: SHADOWS.light,
+        zIndex: 21,
+      }}
+    >
+      {filteredErrors.length === 0 ? (
+        <div
+          style={{
+            padding: SPACING.sm,
+            ...TYPOGRAPHY.bodySmall,
+            color: COLORS.textMuted,
+          }}
+        >
+          No matching error label
+        </div>
+      ) : (
+        filteredErrors.map((option, i) => (
+          <button
+            key={option.key}
+            type="button"
+            role="option"
+            aria-selected={errorMenu.highlightIndex === i}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              onSelectError(option.key);
+            }}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: `${SPACING.sm}px ${SPACING.md}px`,
+              border: 'none',
+              background:
+                errorMenu.highlightIndex === i ? COLORS.backgroundLight : 'transparent',
+              textAlign: 'left',
+              ...TYPOGRAPHY.bodySmall,
+              color: COLORS.textPrimary,
+              cursor: 'pointer',
+            }}
+          >
+            #{option.label}
           </button>
         ))
       )}
@@ -3044,7 +3238,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                             suppressContentEditableWarning
                             role="textbox"
                             aria-multiline="true"
-                            aria-label="Edit comment. Type / for shot commands or @ to tag people."
+                            aria-label="Edit comment. Type / for shots, @ to tag people, or # for error labels."
                             onInput={handleCommentInput}
                             onKeyDown={(e) => {
                               e.stopPropagation();
@@ -3086,6 +3280,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               emptyLabel="No students/coaches assigned to this session"
                               showAtPrefix
                               onSelectMention={selectMentionFromMenu}
+                            />
+                          )}
+                          {errorMenu != null && (
+                            <ErrorSuggestionsDropdown
+                              errorMenu={errorMenu}
+                              filteredErrors={filteredErrors}
+                              inlineMenuTop={inlineMenuTop}
+                              hasAnotherMenu={shotMenu != null || mentionMenu != null}
+                              onSelectError={selectErrorFromMenu}
                             />
                           )}
                           <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.sm, justifyContent: 'flex-end' }}>
@@ -3149,6 +3352,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               return (
                                 <span key={i} style={SHOT_PILL_STYLE}>
                                   {seg.name}
+                                </span>
+                              );
+                            }
+                            if (seg.type === 'error') {
+                              return (
+                                <span key={i} style={ERROR_PILL_STYLE}>
+                                  {seg.label}
                                 </span>
                               );
                             }
@@ -3404,6 +3614,13 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                         </span>
                                       );
                                     }
+                                    if (seg.type === 'error') {
+                                      return (
+                                        <span key={i} style={ERROR_PILL_STYLE}>
+                                          {seg.label}
+                                        </span>
+                                      );
+                                    }
                                     return (
                                       <span key={i} style={MENTION_PILL_STYLE}>
                                         @{seg.name}
@@ -3444,7 +3661,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                               suppressContentEditableWarning
                               role="textbox"
                               aria-multiline="true"
-                              aria-label="Add a comment to the frame. Type / for shot commands or @ to tag people."
+                              aria-label="Add a comment to the frame. Type / for shots, @ to tag people, or # for error labels."
                               onInput={handleCommentInput}
                               onKeyDown={(e) => {
                                 e.stopPropagation();
@@ -3486,6 +3703,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                 emptyLabel="No matching person"
                                 showAtPrefix={false}
                                 onSelectMention={selectMentionFromMenu}
+                              />
+                            )}
+                            {errorMenu != null && (
+                              <ErrorSuggestionsDropdown
+                                errorMenu={errorMenu}
+                                filteredErrors={filteredErrors}
+                                inlineMenuTop={inlineMenuTop}
+                                hasAnotherMenu={shotMenu != null || mentionMenu != null}
+                                onSelectError={selectErrorFromMenu}
                               />
                             )}
                           </div>
@@ -3682,7 +3908,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   suppressContentEditableWarning
                   role="textbox"
                   aria-multiline="true"
-                  aria-label="Type / for shot commands or @ to tag people."
+                  aria-label="Type / for shots, @ to tag people, or # for error labels."
                   onInput={handleCommentInput}
                   onKeyDown={handleCommentKeyDown}
                   onPaste={(e) => {
@@ -3690,7 +3916,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     const text = e.clipboardData.getData('text/plain');
                     document.execCommand('insertText', false, text);
                   }}
-                  data-placeholder="Type / for shot commands or @ to tag"
+                  data-placeholder="Type / for shots, @ to tag, or # for errors"
                   style={{
                     minHeight: 56,
                     width: '100%',
@@ -3716,7 +3942,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                       pointerEvents: 'none',
                     }}
                   >
-                    Type / for shot commands or @ to tag
+                    Type / for shots, @ to tag, or # for errors
                   </span>
                 )}
                 {editingCommentId == null && shotMenu != null && (
@@ -3736,6 +3962,15 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     emptyLabel="No students/coaches assigned to this session"
                     showAtPrefix
                     onSelectMention={selectMentionFromMenu}
+                  />
+                )}
+                {editingCommentId == null && errorMenu != null && (
+                  <ErrorSuggestionsDropdown
+                    errorMenu={errorMenu}
+                    filteredErrors={filteredErrors}
+                    inlineMenuTop={inlineMenuTop}
+                    hasAnotherMenu={shotMenu != null || mentionMenu != null}
+                    onSelectError={selectErrorFromMenu}
                   />
                 )}
               </div>

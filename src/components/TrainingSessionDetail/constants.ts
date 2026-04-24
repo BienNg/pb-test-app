@@ -42,3 +42,21 @@ export const MENTION_PILL_STYLE: React.CSSProperties = {
   ...TYPOGRAPHY.label,
   fontWeight: 600,
 };
+
+export const ERROR_LABEL_OPTIONS = [
+  { key: 'unforced', label: 'Unforced Error' },
+  { key: 'forced', label: 'Forced Error' },
+] as const;
+
+export const ERROR_PILL_STYLE: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  margin: '0 2px',
+  padding: '2px 8px',
+  borderRadius: RADIUS.sm,
+  border: '1px solid rgba(239, 68, 68, 0.35)',
+  backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  color: '#b91c1c',
+  ...TYPOGRAPHY.label,
+  fontWeight: 600,
+};

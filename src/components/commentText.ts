@@ -1,10 +1,11 @@
-// [[shot:Serve]] or [[mention:userId|Full Name]]
-export const INLINE_MARKER_REGEX = /\[\[(shot|mention):([^\]]+)\]\]/g;
+// [[shot:Serve]], [[mention:userId|Full Name]], or [[error:forced|Forced Error]]
+export const INLINE_MARKER_REGEX = /\[\[(shot|mention|error):([^\]]+)\]\]/g;
 
 export type CommentSegment =
   | { type: 'text'; value: string }
   | { type: 'shot'; name: string }
-  | { type: 'mention'; id: string; name: string };
+  | { type: 'mention'; id: string; name: string }
+  | { type: 'error'; key: string; label: string };
 
 /** Split comment text into segments: plain text, shot chips, or mention chips. */
 export function parseCommentTextWithShots(text: string): CommentSegment[] {
@@ -23,6 +24,20 @@ export function parseCommentTextWithShots(text: string): CommentSegment[] {
     } else if (kind === 'mention') {
       const [id, name] = payload.split('|');
       segments.push({ type: 'mention', id, name: name ?? id });
+    } else if (kind === 'error') {
+      const [key, label] = payload.split('|');
+      const normalizedKey = (key ?? '').trim().toLowerCase();
+      const fallbackLabel =
+        normalizedKey === 'forced'
+          ? 'Forced Error'
+          : normalizedKey === 'unforced'
+            ? 'Unforced Error'
+            : (key ?? 'Error');
+      segments.push({
+        type: 'error',
+        key: normalizedKey || 'error',
+        label: (label ?? '').trim() || fallbackLabel,
+      });
     }
     lastIndex = m.index + m[0].length;
   }
