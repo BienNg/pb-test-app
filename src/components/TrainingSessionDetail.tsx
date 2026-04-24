@@ -1179,41 +1179,69 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
-  const errorDashboardRows = useMemo(() => {
-    type ErrorAccumulator = {
+  const errorInsights = useMemo(() => {
+    type ShotBreakdown = { shot: string; forced: number; unforced: number; total: number };
+    type PlayerAccumulator = {
       playerName: string;
       forced: number;
       unforced: number;
+      byShot: Map<string, ShotBreakdown>;
     };
 
-    const rows = new Map<string, ErrorAccumulator>();
+    const players = new Map<string, PlayerAccumulator>();
+    const globalByShot = new Map<string, ShotBreakdown>();
     const entries: Array<Pick<SessionComment, 'text' | 'taggedUsers' | 'author' | 'authorId'>> = [
       ...comments,
       ...Object.values(repliesByCommentId).flat(),
     ];
 
-    const upsert = (playerId: string, playerName: string, forced: number, unforced: number) => {
-      const prev = rows.get(playerId);
-      if (prev) {
-        prev.forced += forced;
-        prev.unforced += unforced;
+    const ensurePlayer = (playerId: string, playerName: string): PlayerAccumulator => {
+      const existing = players.get(playerId);
+      if (existing) return existing;
+      const created: PlayerAccumulator = {
+        playerName,
+        forced: 0,
+        unforced: 0,
+        byShot: new Map(),
+      };
+      players.set(playerId, created);
+      return created;
+    };
+
+    const bumpShot = (
+      target: Map<string, ShotBreakdown>,
+      shot: string,
+      forced: number,
+      unforced: number
+    ) => {
+      const existing = target.get(shot);
+      if (existing) {
+        existing.forced += forced;
+        existing.unforced += unforced;
+        existing.total += forced + unforced;
         return;
       }
-      rows.set(playerId, {
-        playerName,
+      target.set(shot, {
+        shot,
         forced,
         unforced,
+        total: forced + unforced,
       });
     };
 
     entries.forEach((entry) => {
       const mentionedPlayers = new Map<string, string>();
+      const shots: string[] = [];
       let forced = 0;
       let unforced = 0;
 
       parseCommentTextWithShots(entry.text).forEach((seg) => {
         if (seg.type === 'mention') {
           mentionedPlayers.set(seg.id, seg.name);
+          return;
+        }
+        if (seg.type === 'shot') {
+          shots.push(seg.name);
           return;
         }
         if (seg.type === 'error') {
@@ -1239,34 +1267,57 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
 
       mentionedPlayers.forEach((playerName, playerId) => {
-        upsert(playerId, playerName, forced, unforced);
+        const playerAcc = ensurePlayer(playerId, playerName);
+        playerAcc.forced += forced;
+        playerAcc.unforced += unforced;
+        shots.forEach((shot) => bumpShot(playerAcc.byShot, shot, forced, unforced));
       });
+
+      shots.forEach((shot) => bumpShot(globalByShot, shot, forced, unforced));
     });
 
-    return Array.from(rows.entries())
-      .map(([playerId, values]) => ({
-        playerId,
-        playerName: values.playerName,
-        forced: values.forced,
-        unforced: values.unforced,
-        total: values.forced + values.unforced,
-      }))
-      .sort((a, b) => b.total - a.total || b.unforced - a.unforced || a.playerName.localeCompare(b.playerName));
-  }, [comments, repliesByCommentId]);
+    const rows = Array.from(players.entries())
+      .map(([playerId, values]) => {
+        const topShots = Array.from(values.byShot.values())
+          .sort(
+            (a, b) =>
+              b.unforced - a.unforced || b.total - a.total || a.shot.localeCompare(b.shot)
+          )
+          .slice(0, 3);
+        return {
+          playerId,
+          playerName: values.playerName,
+          forced: values.forced,
+          unforced: values.unforced,
+          total: values.forced + values.unforced,
+          topShots,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.unforced - a.unforced ||
+          b.total - a.total ||
+          a.playerName.localeCompare(b.playerName)
+      );
 
-  const errorDashboardTotals = useMemo(
-    () =>
-      errorDashboardRows.reduce(
-        (acc, row) => {
-          acc.forced += row.forced;
-          acc.unforced += row.unforced;
-          acc.total += row.total;
-          return acc;
-        },
-        { forced: 0, unforced: 0, total: 0 }
-      ),
-    [errorDashboardRows]
-  );
+    const totals = rows.reduce(
+      (acc, row) => {
+        acc.forced += row.forced;
+        acc.unforced += row.unforced;
+        acc.total += row.total;
+        return acc;
+      },
+      { forced: 0, unforced: 0, total: 0 }
+    );
+
+    const shotsByUnforced = Array.from(globalByShot.values()).sort(
+      (a, b) => b.unforced - a.unforced || b.total - a.total || a.shot.localeCompare(b.shot)
+    );
+    const focusArea =
+      shotsByUnforced.find((s) => s.unforced > 0) ?? shotsByUnforced[0] ?? null;
+
+    return { rows, totals, focusArea };
+  }, [comments, repliesByCommentId]);
 
   /** Comments sorted by timestamp ascending (newest last); comments without timestamp first. */
   const sortedComments = useMemo(() => {
@@ -2870,72 +2921,616 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                   minHeight: 0,
                   overflowY: 'auto',
                   overflowX: 'hidden',
-                  padding: `0 ${SPACING.sm}px ${SPACING.lg}px`,
+                  padding: `0 ${SPACING.sm}px ${SPACING.xxl}px`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: SPACING.md,
                 }}
               >
-                <div
-                  style={{
-                    borderRadius: RADIUS.md,
-                    border: `1px solid ${COLORS.backgroundLight}`,
-                    backgroundColor: COLORS.cardBg,
-                    padding: SPACING.md,
-                    marginBottom: SPACING.md,
-                  }}
-                >
-                  <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, textTransform: 'uppercase' }}>
-                    Error Summary
-                  </p>
-                  <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
-                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c', ...TYPOGRAPHY.label }}>
-                      Unforced: {errorDashboardTotals.unforced}
+                {errorInsights.totals.total === 0 ? (
+                  <div
+                    style={{
+                      borderRadius: RADIUS.lg,
+                      border: `1px dashed ${COLORS.backgroundLight}`,
+                      backgroundColor: COLORS.cardBg,
+                      padding: `${SPACING.xl}px ${SPACING.lg}px`,
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: RADIUS.circle,
+                        backgroundColor: COLORS.brandLight,
+                        color: COLORS.brandDark,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto',
+                        fontWeight: 700,
+                        fontSize: 20,
+                      }}
+                      aria-hidden
+                    >
+                      ✓
                     </div>
-                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: 'rgba(251,146,60,0.14)', color: '#c2410c', ...TYPOGRAPHY.label }}>
-                      Forced: {errorDashboardTotals.forced}
-                    </div>
-                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: COLORS.backgroundLight, color: COLORS.textPrimary, ...TYPOGRAPHY.label }}>
-                      Total: {errorDashboardTotals.total}
-                    </div>
+                    <p
+                      style={{
+                        ...TYPOGRAPHY.labelMed,
+                        color: COLORS.textPrimary,
+                        margin: `${SPACING.sm}px 0 4px`,
+                      }}
+                    >
+                      Clean session so far
+                    </p>
+                    <p
+                      style={{
+                        ...TYPOGRAPHY.bodySmall,
+                        color: COLORS.textSecondary,
+                        margin: 0,
+                      }}
+                    >
+                      Tag unforced or forced errors with <strong>#</strong> in a comment and coaching insights will show up here.
+                    </p>
                   </div>
-                </div>
-                {errorDashboardRows.length === 0 ? (
-                  <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
-                    No forced or unforced errors yet. Add `#` labels in comments to populate this dashboard.
-                  </p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
-                    {errorDashboardRows.map((row) => (
+                  <React.Fragment>
+                    {/* Focus Area — hero coaching card */}
+                    <div
+                      style={{
+                        position: 'relative',
+                        borderRadius: RADIUS.lg,
+                        padding: SPACING.lg,
+                        color: '#FFFFFF',
+                        overflow: 'hidden',
+                        backgroundImage: `linear-gradient(135deg, ${REFERENCE_PRIMARY} 0%, ${COLORS.brandDark} 100%)`,
+                        boxShadow: SHADOWS.light,
+                      }}
+                    >
                       <div
-                        key={row.playerId}
                         style={{
-                          borderRadius: RADIUS.md,
-                          border: `1px solid ${COLORS.backgroundLight}`,
-                          backgroundColor: COLORS.cardBg,
-                          padding: SPACING.md,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: SPACING.md,
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage:
+                            'radial-gradient(circle at 100% 0%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%)',
+                          pointerEvents: 'none',
                         }}
-                      >
-                        <div>
-                          <p style={{ margin: 0, ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary, fontWeight: 700 }}>
-                            {row.playerName}
-                          </p>
-                          <p style={{ margin: 0, marginTop: 2, ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
-                            Total errors: {row.total}
-                          </p>
-                        </div>
-                        <div style={{ display: 'flex', gap: SPACING.xs, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                          <span style={{ padding: '4px 8px', borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c', ...TYPOGRAPHY.label }}>
-                            Unforced {row.unforced}
+                        aria-hidden
+                      />
+                      <div style={{ position: 'relative' }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: SPACING.sm,
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              color: 'rgba(255,255,255,0.85)',
+                              fontWeight: 700,
+                            }}
+                          >
+                            Focus area
                           </span>
-                          <span style={{ padding: '4px 8px', borderRadius: 999, backgroundColor: 'rgba(251,146,60,0.14)', color: '#c2410c', ...TYPOGRAPHY.label }}>
-                            Forced {row.forced}
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              padding: '4px 10px',
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              color: '#FFFFFF',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Coach’s pick
+                          </span>
+                        </div>
+                        {errorInsights.focusArea ? (
+                          <React.Fragment>
+                            <p
+                              style={{
+                                ...TYPOGRAPHY.h3,
+                                color: '#FFFFFF',
+                                margin: `${SPACING.sm}px 0 2px`,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {errorInsights.focusArea.shot}
+                            </p>
+                            <p
+                              style={{
+                                ...TYPOGRAPHY.bodySmall,
+                                color: 'rgba(255,255,255,0.88)',
+                                margin: 0,
+                              }}
+                            >
+                              {errorInsights.focusArea.unforced > 0
+                                ? `${errorInsights.focusArea.unforced} unforced ${errorInsights.focusArea.unforced === 1 ? 'error' : 'errors'} tied to this shot — drill it next session to clean up the easy points.`
+                                : `${errorInsights.focusArea.forced} forced ${errorInsights.focusArea.forced === 1 ? 'error' : 'errors'} on this shot — work on handling opponent pressure here.`}
+                            </p>
+                          </React.Fragment>
+                        ) : (
+                          <React.Fragment>
+                            <p
+                              style={{
+                                ...TYPOGRAPHY.h3,
+                                color: '#FFFFFF',
+                                margin: `${SPACING.sm}px 0 2px`,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {errorInsights.totals.unforced > errorInsights.totals.forced
+                                ? 'Tighten up the unforced errors'
+                                : 'Manage the pressure moments'}
+                            </p>
+                            <p
+                              style={{
+                                ...TYPOGRAPHY.bodySmall,
+                                color: 'rgba(255,255,255,0.88)',
+                                margin: 0,
+                              }}
+                            >
+                              Tag shots with <strong>/</strong> alongside errors to see the exact shot to drill.
+                            </p>
+                          </React.Fragment>
+                        )}
+                        <div
+                          style={{
+                            display: 'flex',
+                            gap: SPACING.sm,
+                            marginTop: SPACING.md,
+                            flexWrap: 'wrap',
+                          }}
+                        >
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              padding: '6px 10px',
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              color: '#FFFFFF',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {errorInsights.totals.unforced} unforced
+                          </span>
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              padding: '6px 10px',
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              color: '#FFFFFF',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {errorInsights.totals.forced} forced
+                          </span>
+                          <span
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              padding: '6px 10px',
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(255,255,255,0.18)',
+                              color: '#FFFFFF',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {errorInsights.rows.length} {errorInsights.rows.length === 1 ? 'player' : 'players'} tracked
                           </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+
+                    {/* Session overview with ratio bar */}
+                    <div
+                      style={{
+                        borderRadius: RADIUS.lg,
+                        border: `1px solid ${COLORS.backgroundLight}`,
+                        backgroundColor: COLORS.cardBg,
+                        padding: SPACING.lg,
+                        boxShadow: SHADOWS.light,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
+                          gap: SPACING.sm,
+                        }}
+                      >
+                        <p
+                          style={{
+                            ...TYPOGRAPHY.label,
+                            color: COLORS.textSecondary,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Session overview
+                        </p>
+                        <p
+                          style={{
+                            ...TYPOGRAPHY.label,
+                            color: COLORS.textSecondary,
+                            margin: 0,
+                          }}
+                        >
+                          {errorInsights.totals.total} total errors
+                        </p>
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: SPACING.sm,
+                          marginTop: SPACING.md,
+                        }}
+                      >
+                        <div
+                          style={{
+                            borderRadius: RADIUS.md,
+                            backgroundColor: 'rgba(239,68,68,0.08)',
+                            padding: `${SPACING.sm + 2}px ${SPACING.md}px`,
+                          }}
+                        >
+                          <p
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: '#b91c1c',
+                              margin: 0,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Unforced
+                          </p>
+                          <p
+                            style={{
+                              ...TYPOGRAPHY.h3,
+                              color: '#b91c1c',
+                              margin: '2px 0 0',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {errorInsights.totals.unforced}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: RADIUS.md,
+                            backgroundColor: 'rgba(251,146,60,0.12)',
+                            padding: `${SPACING.sm + 2}px ${SPACING.md}px`,
+                          }}
+                        >
+                          <p
+                            style={{
+                              ...TYPOGRAPHY.label,
+                              color: '#c2410c',
+                              margin: 0,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}
+                          >
+                            Forced
+                          </p>
+                          <p
+                            style={{
+                              ...TYPOGRAPHY.h3,
+                              color: '#c2410c',
+                              margin: '2px 0 0',
+                              fontWeight: 700,
+                            }}
+                          >
+                            {errorInsights.totals.forced}
+                          </p>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const total = errorInsights.totals.total;
+                        const unforcedPct = total > 0 ? Math.round((errorInsights.totals.unforced / total) * 100) : 0;
+                        const forcedPct = total > 0 ? 100 - unforcedPct : 0;
+                        return (
+                          <div style={{ marginTop: SPACING.md }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                width: '100%',
+                                height: 8,
+                                borderRadius: 999,
+                                overflow: 'hidden',
+                                backgroundColor: COLORS.backgroundLight,
+                              }}
+                              role="img"
+                              aria-label={`${unforcedPct}% unforced, ${forcedPct}% forced`}
+                            >
+                              <div
+                                style={{
+                                  width: `${unforcedPct}%`,
+                                  backgroundColor: '#EF4444',
+                                  transition: 'width 240ms ease',
+                                }}
+                              />
+                              <div
+                                style={{
+                                  width: `${forcedPct}%`,
+                                  backgroundColor: '#FB923C',
+                                  transition: 'width 240ms ease',
+                                }}
+                              />
+                            </div>
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                marginTop: 6,
+                              }}
+                            >
+                              <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
+                                {unforcedPct}% unforced
+                              </span>
+                              <span style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
+                                {forcedPct}% forced
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Per-player coaching cards */}
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'baseline',
+                          justifyContent: 'space-between',
+                          padding: `0 2px ${SPACING.sm}px`,
+                        }}
+                      >
+                        <p
+                          style={{
+                            ...TYPOGRAPHY.label,
+                            color: COLORS.textSecondary,
+                            margin: 0,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.06em',
+                            fontWeight: 700,
+                          }}
+                        >
+                          Player breakdown
+                        </p>
+                        <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0 }}>
+                          Sorted by unforced
+                        </p>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                        {errorInsights.rows.map((row) => {
+                          const rowTotal = row.total;
+                          const unforcedPct = rowTotal > 0 ? Math.round((row.unforced / rowTotal) * 100) : 0;
+                          const forcedPct = rowTotal > 0 ? 100 - unforcedPct : 0;
+                          const initialsSource = row.playerName.trim();
+                          const parts = initialsSource.split(/\s+/).filter(Boolean);
+                          const initials =
+                            parts.length >= 2
+                              ? `${parts[0][0] ?? ''}${parts[1][0] ?? ''}`.toUpperCase()
+                              : initialsSource.slice(0, 2).toUpperCase() || '–';
+                          const topShot = row.topShots[0];
+                          return (
+                            <div
+                              key={row.playerId}
+                              style={{
+                                borderRadius: RADIUS.lg,
+                                border: `1px solid ${COLORS.backgroundLight}`,
+                                backgroundColor: COLORS.cardBg,
+                                padding: SPACING.lg,
+                                boxShadow: SHADOWS.light,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: SPACING.md,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: SPACING.md,
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: RADIUS.circle,
+                                    backgroundColor: COLORS.brandLight,
+                                    color: COLORS.brandDark,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    letterSpacing: '0.02em',
+                                    flexShrink: 0,
+                                  }}
+                                  aria-hidden
+                                >
+                                  {initials}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p
+                                    style={{
+                                      margin: 0,
+                                      ...TYPOGRAPHY.bodySmall,
+                                      color: COLORS.textPrimary,
+                                      fontWeight: 700,
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                    }}
+                                  >
+                                    {row.playerName}
+                                  </p>
+                                  <p
+                                    style={{
+                                      margin: '2px 0 0',
+                                      ...TYPOGRAPHY.label,
+                                      color: COLORS.textSecondary,
+                                    }}
+                                  >
+                                    {topShot
+                                      ? `Top issue: ${topShot.shot}`
+                                      : `${row.total} ${row.total === 1 ? 'error' : 'errors'} tracked`}
+                                  </p>
+                                </div>
+                                <div
+                                  style={{
+                                    ...TYPOGRAPHY.label,
+                                    padding: '6px 10px',
+                                    borderRadius: 999,
+                                    backgroundColor: COLORS.backgroundLight,
+                                    color: COLORS.textPrimary,
+                                    fontWeight: 700,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {row.total} {row.total === 1 ? 'err' : 'errs'}
+                                </div>
+                              </div>
+
+                              <div>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    width: '100%',
+                                    height: 6,
+                                    borderRadius: 999,
+                                    overflow: 'hidden',
+                                    backgroundColor: COLORS.backgroundLight,
+                                  }}
+                                  role="img"
+                                  aria-label={`${row.playerName}: ${unforcedPct}% unforced, ${forcedPct}% forced`}
+                                >
+                                  <div
+                                    style={{
+                                      width: `${unforcedPct}%`,
+                                      backgroundColor: '#EF4444',
+                                      transition: 'width 240ms ease',
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      width: `${forcedPct}%`,
+                                      backgroundColor: '#FB923C',
+                                      transition: 'width 240ms ease',
+                                    }}
+                                  />
+                                </div>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    marginTop: 6,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      ...TYPOGRAPHY.label,
+                                      color: '#b91c1c',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    Unforced {row.unforced}
+                                  </span>
+                                  <span
+                                    style={{
+                                      ...TYPOGRAPHY.label,
+                                      color: '#c2410c',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    Forced {row.forced}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {row.topShots.length > 0 && (
+                                <div>
+                                  <p
+                                    style={{
+                                      ...TYPOGRAPHY.label,
+                                      color: COLORS.textSecondary,
+                                      margin: `0 0 ${SPACING.xs}px`,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.06em',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    Areas to improve
+                                  </p>
+                                  <div
+                                    style={{
+                                      display: 'flex',
+                                      flexWrap: 'wrap',
+                                      gap: SPACING.xs,
+                                    }}
+                                  >
+                                    {row.topShots.map((shot) => {
+                                      const isUnforcedLed = shot.unforced >= shot.forced;
+                                      const chipBg = isUnforcedLed
+                                        ? 'rgba(239,68,68,0.10)'
+                                        : 'rgba(251,146,60,0.14)';
+                                      const chipColor = isUnforcedLed ? '#b91c1c' : '#c2410c';
+                                      const dominantCount = isUnforcedLed ? shot.unforced : shot.forced;
+                                      const dominantLabel = isUnforcedLed ? 'unforced' : 'forced';
+                                      return (
+                                        <span
+                                          key={`${row.playerId}-${shot.shot}`}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 6,
+                                            padding: '6px 10px',
+                                            borderRadius: 999,
+                                            backgroundColor: chipBg,
+                                            color: chipColor,
+                                            ...TYPOGRAPHY.label,
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          <span>{shot.shot}</span>
+                                          <span
+                                            style={{
+                                              fontWeight: 700,
+                                              opacity: 0.9,
+                                            }}
+                                          >
+                                            · {dominantCount} {dominantLabel}
+                                          </span>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </React.Fragment>
                 )}
               </div>
             )}
