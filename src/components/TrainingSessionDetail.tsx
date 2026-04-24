@@ -1054,6 +1054,44 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
+  const toOverlayCommentText = useCallback((text: string): string => {
+    return parseCommentTextWithShots(text)
+      .map((seg) => {
+        if (seg.type === 'text') return seg.value;
+        if (seg.type === 'shot') return seg.name;
+        return `@${seg.name}`;
+      })
+      .join('');
+  }, []);
+
+  const loopCommentOverlays = useMemo<VideoPlayerLoopCommentOverlay[]>(
+    () =>
+      comments
+        .filter((c) => c.timestampSeconds != null && c.text.trim().length > 0)
+        .map((c) => {
+          const start = c.timestampSeconds ?? 0;
+          const loopEnd = c.loopEndTimestampSeconds;
+          const nextTimestamp = sortedCommentTimestamps.find((ts) => ts > start) ?? null;
+          const fallbackEnd = nextTimestamp != null ? Math.min(start + 5, nextTimestamp) : start + 5;
+          const end =
+            loopEnd != null && loopEnd > start
+              ? loopEnd
+              : fallbackEnd;
+          return {
+            id: c.id,
+            start,
+            end,
+            text: toOverlayCommentText(c.text),
+            textBoxXPercent: c.textBoxXPercent,
+            textBoxYPercent: c.textBoxYPercent,
+            textBoxWidthPercent: c.textBoxWidthPercent,
+            textBoxHeightPercent: c.textBoxHeightPercent,
+          };
+        })
+        .filter((overlay) => overlay.end > overlay.start),
+    [comments, sortedCommentTimestamps, toOverlayCommentText]
+  );
+
   /** Mentioned profile ids in a comment from inline markers (fallback to taggedUsers for older data). */
   const getMentionedStudentIds = useCallback((comment: SessionComment): Set<string> => {
     const ids = new Set<string>();
@@ -2297,26 +2335,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                         }`,
                       }))
                   }
-                  loopCommentOverlays={
-                    comments
-                      .filter(
-                        (c) =>
-                          c.timestampSeconds != null &&
-                          c.loopEndTimestampSeconds != null &&
-                          c.loopEndTimestampSeconds > c.timestampSeconds &&
-                          c.text.trim().length > 0
-                      )
-                      .map<VideoPlayerLoopCommentOverlay>((c) => ({
-                        id: c.id,
-                        start: c.timestampSeconds ?? 0,
-                        end: c.loopEndTimestampSeconds ?? 0,
-                        text: c.text,
-                        textBoxXPercent: c.textBoxXPercent,
-                        textBoxYPercent: c.textBoxYPercent,
-                        textBoxWidthPercent: c.textBoxWidthPercent,
-                        textBoxHeightPercent: c.textBoxHeightPercent,
-                      }))
-                  }
+                  loopCommentOverlays={loopCommentOverlays}
                   editableLoopCommentId={editingCommentId}
                   editableLoopCommentTextBoxInitial={editCommentTextBoxDraft}
                   onEditableLoopCommentTextBoxChange={handleEditableLoopCommentTextBoxChange}
