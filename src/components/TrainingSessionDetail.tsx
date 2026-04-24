@@ -300,6 +300,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [activeFrameReplyId, setActiveFrameReplyId] = useState<string | null>(null);
   /** Tab for shot session detail: comments (default) or technique checklist. Only used when isShotVideo. */
   const [shotDetailTab, setShotDetailTab] = useState<'comments' | 'technique'>('comments');
+  /** Tab below video for comment insights vs full comment thread. */
+  const [commentInsightsTab, setCommentInsightsTab] = useState<'dashboard' | 'comments'>('dashboard');
   /** When set, show Add Loop UI below video controls (start = comment timestamp, end = current video time). */
   const [addLoopState, setAddLoopState] = useState<{
     commentId: string | number;
@@ -1175,6 +1177,95 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
         .map(([id, name]) => ({ id, name }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     [comments]
+  );
+
+  const errorDashboardRows = useMemo(() => {
+    type ErrorAccumulator = {
+      playerName: string;
+      forced: number;
+      unforced: number;
+    };
+
+    const rows = new Map<string, ErrorAccumulator>();
+    const entries: Array<Pick<SessionComment, 'text' | 'taggedUsers' | 'author' | 'authorId'>> = [
+      ...comments,
+      ...Object.values(repliesByCommentId).flat(),
+    ];
+
+    const upsert = (playerId: string, playerName: string, forced: number, unforced: number) => {
+      const prev = rows.get(playerId);
+      if (prev) {
+        prev.forced += forced;
+        prev.unforced += unforced;
+        return;
+      }
+      rows.set(playerId, {
+        playerName,
+        forced,
+        unforced,
+      });
+    };
+
+    entries.forEach((entry) => {
+      const mentionedPlayers = new Map<string, string>();
+      let forced = 0;
+      let unforced = 0;
+
+      parseCommentTextWithShots(entry.text).forEach((seg) => {
+        if (seg.type === 'mention') {
+          mentionedPlayers.set(seg.id, seg.name);
+          return;
+        }
+        if (seg.type === 'error') {
+          if (seg.key === 'forced') forced += 1;
+          if (seg.key === 'unforced') unforced += 1;
+        }
+      });
+
+      (entry.taggedUsers ?? []).forEach((tagged) => {
+        if (!mentionedPlayers.has(tagged.id)) {
+          mentionedPlayers.set(tagged.id, tagged.name);
+        }
+      });
+
+      if (forced + unforced === 0) return;
+
+      if (mentionedPlayers.size === 0) {
+        const fallbackName = entry.author?.trim() || 'Unknown';
+        const fallbackId = entry.authorId
+          ? `author:${entry.authorId}`
+          : `author-name:${fallbackName.toLowerCase()}`;
+        mentionedPlayers.set(fallbackId, fallbackName);
+      }
+
+      mentionedPlayers.forEach((playerName, playerId) => {
+        upsert(playerId, playerName, forced, unforced);
+      });
+    });
+
+    return Array.from(rows.entries())
+      .map(([playerId, values]) => ({
+        playerId,
+        playerName: values.playerName,
+        forced: values.forced,
+        unforced: values.unforced,
+        total: values.forced + values.unforced,
+      }))
+      .sort((a, b) => b.total - a.total || b.unforced - a.unforced || a.playerName.localeCompare(b.playerName));
+  }, [comments, repliesByCommentId]);
+
+  const errorDashboardTotals = useMemo(
+    () =>
+      errorDashboardRows.reduce(
+        (acc, row) => {
+          acc.forced += row.forced;
+          acc.unforced += row.unforced;
+          acc.total += row.total;
+          return acc;
+        },
+        { forced: 0, unforced: 0, total: 0 }
+      ),
+    [errorDashboardRows]
   );
 
   /** Comments sorted by timestamp ascending (newest last); comments without timestamp first. */
@@ -2716,7 +2807,139 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
               </div>
             )}
             {(!isShotVideo || shotDetailTab === 'comments') && (
-              <>
+              <React.Fragment>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                gap: 20,
+                padding: '0 8px',
+                borderBottom: '1px solid #F1F5F9',
+                marginBottom: SPACING.sm,
+                flexShrink: 0,
+              }}
+              role="tablist"
+              aria-label="Comment section tabs"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={commentInsightsTab === 'dashboard'}
+                onClick={() => setCommentInsightsTab('dashboard')}
+                style={{
+                  padding: '10px 0',
+                  border: 'none',
+                  borderRadius: 0,
+                  background: 'none',
+                  fontSize: 13,
+                  fontWeight: commentInsightsTab === 'dashboard' ? 700 : 500,
+                  color: commentInsightsTab === 'dashboard' ? REFERENCE_PRIMARY : '#8E8E93',
+                  borderBottom: `2.5px solid ${commentInsightsTab === 'dashboard' ? REFERENCE_PRIMARY : 'transparent'}`,
+                  marginBottom: -1,
+                  cursor: 'pointer',
+                }}
+              >
+                Dashboard
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={commentInsightsTab === 'comments'}
+                onClick={() => setCommentInsightsTab('comments')}
+                style={{
+                  padding: '10px 0',
+                  border: 'none',
+                  borderRadius: 0,
+                  background: 'none',
+                  fontSize: 13,
+                  fontWeight: commentInsightsTab === 'comments' ? 700 : 500,
+                  color: commentInsightsTab === 'comments' ? REFERENCE_PRIMARY : '#8E8E93',
+                  borderBottom: `2.5px solid ${commentInsightsTab === 'comments' ? REFERENCE_PRIMARY : 'transparent'}`,
+                  marginBottom: -1,
+                  cursor: 'pointer',
+                }}
+              >
+                Comments
+              </button>
+            </div>
+            {commentInsightsTab === 'dashboard' && (
+              <div
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  padding: `0 ${SPACING.sm}px ${SPACING.lg}px`,
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: RADIUS.md,
+                    border: `1px solid ${COLORS.backgroundLight}`,
+                    backgroundColor: COLORS.cardBg,
+                    padding: SPACING.md,
+                    marginBottom: SPACING.md,
+                  }}
+                >
+                  <p style={{ ...TYPOGRAPHY.label, color: COLORS.textSecondary, margin: 0, textTransform: 'uppercase' }}>
+                    Error Summary
+                  </p>
+                  <div style={{ display: 'flex', gap: SPACING.sm, marginTop: SPACING.sm, flexWrap: 'wrap' }}>
+                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c', ...TYPOGRAPHY.label }}>
+                      Unforced: {errorDashboardTotals.unforced}
+                    </div>
+                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: 'rgba(251,146,60,0.14)', color: '#c2410c', ...TYPOGRAPHY.label }}>
+                      Forced: {errorDashboardTotals.forced}
+                    </div>
+                    <div style={{ padding: '6px 10px', borderRadius: 999, backgroundColor: COLORS.backgroundLight, color: COLORS.textPrimary, ...TYPOGRAPHY.label }}>
+                      Total: {errorDashboardTotals.total}
+                    </div>
+                  </div>
+                </div>
+                {errorDashboardRows.length === 0 ? (
+                  <p style={{ ...TYPOGRAPHY.bodySmall, color: COLORS.textSecondary, margin: 0 }}>
+                    No forced or unforced errors yet. Add `#` labels in comments to populate this dashboard.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: SPACING.sm }}>
+                    {errorDashboardRows.map((row) => (
+                      <div
+                        key={row.playerId}
+                        style={{
+                          borderRadius: RADIUS.md,
+                          border: `1px solid ${COLORS.backgroundLight}`,
+                          backgroundColor: COLORS.cardBg,
+                          padding: SPACING.md,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: SPACING.md,
+                        }}
+                      >
+                        <div>
+                          <p style={{ margin: 0, ...TYPOGRAPHY.bodySmall, color: COLORS.textPrimary, fontWeight: 700 }}>
+                            {row.playerName}
+                          </p>
+                          <p style={{ margin: 0, marginTop: 2, ...TYPOGRAPHY.label, color: COLORS.textSecondary }}>
+                            Total errors: {row.total}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: SPACING.xs, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                          <span style={{ padding: '4px 8px', borderRadius: 999, backgroundColor: 'rgba(239,68,68,0.12)', color: '#b91c1c', ...TYPOGRAPHY.label }}>
+                            Unforced {row.unforced}
+                          </span>
+                          <span style={{ padding: '4px 8px', borderRadius: 999, backgroundColor: 'rgba(251,146,60,0.14)', color: '#c2410c', ...TYPOGRAPHY.label }}>
+                            Forced {row.forced}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {commentInsightsTab === 'comments' && (
             <div
               ref={commentsScrollRef}
               style={{
@@ -4004,7 +4227,8 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
             </div>
             )}
             </div>
-              </>
+            )}
+              </React.Fragment>
             )}
             {isShotVideo && shotDetailTab === 'technique' && (() => {
               const shotSkill = session ? ROADMAP_SKILLS.find((s) => s.title === session.title) : null;
