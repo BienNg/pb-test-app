@@ -91,6 +91,8 @@ export interface TrainingSession {
 
 export interface SessionComment {
   id: number | string;
+  /** Profile id of comment author when available (DB-backed sessions). */
+  authorId?: string;
   author: string;
   role: 'Coach' | 'You' | string;
   createdAt: string;

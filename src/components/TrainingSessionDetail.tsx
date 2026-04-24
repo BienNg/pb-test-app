@@ -206,6 +206,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
   const [, setVideoDuration] = useState(0);
   const [isExampleModalOpen, setIsExampleModalOpen] = useState(false);
   const [selectedExampleKey, setSelectedExampleKey] = useState<string | null>(null);
+  const SHOW_EXAMPLE_BUTTON = false;
   /** Which comment triggered the example modal ('new' = composer, else comment id) */
   const [exampleModalContext, setExampleModalContext] = useState<string | number | 'new' | null>(null);
   /** GIF attached to the pending new comment (before it is posted) */
@@ -1053,13 +1054,24 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     [comments]
   );
 
+  /** Mentioned profile ids in a comment from inline markers (fallback to taggedUsers for older data). */
+  const getMentionedStudentIds = useCallback((comment: SessionComment): Set<string> => {
+    const ids = new Set<string>();
+    parseCommentTextWithShots(comment.text).forEach((seg) => {
+      if (seg.type === 'mention') ids.add(seg.id);
+    });
+    (comment.taggedUsers ?? []).forEach((u) => ids.add(u.id));
+    return ids;
+  }, []);
+
   /** When students are selected, only consider comments that mention at least one of them. */
   const commentsForShotCount = useMemo(() => {
     if (studentFilter.length === 0) return comments;
-    return comments.filter((c) =>
-      (c.taggedUsers ?? []).some((u) => studentFilter.includes(u.id))
-    );
-  }, [comments, studentFilter]);
+    return comments.filter((c) => {
+      const commentStudentIds = getMentionedStudentIds(c);
+      return studentFilter.some((id) => commentStudentIds.has(id));
+    });
+  }, [comments, getMentionedStudentIds, studentFilter]);
 
   /** Shot types in relevant comments. When students selected, only show shots with count > 0. */
   const shotsInComments = useMemo(() => {
@@ -1108,6 +1120,9 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     () =>
       Array.from(
         comments.reduce<Map<string, string>>((map, c) => {
+          parseCommentTextWithShots(c.text).forEach((seg) => {
+            if (seg.type === 'mention' && !map.has(seg.id)) map.set(seg.id, seg.name);
+          });
           (c.taggedUsers ?? []).forEach((u) => {
             if (!map.has(u.id)) map.set(u.id, u.name);
           });
@@ -1141,7 +1156,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       const commentShots = new Set(
         segments.filter((seg) => seg.type === 'shot').map((seg) => (seg as Extract<CommentSegment, { type: 'shot' }>).name)
       );
-      const commentStudentIds = new Set((comment.taggedUsers ?? []).map((u) => u.id));
+      const commentStudentIds = getMentionedStudentIds(comment);
 
       if (shotFilter.length > 0 && !shotFilter.some((shot) => commentShots.has(shot))) {
         return false;
@@ -1151,7 +1166,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
       }
       return true;
     });
-  }, [sortedComments, shotFilter, studentFilter]);
+  }, [getMentionedStudentIds, sortedComments, shotFilter, studentFilter]);
 
   // When video time reaches a comment's timestamp, set that comment as active (for scroll + highlight)
   useEffect(() => {
@@ -2781,7 +2796,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                                     })
                                   }
                                 />
-                              ) : isAdmin ? (
+                              ) : isAdmin && SHOW_EXAMPLE_BUTTON ? (
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -3559,7 +3574,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                           })
                         }
                       />
-                      {!pendingNewCommentGif && (
+                      {!pendingNewCommentGif && SHOW_EXAMPLE_BUTTON && (
                         <button
                           type="button"
                           onClick={() => {

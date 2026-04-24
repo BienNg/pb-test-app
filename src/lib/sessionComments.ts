@@ -70,6 +70,7 @@ export function mapDbCommentToSessionComment(
   const displayRole = role === 'Coach' ? 'Coach' : role === 'You' ? 'You' : role;
   return {
     id: row.id,
+    authorId: row.author_id,
     author: authorName,
     role: displayRole as 'Coach' | 'You',
     createdAt: formatRelativeTime(row.created_at),
