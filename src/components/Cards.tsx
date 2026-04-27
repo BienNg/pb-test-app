@@ -160,6 +160,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         flexDirection: 'column',
         height: hasShotVideoExtras ? undefined : '100%',
         alignSelf: hasShotVideoExtras ? 'flex-start' : undefined,
+        ...(isGrid && !hasShotVideoExtras ? { flex: 1, minHeight: 0 } : {}),
       }}
     >
       {/* Thumbnail — glass-v3: 16/9 like video thumbnails (not square), Watch pill bottom-right; else: 16/9, center play */}

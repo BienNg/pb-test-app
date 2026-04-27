@@ -135,7 +135,16 @@ const CARD_ANIMATION_DURATION_MS = 480;
 const CARD_STAGGER_MS = 80;
 
 /** Wraps content and animates it in when it scrolls into view (fade + slide up), with optional stagger delay. */
-function ScrollAnimatedCard({ children, staggerIndex = 0 }: { children: React.ReactNode; staggerIndex?: number }) {
+function ScrollAnimatedCard({
+  children,
+  staggerIndex = 0,
+  /** When true, stretches to fill a CSS grid/flex row so children can use height: 100%. */
+  fillHeight = false,
+}: {
+  children: React.ReactNode;
+  staggerIndex?: number;
+  fillHeight?: boolean;
+}) {
   const { ref, inView } = useInView({ threshold: 0.08, rootMargin: '0px 0px -24px 0px', triggerOnce: true });
   const delayMs = inView ? staggerIndex * CARD_STAGGER_MS : 0;
   return (
@@ -146,6 +155,14 @@ function ScrollAnimatedCard({ children, staggerIndex = 0 }: { children: React.Re
         transform: inView ? 'translateY(0)' : 'translateY(24px)',
         transition: `opacity ${CARD_ANIMATION_DURATION_MS}ms ease-out, transform ${CARD_ANIMATION_DURATION_MS}ms ease-out`,
         transitionDelay: `${delayMs}ms`,
+        ...(fillHeight
+          ? {
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              minHeight: 0,
+            }
+          : {}),
       }}
     >
       {children}
@@ -2066,8 +2083,16 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
                   }}
                 >
                   {sessions.map((session, index) => (
-                    <ScrollAnimatedCard key={session.id} staggerIndex={index}>
-                      <div id={`session-${session.id}`}>
+                    <ScrollAnimatedCard key={session.id} staggerIndex={index} fillHeight>
+                      <div
+                        id={`session-${session.id}`}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          minHeight: 0,
+                        }}
+                      >
                         <LessonCard
                           title={session.title || session.focus || 'Training Session'}
                           dateLabel={session.time === '—' ? session.dateLabel : `${session.dateLabel} • ${session.time}`}
