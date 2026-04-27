@@ -1353,17 +1353,37 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
     });
   }, [getMentionedStudentIds, sortedComments, shotFilter, studentFilter]);
 
+  const visibleCommentTimestamps = useMemo(
+    () =>
+      [...new Set(visibleComments.filter((c) => c.timestampSeconds != null).map((c) => c.timestampSeconds!))].sort(
+        (a, b) => a - b
+      ),
+    [visibleComments]
+  );
+
+  const visibleCommentMarkers = useMemo<VideoPlayerMarker[]>(
+    () =>
+      visibleComments
+        .filter((c) => c.timestampSeconds != null)
+        .map((c) => ({
+          time: c.timestampSeconds ?? 0,
+          id: c.id,
+          label: `${c.author}: ${c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text}`,
+        })),
+    [visibleComments]
+  );
+
   // When video time reaches a comment's timestamp, set that comment as active (for scroll + highlight)
   useEffect(() => {
     const activeTimestamp =
-      sortedCommentTimestamps.filter((t) => t <= currentVideoTime + 0.5).pop() ?? null;
+      visibleCommentTimestamps.filter((t) => t <= currentVideoTime + 0.5).pop() ?? null;
     const activeComment =
       activeTimestamp != null
-        ? sortedComments.find((c) => c.timestampSeconds === activeTimestamp)
+        ? visibleComments.find((c) => c.timestampSeconds === activeTimestamp)
         : null;
     const nextId = activeComment?.id ?? null;
     setActiveCommentId((prev) => (prev === nextId ? prev : nextId));
-  }, [currentVideoTime, sortedComments, sortedCommentTimestamps]);
+  }, [currentVideoTime, visibleComments, visibleCommentTimestamps]);
 
   /** Skip seeking only when already at the same frame (exact timestamp), not when within a rounded second. */
   const seekToTimestampIfNeeded = useCallback(
@@ -2660,17 +2680,7 @@ export const TrainingSessionDetail: React.FC<TrainingSessionDetailProps> = ({
                     setPendingSeekSeconds(null);
                     setFrameReplyPauseRequested(false);
                   }}
-                  markers={
-                    comments
-                      .filter((c) => c.timestampSeconds != null)
-                      .map<VideoPlayerMarker>((c) => ({
-                        time: c.timestampSeconds ?? 0,
-                        id: c.id,
-                        label: `${c.author}: ${
-                          c.text.length > 45 ? c.text.slice(0, 45) + '…' : c.text
-                        }`,
-                      }))
-                  }
+                  markers={visibleCommentMarkers}
                   loopCommentOverlays={loopCommentOverlays}
                   editableLoopCommentId={editingCommentId}
                   editableLoopCommentTextBoxInitial={editCommentTextBoxDraft}
