@@ -6,7 +6,7 @@ import { getYoutubeVideoId } from '@/lib/youtube';
 import { LessonCard } from './Cards';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionComments, mapDbCommentToSessionComment } from '@/lib/sessionComments';
-import { fetchShotVideos, fetchShotVideoCountsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
+import { fetchShotVideos, fetchShotVideoStatsByShot, shotVideoToSessionLike, type ShotVideoRow } from '@/lib/shotVideos';
 import { fetchFocusedSkillIds, upsertFocusedSkillIds } from '@/lib/studentFocusedSkills';
 import { fetchMultipleShotTechniqueChecks, type ShotTechniqueCheckRow } from '@/lib/shotTechniqueChecks';
 import { fetchShotTechniqueSubVisibilityBatch } from '@/lib/shotTechniqueSubVisibility';
@@ -1549,8 +1549,8 @@ export interface RoadmapSkillsChecklistProps {
   studentName?: string;
   /** When set (coach/admin viewing a student), passed to ShotDetailView so "Add video" can save to DB for that student. */
   studentId?: string;
-  /** Session (shot video) count per shot id for badge and sorting (descending by count). */
-  sessionCountByShotId?: Record<string, number>;
+  /** Session (shot video) stats per shot id for badge and sorting (descending by count). */
+  shotVideoStatsByShotId?: Record<string, { count: number; latestVideoUrl: string | null }>;
   /** When provided, called with true/false when shot detail opens/closes so parent can hide navbar. */
   onShotDetailOpenChange?: (open: boolean) => void;
   /** When provided, called when user taps "Watch Tutorial" in shot detail (e.g. switch to library tab). */
@@ -1570,7 +1570,9 @@ export interface RoadmapSkillsChecklistProps {
   hideShotAnalyticsTab?: boolean;
 }
 
-export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed, hideShotAnalyticsTab }: RoadmapSkillsChecklistProps = {}) {
+export function RoadmapSkillsChecklist({ studentName, studentId, shotVideoStatsByShotId = {}, onShotDetailOpenChange, onWatchTutorial, onAddSession, onOpenShotVideo, openShotTitle, onOpenShotTitleConsumed, hideShotAnalyticsTab }: RoadmapSkillsChecklistProps = {}) {
+  /** Coach/admin viewing a student — same as ShotDetailView `isAdmin`; students never see per-card settings. */
+  const showSkillCardSettings = Boolean(studentName);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<RoadmapSkill | null>(null);
   const [focusedSkillIds, setFocusedSkillIds] = useState<Set<string>>(new Set());
@@ -1621,9 +1623,9 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
       const aFocused = focusedSkillIds.has(a.id) ? 1 : 0;
       const bFocused = focusedSkillIds.has(b.id) ? 1 : 0;
       if (bFocused !== aFocused) return bFocused - aFocused;
-      return (sessionCountByShotId[b.id] ?? 0) - (sessionCountByShotId[a.id] ?? 0);
+      return (shotVideoStatsByShotId[b.id]?.count ?? 0) - (shotVideoStatsByShotId[a.id]?.count ?? 0);
     });
-  }, [searchQuery, sessionCountByShotId, focusedSkillIds]);
+  }, [searchQuery, shotVideoStatsByShotId, focusedSkillIds]);
 
   // When a skill is selected, show shot detail as the full view (replaces list, no overlay)
   if (selectedSkill) {
@@ -1686,13 +1688,19 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
 
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 24,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
         }}
       >
         {filteredSkills.map((skill, index) => {
           const isFocused = focusedSkillIds.has(skill.id);
+          const stats = shotVideoStatsByShotId[skill.id];
+          const sessionCount = stats?.count ?? 0;
+          const latestVideoUrl = stats?.latestVideoUrl;
+          const ytId = latestVideoUrl ? getYoutubeVideoId(latestVideoUrl) : null;
+          const thumbnailUrl = ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null;
+
           return (
           <ScrollAnimatedCard key={skill.id} staggerIndex={index}>
             <div style={{ position: 'relative' }}>
@@ -1705,162 +1713,187 @@ export function RoadmapSkillsChecklist({ studentName, studentId, sessionCountByS
                   cursor: 'pointer',
                   backgroundColor: isFocused ? `${SAGE_PRIMARY}0D` : COLORS.white,
                   borderRadius: 12,
-                  padding: 24,
+                  padding: showSkillCardSettings ? '16px 48px 16px 16px' : 16,
                   border: isFocused ? `2px solid ${SAGE_PRIMARY}` : `1px solid ${SAGE_PRIMARY}1A`,
                   boxShadow: isFocused
                     ? `0 0 0 4px ${SAGE_PRIMARY}22, 0 2px 8px rgba(0,0,0,0.08)`
                     : '0 1px 3px rgba(0,0,0,0.06)',
                   transition: 'border 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, paddingRight: 28 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 12,
-                      backgroundColor: isFocused ? `${SAGE_PRIMARY}2A` : `${SAGE_PRIMARY}1A`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: SAGE_PRIMARY,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {skill.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
-                        {skill.title}
-                      </h3>
-                      {isFocused && (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 3,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: COLORS.white,
-                            backgroundColor: SAGE_PRIMARY,
-                            padding: '2px 7px',
-                            borderRadius: 20,
-                            letterSpacing: 0.3,
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          <IconTarget size={10} style={{ color: COLORS.white }} />
-                          Focus
-                        </span>
-                      )}
-                    </div>
-                    {(sessionCountByShotId[skill.id] ?? 0) > 0 && (
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    backgroundColor: isFocused ? `${SAGE_PRIMARY}2A` : `${SAGE_PRIMARY}1A`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: SAGE_PRIMARY,
+                    flexShrink: 0,
+                  }}
+                >
+                  {skill.icon}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, lineHeight: 1.3, color: COLORS.textPrimary }}>
+                      {skill.title}
+                    </h3>
+                    {isFocused && (
                       <span
                         style={{
-                          display: 'inline-block',
-                          marginTop: 4,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          color: SAGE_PRIMARY,
-                          backgroundColor: `${SAGE_PRIMARY}1A`,
-                          padding: '2px 8px',
-                          borderRadius: 6,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: COLORS.white,
+                          backgroundColor: SAGE_PRIMARY,
+                          padding: '2px 7px',
+                          borderRadius: 20,
+                          letterSpacing: 0.3,
+                          textTransform: 'uppercase',
                         }}
                       >
-                        {sessionCountByShotId[skill.id] === 1
-                          ? '1 session'
-                          : `${sessionCountByShotId[skill.id]} sessions`}
+                        <IconTarget size={10} style={{ color: COLORS.white }} />
+                        Focus
                       </span>
                     )}
                   </div>
+                  {sessionCount > 0 && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginTop: 4,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: SAGE_PRIMARY,
+                        backgroundColor: `${SAGE_PRIMARY}1A`,
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                      }}
+                    >
+                      {sessionCount === 1 ? '1 session' : `${sessionCount} sessions`}
+                    </span>
+                  )}
                 </div>
-              </button>
-
-              {/* Settings button */}
-              <button
-                type="button"
-                aria-label={`Settings for ${skill.title}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenSettingsId(openSettingsId === skill.id ? null : skill.id);
-                }}
-                style={{
-                  position: 'absolute',
-                  top: 14,
-                  right: 14,
-                  width: 28,
-                  height: 28,
-                  borderRadius: 8,
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: openSettingsId === skill.id ? `${SAGE_PRIMARY}22` : 'transparent',
-                  color: openSettingsId === skill.id ? SAGE_PRIMARY : COLORS.textSecondary,
-                  transition: 'background-color 0.12s ease, color 0.12s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (openSettingsId !== skill.id) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${SAGE_PRIMARY}14`;
-                    (e.currentTarget as HTMLButtonElement).style.color = SAGE_PRIMARY;
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (openSettingsId !== skill.id) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                    (e.currentTarget as HTMLButtonElement).style.color = COLORS.textSecondary;
-                  }
-                }}
-              >
-                <IconSettings size={15} />
-              </button>
-
-              {/* Settings dropdown */}
-              {openSettingsId === skill.id && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    position: 'absolute',
-                    top: 46,
-                    right: 14,
-                    background: COLORS.white,
-                    borderRadius: 10,
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.13)',
-                    border: '1px solid rgba(0,0,0,0.07)',
-                    padding: 4,
-                    zIndex: 200,
-                    minWidth: 168,
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleFocus(skill.id);
-                      setOpenSettingsId(null);
-                    }}
+                {thumbnailUrl && (
+                  <div
                     style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 9,
-                      padding: '9px 12px',
-                      border: 'none',
-                      background: isFocused ? `${SAGE_PRIMARY}14` : 'transparent',
-                      borderRadius: 7,
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: isFocused ? SAGE_PRIMARY : COLORS.textPrimary,
-                      textAlign: 'left',
+                      width: 80,
+                      height: 56,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                      border: `1px solid ${COLORS.textMuted}40`,
+                      position: 'relative',
                     }}
                   >
-                    <IconTarget size={15} style={{ color: isFocused ? SAGE_PRIMARY : COLORS.textSecondary, flexShrink: 0 }} />
-                    {isFocused ? 'Remove focus' : 'Focus card'}
+                    <img
+                      src={thumbnailUrl}
+                      alt={`Latest video for ${skill.title}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <IconPlay size={16} style={{ color: 'white', opacity: 0.9 }} />
+                    </div>
+                  </div>
+                )}
+              </button>
+
+              {showSkillCardSettings && (
+                <>
+                  <button
+                    type="button"
+                    aria-label={`Settings for ${skill.title}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenSettingsId(openSettingsId === skill.id ? null : skill.id);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      right: 12,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: openSettingsId === skill.id ? `${SAGE_PRIMARY}22` : 'transparent',
+                      color: openSettingsId === skill.id ? SAGE_PRIMARY : COLORS.textSecondary,
+                      transition: 'background-color 0.12s ease, color 0.12s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (openSettingsId !== skill.id) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = `${SAGE_PRIMARY}14`;
+                        (e.currentTarget as HTMLButtonElement).style.color = SAGE_PRIMARY;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (openSettingsId !== skill.id) {
+                        (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                        (e.currentTarget as HTMLButtonElement).style.color = COLORS.textSecondary;
+                      }
+                    }}
+                  >
+                    <IconSettings size={15} />
                   </button>
-                </div>
+
+                  {openSettingsId === skill.id && (
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        position: 'absolute',
+                        top: '50%',
+                        marginTop: 18,
+                        right: 12,
+                        background: COLORS.white,
+                        borderRadius: 10,
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.13)',
+                        border: '1px solid rgba(0,0,0,0.07)',
+                        padding: 4,
+                        zIndex: 200,
+                        minWidth: 168,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleFocus(skill.id);
+                          setOpenSettingsId(null);
+                        }}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 9,
+                          padding: '9px 12px',
+                          border: 'none',
+                          background: isFocused ? `${SAGE_PRIMARY}14` : 'transparent',
+                          borderRadius: 7,
+                          cursor: 'pointer',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: isFocused ? SAGE_PRIMARY : COLORS.textPrimary,
+                          textAlign: 'left',
+                        }}
+                      >
+                        <IconTarget size={15} style={{ color: isFocused ? SAGE_PRIMARY : COLORS.textSecondary, flexShrink: 0 }} />
+                        {isFocused ? 'Remove focus' : 'Focus card'}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </ScrollAnimatedCard>
@@ -1897,7 +1930,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   const selectedSegment = hideSegmentSwitcher ? 'videos' : (selectedSegmentProp ?? internalSelectedSegment);
   const setSelectedSegment = onSelectedSegmentChange ?? setInternalSelectedSegment;
   const [shotsBySession, setShotsBySession] = useState<Record<string, string[]>>({});
-  const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
+  const [shotVideoStatsByShotId, setShotVideoStatsByShotId] = useState<Record<string, { count: number; latestVideoUrl: string | null }>>({});
   const effectiveStudentId = studentId ?? user?.id ?? null;
   const welcomeName =
     studentName ??
@@ -1915,15 +1948,15 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
   // Shot video counts per shot for roadmap (badge + sort)
   useEffect(() => {
     if (!effectiveStudentId) {
-      queueMicrotask(() => setShotVideoCountByShotId({}));
+      queueMicrotask(() => setShotVideoStatsByShotId({}));
       return;
     }
     const supabase = createClient();
     if (!supabase) return;
     let cancelled = false;
     (async () => {
-      const counts = await fetchShotVideoCountsByShot(supabase, effectiveStudentId);
-      if (!cancelled) setShotVideoCountByShotId(counts);
+      const stats = await fetchShotVideoStatsByShot(supabase, effectiveStudentId);
+      if (!cancelled) setShotVideoStatsByShotId(stats);
     })();
     return () => {
       cancelled = true;
@@ -1988,7 +2021,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
             />
             <QuickStatsSection
               sessionCount={sessions.length}
-              shotVideoCountByShotId={shotVideoCountByShotId}
+              shotVideoStatsByShotId={shotVideoStatsByShotId}
               onOpenRoadmap={onOpenRoadmap}
               onOpenShotDetail={onOpenShotDetail}
             />
@@ -2062,7 +2095,7 @@ export const GameAnalyticsPage: React.FC<GameAnalyticsPageProps> = ({
           <RoadmapSkillsChecklist
             studentName={studentName}
             studentId={studentId}
-            sessionCountByShotId={shotVideoCountByShotId}
+            shotVideoStatsByShotId={shotVideoStatsByShotId}
             onAddSession={onAddSession}
             onOpenShotVideo={onOpenShotVideo}
             openShotTitle={openShotTitle}

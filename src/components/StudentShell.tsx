@@ -8,7 +8,7 @@ import { GameAnalyticsPage, RoadmapSkillsChecklist, type TrainingSession } from 
 import { PlayerProfileLoadingScreen } from './PlayerProfileLoadingScreen';
 import { createClient } from '@/lib/supabase/client';
 import { fetchSessionsForStudent } from '@/lib/studentSessions';
-import { fetchShotVideoCountsByShot } from '@/lib/shotVideos';
+import { fetchShotVideoStatsByShot } from '@/lib/shotVideos';
 import { useAuth } from './providers/AuthProvider';
 
 type TabId = 'roadmap' | 'sessions' | 'library';
@@ -22,7 +22,7 @@ export function StudentShell() {
   const [openShotTitle, setOpenShotTitle] = useState<string | null>(null);
   const [sessionsForStudent, setSessionsForStudent] = useState<TrainingSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  const [shotVideoCountByShotId, setShotVideoCountByShotId] = useState<Record<string, number>>({});
+  const [shotVideoStatsByShotId, setShotVideoStatsByShotId] = useState<Record<string, { count: number; latestVideoUrl: string | null }>>({});
   const [showTutorialsComingSoon, setShowTutorialsComingSoon] = useState(false);
 
   const handleTabClick = (tabId: TabId) => {
@@ -49,15 +49,15 @@ export function StudentShell() {
   // Shot video counts per shot for roadmap (badge + same sort as admin: descending by session count).
   useEffect(() => {
     if (!user?.id) {
-      setShotVideoCountByShotId({});
+      setShotVideoStatsByShotId({});
       return;
     }
     const supabase = createClient();
     if (!supabase) return;
     let cancelled = false;
     (async () => {
-      const counts = await fetchShotVideoCountsByShot(supabase, user.id);
-      if (!cancelled) setShotVideoCountByShotId(counts);
+      const stats = await fetchShotVideoStatsByShot(supabase, user.id);
+      if (!cancelled) setShotVideoStatsByShotId(stats);
     })();
     return () => {
       cancelled = true;
@@ -127,7 +127,7 @@ export function StudentShell() {
         aria-hidden={!showRoadmap}
       >
         <RoadmapSkillsChecklist
-          sessionCountByShotId={shotVideoCountByShotId}
+          shotVideoStatsByShotId={shotVideoStatsByShotId}
           onShotDetailOpenChange={setShotDetailOpen}
           onWatchTutorial={() => setShowTutorialsComingSoon(true)}
           onOpenShotVideo={(session) => {

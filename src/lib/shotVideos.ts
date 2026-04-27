@@ -38,6 +38,34 @@ export async function fetchShotVideoCountsByShot(
 }
 
 /**
+ * Fetch shot video stats (count and latest video URL) per shot_id for a student.
+ */
+export async function fetchShotVideoStatsByShot(
+  supabase: SupabaseClient | null,
+  studentId: string
+): Promise<Record<string, { count: number; latestVideoUrl: string | null }>> {
+  if (!supabase || !studentId) return {};
+  const { data, error } = await supabase
+    .from('shot_videos')
+    .select('shot_id, video_url, created_at')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: true });
+  if (error) return {};
+  const stats: Record<string, { count: number; latestVideoUrl: string | null }> = {};
+  for (const row of data ?? []) {
+    const id = row.shot_id;
+    if (id) {
+      if (!stats[id]) {
+        stats[id] = { count: 0, latestVideoUrl: null };
+      }
+      stats[id].count += 1;
+      stats[id].latestVideoUrl = row.video_url;
+    }
+  }
+  return stats;
+}
+
+/**
  * Fetch shot videos for a student and shot (for "Your Game Analytics" tab in ShotDetailView).
  */
 export async function fetchShotVideos(

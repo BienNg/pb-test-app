@@ -5,22 +5,22 @@ import { ROADMAP_SKILLS } from '../../data/roadmapSkills';
 
 interface QuickStatsSectionProps {
   sessionCount: number;
-  shotVideoCountByShotId: Record<string, number>;
+  shotVideoStatsByShotId: Record<string, { count: number; latestVideoUrl: string | null }>;
   onOpenRoadmap?: () => void;
   onOpenShotDetail?: (shotTitle: string) => void;
 }
 
 export function QuickStatsSection({
   sessionCount,
-  shotVideoCountByShotId,
+  shotVideoStatsByShotId,
   onOpenRoadmap,
   onOpenShotDetail,
 }: QuickStatsSectionProps) {
-  const mostTrained = Object.entries(shotVideoCountByShotId).sort((a, b) => b[1] - a[1])[0];
+  const mostTrained = Object.entries(shotVideoStatsByShotId).sort((a, b) => b[1].count - a[1].count)[0];
   const mostTrainedSkill = mostTrained ? ROADMAP_SKILLS.find((s) => s.id === mostTrained[0]) : null;
   const mostTrainedTitle = mostTrainedSkill?.title ?? '—';
   const canOpenShotDetail = Boolean(onOpenShotDetail && mostTrainedSkill);
-  const totalShotsAnalyzed = Object.values(shotVideoCountByShotId).reduce((a, b) => a + b, 0);
+  const totalShotsAnalyzed = Object.values(shotVideoStatsByShotId).reduce((a, b) => a + b.count, 0);
 
   return (
     <section
